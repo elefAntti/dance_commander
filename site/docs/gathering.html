@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marks, shelf, collections — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Marks, shelf, collections</h1>
+<p>Four ways to gather things, which differ in what they hold and how long they last.</p>
+
+<table>
+  <thead><tr><th></th><th>Holds</th><th>Lasts</th><th>Answers</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Marks</strong></td><td>rows in the folder on screen</td><td>until you leave the folder or press Esc</td><td>Which of these do I mean now?</td></tr>
+    <tr><td><strong>Shelf</strong></td><td>files from many folders</td><td>this session</td><td>What have I picked up on the way?</td></tr>
+    <tr><td><strong>Collections</strong></td><td>files from anywhere, by name</td><td>saved</td><td>Which files belong together?</td></tr>
+    <tr><td><strong>Bookmarks</strong></td><td>places, with a label</td><td>saved</td><td>Where do I go often?</td></tr>
+  </tbody>
+</table>
+
+<h2 id="marks">Marks</h2>
+<p><em>“Copy these seven files to the other pane.”</em> <kbd>Insert</kbd> or <kbd>Space</kbd> on
+each, then <kbd>F5</kbd>. The arrow keys move the cursor without losing them, and they stay put
+when the folder refreshes or you sort it differently. They belong to the folder: going somewhere
+else drops them. See <a href="files.html#marking">Marking</a>.</p>
+
+<h2 id="shelf">The shelf</h2>
+<p><em>“Put together what goes to the customer: a log from here, two configs from there, a
+screenshot from Downloads.”</em></p>
+<p><kbd>Ctrl</kbd>+<kbd>B</kbd> puts the selection on the shelf, wherever you are. The foot of the
+window counts it (<em>Shelf 3</em>); click that, or go to <code>about:shelf</code>, to see
+everything on it as one listing, with a column saying where each file lives.</p>
+<ul>
+  <li><kbd>F5</kbd>, <kbd>F6</kbd>, <kbd>F2</kbd> and <kbd>F3</kbd> act on the files themselves.</li>
+  <li><kbd>Del</kbd> takes a file off the shelf, never off the disk. <kbd>Ctrl</kbd>+<kbd>Z</kbd>
+  puts it back.</li>
+  <li><kbd>F7</kbd> saves the shelf as a collection, or adds it to an existing one.</li>
+  <li><em>Empty shelf</em> is in the menu.</li>
+  <li>Dropping files onto the page adds them.</li>
+</ul>
+<p>The shelf lasts until you close the application. If the file is moved by Dance Commander, the
+shelf follows it.</p>
+
+<figure class="shot" data-file="screenshots/shelf.png"><img src="../screenshots/shelf.png" alt="about:shelf — the shelf, with files gathered from several folders." onerror="this.parentNode.classList.add('missing')"><figcaption>about:shelf — the shelf, with files gathered from several folders.</figcaption></figure>
+
+<h3 id="shelf-window">The shelf window</h3>
+<p>The same shelf in a small window that stays on top of everything, for moving files to and from
+programs that fill the screen. <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> shows or hides it from
+any program, even in the middle of a drag; <em>Show or hide the shelf window</em> in the command
+palette does the same.</p>
+<ul>
+  <li>Drop files or folders on it to put them on the shelf. It holds files that are somewhere
+  already. Text dragged from an editor or a browser isn't taken; dropped on a pane instead, it
+  becomes a file there.</li>
+  <li>Drag from it to drop a copy into another program. It never moves the original.</li>
+  <li><kbd>Del</kbd> takes an item off, with undo. <kbd>Esc</kbd> hides the window.</li>
+</ul>
+<p>It opens without taking focus from the program you are in, and stays available while the main
+window is minimised.</p>
+
+<h2 id="collections">Collections</h2>
+<p><em>“The files for the release checklist, the same set every release.”</em></p>
+<p>A collection is a named, saved set of files and folders from anywhere: local disk, a server,
+inside an archive. Its rows are the files themselves, so preview, copy and the rest work as they
+do in a search result.</p>
+<ul>
+  <li><strong>Adding:</strong> <em>Add to collection…</em> in the selection's menu or the command
+  palette; drop files onto a collection's page or its row in <code>about:collections</code>; or save
+  the shelf with <kbd>F7</kbd>.</li>
+  <li><strong>Managing:</strong> <code>about:collections</code> lists them. <kbd>F7</kbd> makes a new
+  one, <kbd>Del</kbd> deletes one (asking first if it has members). The files are never touched.</li>
+  <li><strong>Inside one:</strong> <kbd>Del</kbd> takes a file out of the set, not off the disk, and
+  <kbd>Ctrl</kbd>+<kbd>Z</kbd> puts it back. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> goes to
+  where the file actually lives.</li>
+</ul>
+<p>When Dance Commander moves or renames a file, collections update to follow it. A file moved by
+some other program shows as <em>not found</em> instead of silently disappearing from the list.</p>
+
+<h2 id="bookmarks">Bookmarks</h2>
+<p><em>“The build server's log folder. My worktrees.”</em> A bookmark goes somewhere: you open it
+rather than act on it. See <a href="navigating.html#bookmarks">Bookmarks</a>.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

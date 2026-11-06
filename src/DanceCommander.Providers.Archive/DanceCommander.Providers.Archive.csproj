@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DanceCommander.Core\DanceCommander.Core.csproj" />
+    <ProjectReference Include="..\DanceCommander.Extensibility\DanceCommander.Extensibility.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- The path-safety and name-parsing helpers are implementation detail but are exactly the
+         parts worth testing directly, so the test assembly sees inside. -->
+    <InternalsVisibleTo Include="DanceCommander.Tests" />
+  </ItemGroup>
+
+</Project>

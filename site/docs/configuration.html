@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuration files — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Configuration files</h1>
+<p>Configuration lives in plain files that are meant to be edited by hand, and the application
+treats them as yours. The settings window (<kbd>Ctrl</kbd>+<kbd>,</kbd>) is one way of editing
+<code>settings.json</code>; the file is the other, and each shows what the other did.
+<code>about:app</code> has a row that opens the folder they are in.</p>
+
+<h2 id="files">Where things are</h2>
+<p>In <code>%APPDATA%\DanceCommander\</code>, the files that are about you:</p>
+<table>
+  <tbody>
+    <tr><td><code>settings.json</code></td><td><a href="#settings">Settings</a> and the keys you have changed. Not written until you change something</td></tr>
+    <tr><td><code>tools.json</code></td><td>Your <a href="tools.html">tools</a> and <a href="scripts.html">listings</a></td></tr>
+    <tr><td><code>highlighting.json</code></td><td><a href="highlighting.html">Highlight rules</a> for the listing</td></tr>
+    <tr><td><code>bookmarks.json</code></td><td>Bookmarks and their groups</td></tr>
+    <tr><td><code>collections.json</code></td><td>Your collections</td></tr>
+    <tr><td><code>history.json</code></td><td>Places you have been, and when</td></tr>
+    <tr><td><code>viewstate.json</code></td><td>Each folder's sort order and whether it shows hidden entries</td></tr>
+    <tr><td><code>commands.json</code></td><td>Lines typed at the command line, for <kbd>↑</kbd> to bring back</td></tr>
+    <tr><td><code>palette.json</code></td><td>What you have picked in the command palette, so the usual choice comes first</td></tr>
+    <tr><td><code>known_hosts</code></td><td>SSH host keys you have accepted</td></tr>
+  </tbody>
+</table>
+<p>In <code>%LOCALAPPDATA%\DanceCommander\</code>, the things that are about this machine:</p>
+<table>
+  <tbody>
+    <tr><td><code>DanceCommander.exe</code></td><td>The installed application, with <code>README.md</code>, the licence and the third-party notices beside it</td></tr>
+    <tr><td><code>session.json</code></td><td>Open tabs and panes, for restoring them</td></tr>
+    <tr><td><code>window.json</code></td><td>Window position and size</td></tr>
+    <tr><td><code>packs.json</code></td><td>Which programs with tool packs were found on this computer</td></tr>
+    <tr><td><code>logs\</code></td><td>The log, one file per day, the last seven kept</td></tr>
+  </tbody>
+</table>
+<p>Passwords and tokens are kept in Windows Credential Manager, never in any of these files.</p>
+
+<h2 id="editing">Editing them</h2>
+<ul>
+  <li><strong>Comments and trailing commas are allowed.</strong> Write <code>// why this rule
+  exists</code> wherever it helps.</li>
+  <li><strong>Saving applies it.</strong> No restart.</li>
+  <li><strong>A mistake is reported, not punished.</strong> If a file doesn't parse, the pane says
+  which file, line and column, and the last good version stays in use. A broken file is never
+  replaced with defaults. If the application needs to save to a file that is broken (adding a
+  bookmark, say), it first copies yours aside as <code>name.broken-&lt;time&gt;.json</code>.</li>
+  <li>Defaults are written only when a file doesn't exist. To get a file's defaults back, rename it
+  and restart. (A new <code>bookmarks.json</code> also takes in Explorer's Quick access pins again;
+  <em>Import bookmarks from Explorer's Quick access</em> in the palette adds pins you don't have yet,
+  without renaming or removing anything.)</li>
+</ul>
+
+<h2 id="settings">settings.json</h2>
+<p>The settings window writes here, and so can you. It holds only what differs from the defaults,
+so a missing file, or a missing entry, means the default. A change made in the window touches only
+its own entry and leaves the rest of the file, comments included, as it was; choosing a default
+again takes the entry out. Each setting's place in the file is shown under it in the window.</p>
+<table>
+  <thead><tr><th>Entry</th><th>Values</th></tr></thead>
+  <tbody>
+    <tr><td><code>appearance.scheme</code></td><td><code>"system"</code> (follows Windows' app mode, and changes when it does), <code>"dark"</code>, <code>"light"</code></td></tr>
+    <tr><td><code>appearance.accent</code></td><td><code>"system"</code> (Windows' accent colour), <code>"blue"</code>, <code>"teal"</code>, <code>"green"</code>, <code>"amber"</code>, <code>"red"</code>, <code>"pink"</code>, <code>"violet"</code>, or your own as <code>"#RRGGBB"</code>. Whatever it is, its lightness is adjusted until it is legible on the colours in use</td></tr>
+    <tr><td><code>appearance.density</code></td><td><code>"comfortable"</code> or <code>"compact"</code> rows</td></tr>
+    <tr><td><code>appearance.textSize</code></td><td>A factor over all text and the rows with it: <code>0.9</code>, <code>1</code>, <code>1.1</code>, <code>1.25</code></td></tr>
+    <tr><td><code>view.directoriesFirst</code></td><td><code>true</code> sorts folders before files in a new tab. A folder you sorted another way stays that way</td></tr>
+    <tr><td><code>view.cloudStatus</code></td><td>Where a OneDrive file's state is drawn: <code>"cursor"</code> (the cursor row) or <code>"all"</code> (every row, as in Explorer)</td></tr>
+    <tr><td><code>commandLine.shell</code></td><td><code>"auto"</code> (Git Bash if installed, otherwise cmd), <code>"bash"</code>, <code>"pwsh"</code>, <code>"cmd"</code></td></tr>
+    <tr><td><code>mouse.middleClick</code></td><td><code>"newTab"</code> or <code>"otherPane"</code></td></tr>
+    <tr><td><code>tools.packs.<em>id</em></code></td><td><code>false</code> switches a program's tools off (see below)</td></tr>
+    <tr><td><code>keys.<em>command id</em></code></td><td>A key of your own for a command, or <code>null</code> for none. See <a href="keyboard.html#rebinding">Changing keys</a></td></tr>
+  </tbody>
+</table>
+<pre><code>// settings.json
+{
+  "appearance": { "scheme": "light", "accent": "#C2410C" },
+  "commandLine": { "shell": "pwsh" },
+  "keys": { "dc.search": "Ctrl+F" }
+}</code></pre>
+<p>When Windows uses a contrast theme, the application uses the theme's own colours, whatever the
+scheme and accent say.</p>
+
+<h2 id="packs">Tool packs</h2>
+<p>Some tools come with the programs they run rather than from <code>tools.json</code>. When one of
+these programs is found, its tools are in the menus; nothing needs adding. The packs, by the id
+<code>tools.packs</code> uses:</p>
+<table>
+  <tbody>
+    <tr><td><code>gitbash</code></td><td>Git Bash: <em>Open in bash</em> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)</td></tr>
+    <tr><td><code>terminal</code></td><td>Windows Terminal: open it here</td></tr>
+    <tr><td><code>wsl</code></td><td>WSL: open it here</td></tr>
+    <tr><td><code>vscode</code></td><td>VS Code: open a file, the folder, or the repository</td></tr>
+    <tr><td><code>beyondcompare</code></td><td>Beyond Compare: compare marked files, with the other pane, or two folders; git diff; resolving conflicts</td></tr>
+    <tr><td><code>fork</code>, <code>gitkraken</code></td><td>Open the repository in Fork or GitKraken</td></tr>
+    <tr><td><code>windows</code></td><td>SHA-256 of a file, with Windows' own <code>certutil</code></td></tr>
+  </tbody>
+</table>
+<p>Each pack is switched on or off on the <em>Tools</em> page of Settings, which also says whether
+its program was found. A tool in <code>tools.json</code> with the same <code>id</code> as a pack's is
+used instead of it, which is how you change one. A program installed later is noticed the next
+time the application starts, or when you open the Tools page, and a line in the pane says which
+tools it added.</p>
+
+<h2 id="command-line">Command-line arguments</h2>
+<pre><code>DanceCommander                      <span class="c">where you left off</span>
+DanceCommander PATH                 <span class="c">open PATH</span>
+DanceCommander LEFT RIGHT           <span class="c">one place per pane (implies two panes)</span>
+
+DanceCommander /select,PATH         <span class="c">PATH's folder with the cursor on PATH</span>
+DanceCommander /n,PATH              <span class="c">PATH in one pane</span>
+DanceCommander /e,PATH              <span class="c">PATH in two panes</span>
+
+--select PATH   --left PATH   --right PATH
+--one-pane      --two-panes   --new-window   --help</code></pre>
+<p>Explorer's syntax is accepted exactly, comma and all, so any program that offers “Show in
+folder” by calling <code>explorer.exe /select,…</code> can be pointed at Dance Commander instead.
+A PATH can be any <a href="remote.html#addresses">address</a>. A PATH that is a file works too: an
+archive opens like a folder, and anything else opens its folder with the cursor on it, so
+Dance Commander can be the program a zip opens with.</p>
+<p>If Dance Commander is already running, the arguments are handed to it and open in a new tab, so
+you don't lose your place. <code>--new-window</code> starts a separate window that doesn't save its
+session. <code>--help</code> prints to the terminal you typed it in.</p>
+
+<h2 id="logs">The log</h2>
+<p><code>%LOCALAPPDATA%\DanceCommander\logs\</code> is quiet unless something is slow or wrong. Timing
+lines (<code>Startup:</code>, <code>Slow listing</code>, <code>Slow menu</code>) end with the budget
+they kept or broke, so if the app ever feels slow, the log says where and by how much. After a
+crash, the next start says so and points to the log. Include the relevant lines when you report a
+problem, with the version and commit from <code>about:app</code>.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<!--
+  Palette lab: try colours for Theme/Dark.xaml and Theme/Light.xaml against a mock of the window,
+  with the contrast checks PaletteContrastTests makes. One file, no dependencies; open it in a
+  browser. The mock is drawn from the same token names as the XAML, so what you export pastes
+  straight back. It is a sketch of the app, not the app: check the result in the real window.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dance Commander — palette lab</title>
+<style>
+  :root {
+    --ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+    --glyph: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+    --small: 11.5px; --body: 13px; --title: 15px;
+    --row: 24px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: var(--body)/1.35 var(--ui); background: #111; color: #ddd; display: flex; height: 100vh; overflow: hidden; }
+
+  /* ---- the lab's own controls, deliberately neutral so they don't colour the judgement ---- */
+  #side { width: 400px; flex: none; overflow-y: auto; background: #1a1a1a; border-right: 1px solid #333; padding: 12px; }
+  #side h1 { font-size: 14px; margin: 0 0 8px; color: #eee; }
+  #side h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #888; margin: 16px 0 6px; }
+  .bar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bar button, .bar label { background: #2a2a2a; color: #ddd; border: 1px solid #3a3a3a; border-radius: 4px; padding: 4px 9px; font: 12px var(--ui); cursor: pointer; }
+  .bar button:hover { background: #333; }
+  .bar button.on { border-color: #888; background: #383838; }
+  .bar label { display: inline-flex; gap: 5px; align-items: center; }
+  .tok { display: grid; grid-template-columns: 26px 78px 1fr auto; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 4px; }
+  .tok.flash { background: #34343a; }
+  .tok input[type=color] { width: 26px; height: 22px; padding: 0; border: 1px solid #444; background: none; cursor: pointer; }
+  .tok input[type=text] { width: 78px; background: #111; color: #ddd; border: 1px solid #333; border-radius: 3px; font: 12px var(--mono); padding: 2px 4px; }
+  .tok input[type=text].bad { border-color: #a33; }
+  .tok .name { font-size: 12px; color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tok .changed { font-size: 10px; color: #c90; cursor: pointer; }
+  textarea { width: 100%; height: 120px; background: #111; color: #ccc; border: 1px solid #333; border-radius: 4px; font: 11px var(--mono); }
+  #contrast table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  #contrast td { padding: 2px 4px; border-bottom: 1px solid #262626; }
+  #contrast td.r { text-align: right; font-family: var(--mono); }
+  #contrast .fail { color: #ff8b82; }
+  #contrast .ok { color: #8dd18d; }
+  #contrast .sw { display: inline-block; width: 22px; text-align: center; border-radius: 3px; font-weight: 600; }
+  .hint { color: #888; font-size: 11.5px; margin: 4px 0; }
+
+  #stage { flex: 1; overflow: auto; padding: 24px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* ---- the mock window: every colour below is a token ---- */
+  .win { width: 1180px; flex: none; background: var(--WindowBrush); color: var(--TextPrimaryBrush); border-radius: 8px; overflow: hidden; box-shadow: 0 8px 30px #0008; font-size: var(--body); }
+  .caption { height: 32px; display: flex; align-items: center; padding: 0 12px; background: var(--WindowBrush); color: var(--TextPrimaryBrush); font-size: 12px; }
+  .win.inactive .caption { color: var(--TextMutedBrush); }
+  .caption .sp { flex: 1; }
+  .caption span.c { width: 46px; text-align: center; font-family: var(--glyph); font-size: 10px; }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 8px; }
+
+  .pane { display: flex; flex-direction: column; height: 520px; position: relative; }
+  .tabs { display: flex; gap: 2px; }
+  .tab { padding: 5px 9px 5px 11px; border-radius: 6px 6px 0 0; color: var(--TextMutedBrush); display: flex; gap: 6px; align-items: center; cursor: default; }
+  .tab:hover { color: var(--TextSecondaryBrush); }
+  .tab .x { font-size: var(--small); padding: 0 2px; color: var(--TextMutedBrush); }
+  .tab.cur { background: var(--surface); color: var(--TextPrimaryBrush); }
+  .pane.active .tab.cur { border-top: 2px solid var(--paneAccent); padding-top: 3px; }
+  .body { flex: 1; background: var(--surface); border-radius: 0 6px 6px 6px; display: flex; flex-direction: column; overflow: hidden; }
+  .pane.active { --surface: var(--PaneBrush); }
+  .pane:not(.active) { --surface: var(--PaneInactiveBrush); }
+  .win { --paneAccent: var(--Accent); }
+  .win.inactive { --paneAccent: var(--TextMutedBrush); }
+
+  .toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
+  .gl { font-family: var(--glyph); font-size: 12px; width: 28px; height: 24px; display: grid; place-items: center; border-radius: 4px; color: var(--TextSecondaryBrush); }
+  .gl:hover { background: var(--HoverBrush); }
+  .gl.dis { color: var(--TextMutedBrush); opacity: .5; }
+  .addr { flex: 1; height: 26px; border-radius: 4px; background: var(--SunkenBrush); border: 1px solid transparent; display: flex; align-items: center; padding: 0 8px; gap: 6px; color: var(--TextPrimaryBrush); }
+  .addr.focus { border-color: var(--Accent); }
+  .addr .sel { background: var(--Accent); color: var(--PaneBrush); }
+  .branch { color: var(--TextSecondaryBrush); font-size: var(--small); padding: 0 6px; }
+
+  .head { display: grid; grid-template-columns: 22px 1fr 18px 90px 130px; height: 26px; align-items: center; color: var(--TextSecondaryBrush); font-size: var(--small); border-bottom: 1px solid var(--DividerBrush); padding: 0 12px 0 0; }
+  .head .sorted { color: var(--TextPrimaryBrush); }
+  .grid { flex: 1; position: relative; overflow: hidden; }
+  .row { display: grid; grid-template-columns: 22px 1fr 18px 90px 130px; height: var(--row); align-items: center; position: relative; padding-right: 12px; }
+  .row > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px 0 0; }
+  .row .ic { text-align: center; font-size: 12px; padding: 0; }
+  .row .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--TextSecondaryBrush); }
+  .row .date { color: var(--TextSecondaryBrush); font-variant-numeric: tabular-nums; }
+  .row.dim { color: var(--TextMutedBrush); }
+  .row.dim .num, .row.dim .date { color: var(--TextMutedBrush); }
+  .row:hover, .row.hover { background: var(--HoverBrush); }
+  .row.sel { background: var(--SelectionActiveBrush); }
+  .pane:not(.active) .row.sel, .win.inactive .row.sel { background: var(--SelectionInactiveBrush); }
+  .row.cursor::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--Accent); }
+  .pane:not(.active) .row.cursor::before, .win.inactive .row.cursor::before { display: none; }
+  .row.drop { background: var(--SelectionActiveBrush); outline: 1px solid var(--Accent); outline-offset: -1px; }
+  .row.arrive::after { content: ""; position: absolute; inset: 0; background: var(--Accent); opacity: .2; pointer-events: none; }
+  .g { font-weight: 600; text-align: center; padding: 0 !important; }
+  .gM { color: var(--GitModifiedBrush); } .gA { color: var(--GitAddedBrush); } .gD { color: var(--GitDeletedBrush); }
+  .gU { color: var(--GitUntrackedBrush); } .gC { color: var(--GitConflictBrush); }
+
+  .scroll { position: absolute; right: 2px; top: 4px; width: 6px; height: 120px; border-radius: 3px; background: var(--ScrollThumbBrush); }
+  .scroll:hover { background: var(--ScrollThumbHoverBrush); }
+  .scroll.active { background: var(--ScrollThumbActiveBrush); top: 200px; height: 70px; }
+
+  .notice { margin: 6px 8px; padding: 7px 10px; border-radius: 4px; display: flex; gap: 10px; align-items: center; }
+  .notice.danger { background: var(--DangerSurfaceBrush); color: var(--DangerBrush); }
+  .notice.warn { background: var(--WarningSurfaceBrush); color: var(--WarningBrush); }
+  .notice.info { background: var(--InfoSurfaceBrush); color: var(--TextPrimaryBrush); }
+  .notice .act { margin-left: auto; display: flex; gap: 4px; }
+  .btn { white-space: nowrap; padding: 2px 9px; border-radius: 4px; color: var(--TextPrimaryBrush); background: var(--HoverBrush); font-size: var(--small); }
+  .btn.primary { background: var(--Accent); color: var(--PaneBrush); }
+
+  .cmd { margin: 0 8px 6px; height: 26px; border-radius: 4px; background: var(--SunkenBrush); display: flex; align-items: center; padding: 0 8px; font-family: var(--mono); font-size: var(--small); gap: 8px; border: 1px solid var(--Accent); }
+  .cmd .p { color: var(--TextMutedBrush); }
+  .caret { display: inline-block; width: 1px; height: 14px; background: var(--TextPrimaryBrush); vertical-align: middle; }
+  .foot { display: flex; gap: 14px; padding: 5px 10px; font-size: var(--small); color: var(--TextSecondaryBrush); }
+  .foot .m { color: var(--TextMutedBrush); }
+  .foot .live::before { content: "●"; color: var(--Accent); margin-right: 4px; font-size: 9px; }
+
+  .popup { position: absolute; left: 230px; top: 110px; width: 230px; background: var(--PopupBrush); border: 1px solid var(--PopupBorderBrush); border-radius: 6px; padding: 4px; box-shadow: 0 6px 18px #0006; z-index: 2; }
+  .mi { display: flex; padding: 4px 8px; border-radius: 4px; }
+  .mi:hover, .mi.hover { background: var(--HoverBrush); }
+  .mi .k { margin-left: auto; color: var(--TextMutedBrush); font-size: var(--small); }
+  .mi.danger { color: var(--DangerBrush); }
+  .sepr { height: 1px; background: var(--DividerBrush); margin: 4px 6px; }
+
+  .strip { display: flex; align-items: center; gap: 10px; margin: 6px 8px 0; padding: 5px 10px; border-radius: 6px; background: var(--PaneBrush); font-size: var(--small); color: var(--TextSecondaryBrush); }
+  .prog { width: 160px; height: 4px; border-radius: 2px; background: var(--SunkenBrush); overflow: hidden; }
+  .prog i { display: block; width: 62%; height: 100%; background: var(--Accent); }
+  .legend { display: flex; gap: 2px; padding: 6px 8px 8px; font-size: var(--small); color: var(--TextMutedBrush); }
+  .legend span { flex: 1; padding: 3px 6px; border-radius: 4px; }
+  .legend span:hover { background: var(--HoverBrush); color: var(--TextSecondaryBrush); }
+  .legend b { color: var(--TextSecondaryBrush); font-weight: 600; margin-right: 4px; }
+
+  [data-t] { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<aside id="side">
+  <h1>Palette lab</h1>
+  <div class="hint">Click anything in the mock to find its colour here. Values keep in this browser between visits.</div>
+
+  <h2>Start from</h2>
+  <div class="bar">
+    <button data-preset="dark">Dark.xaml</button>
+    <button data-preset="light">Light.xaml</button>
+    <button id="undoAll" title="Back to the preset this palette started from">Reset changes</button>
+  </div>
+
+  <h2>Show</h2>
+  <div class="bar">
+    <label><input type="checkbox" id="optInactive"> Window inactive</label>
+    <label><input type="checkbox" id="optRight"> Right pane active</label>
+    <label><input type="checkbox" id="optCompact"> Compact rows</label>
+    <label><input type="checkbox" id="optPopup" checked> Context menu</label>
+  </div>
+
+  <h2>Contrast (WCAG AA 4.5:1)</h2>
+  <div id="contrast"></div>
+
+  <div id="tokens"></div>
+
+  <h2>Import / export</h2>
+  <div class="hint">Paste a palette XAML (or any lines with <code>x:Key="…" Color="#…"</code>) and import, or export the current one.</div>
+  <textarea id="xaml" spellcheck="false"></textarea>
+  <div class="bar" style="margin-top:6px">
+    <button id="import">Import</button>
+    <button id="export">Export changed lines</button>
+    <button id="exportAll">Export all</button>
+    <button id="copy">Copy</button>
+  </div>
+</aside>
+
+<main id="stage">
+  <div class="win" id="win">
+    <div class="caption" data-t="WindowBrush TextPrimaryBrush">Dance Commander<span class="sp"></span><span class="c">&#xE921;</span><span class="c">&#xE922;</span><span class="c">&#xE8BB;</span></div>
+    <div class="panes">
+      <section class="pane active" id="left"></section>
+      <section class="pane" id="right"></section>
+    </div>
+    <div class="strip" data-t="PaneBrush TextSecondaryBrush Accent SunkenBrush">
+      <span>Copying 184 files to D:\backup — 2.1 GB of 3.4 GB</span><span class="prog"><i></i></span><span>62 %</span>
+      <span style="margin-left:auto" class="btn">Activity</span>
+    </div>
+    <div class="legend" data-t="TextMutedBrush TextSecondaryBrush HoverBrush">
+      <span><b>F1</b>Help</span><span><b>F2</b>Rename</span><span><b>F3</b>View</span><span><b>F4</b>Edit</span><span><b>F5</b>Copy</span>
+      <span><b>F6</b>Move</span><span><b>F7</b>New folder</span><span><b>F8</b>Delete</span><span><b>F9</b>Menu</span><span><b>F10</b>Quit</span>
+    </div>
+  </div>
+</main>
+
+<script>
+// The keys and order of Theme/Dark.xaml; "Accent" stands for AccentColor and AccentBrush, which
+// the XAML keeps equal. The ControlBrushKey corner is left out: it is never seen in the mock.
+const GROUPS = [
+  ["Surfaces", ["WindowBrush", "PaneBrush", "PaneInactiveBrush", "SunkenBrush", "HoverBrush", "DividerBrush", "PopupBrush", "PopupBorderBrush"]],
+  ["Text", ["TextPrimaryBrush", "TextSecondaryBrush", "TextMutedBrush"]],
+  ["Accent and selection", ["Accent", "SelectionActiveBrush", "SelectionInactiveBrush"]],
+  ["Scroll bars", ["ScrollThumbBrush", "ScrollThumbHoverBrush", "ScrollThumbActiveBrush"]],
+  ["Git marks", ["GitModifiedBrush", "GitAddedBrush", "GitDeletedBrush", "GitUntrackedBrush", "GitConflictBrush"]],
+  ["Semantic", ["DangerBrush", "WarningBrush", "DangerSurfaceBrush", "WarningSurfaceBrush", "InfoSurfaceBrush"]],
+];
+const KEYS = GROUPS.flatMap(g => g[1]);
+
+// Copied from the XAML on 2026-10-09. Import the file again if it has moved on since.
+const PRESETS = {
+  dark: {
+    WindowBrush: "#16181A", PaneBrush: "#1F2225", PaneInactiveBrush: "#1B1E21", SunkenBrush: "#121416",
+    HoverBrush: "#2B2F34", DividerBrush: "#33383E", PopupBrush: "#2A2E33", PopupBorderBrush: "#434A52",
+    TextPrimaryBrush: "#F2F3F4", TextSecondaryBrush: "#B4BCC4", TextMutedBrush: "#8A929A",
+    Accent: "#7AAAFF", SelectionActiveBrush: "#2F3E5D", SelectionInactiveBrush: "#31363C",
+    ScrollThumbBrush: "#454B52", ScrollThumbHoverBrush: "#5C646D", ScrollThumbActiveBrush: "#6F7881",
+    GitModifiedBrush: "#E2C08D", GitAddedBrush: "#8DD18D", GitDeletedBrush: "#E58C8C", GitUntrackedBrush: "#7FB5C9", GitConflictBrush: "#E06C75",
+    DangerBrush: "#FF8B82", WarningBrush: "#F0C56B", DangerSurfaceBrush: "#3A2623", WarningSurfaceBrush: "#3A3220", InfoSurfaceBrush: "#242E3C",
+  },
+  light: {
+    WindowBrush: "#E9ECEF", PaneBrush: "#FAFBFC", PaneInactiveBrush: "#F2F4F6", SunkenBrush: "#E2E6EA",
+    HoverBrush: "#E7EBF0", DividerBrush: "#D3D8DE", PopupBrush: "#FFFFFF", PopupBorderBrush: "#BCC3CB",
+    TextPrimaryBrush: "#1A1D21", TextSecondaryBrush: "#46505B", TextMutedBrush: "#58626C",
+    Accent: "#1F5FC7", SelectionActiveBrush: "#D6E4FA", SelectionInactiveBrush: "#E2E6EB",
+    ScrollThumbBrush: "#BCC3CB", ScrollThumbHoverBrush: "#A3ABB4", ScrollThumbActiveBrush: "#8C959F",
+    GitModifiedBrush: "#8A5A00", GitAddedBrush: "#166F30", GitDeletedBrush: "#C2272D", GitUntrackedBrush: "#1765A8", GitConflictBrush: "#A40E26",
+    DangerBrush: "#B42318", WarningBrush: "#8A5A00", DangerSurfaceBrush: "#FCE8E6", WarningSurfaceBrush: "#FBF0D2", InfoSurfaceBrush: "#E3ECFA",
+  },
+};
+
+// ---- the mock's content ---------------------------------------------------------------------
+const LEFT_ROWS = [
+  ["📁", ".git", "", "", "2026-10-09 09:12", "dim"],
+  ["📁", "docs", "", "", "2026-10-08 17:40"],
+  ["📁", "src", "M", "", "2026-10-09 10:02", "", "M"],
+  ["📁", "tests", "", "", "2026-10-09 10:01"],
+  ["📄", ".gitignore", "", "312", "2026-09-12 08:30", "dim"],
+  ["📄", "ARCHITECTURE.md", "M", "88,410", "2026-10-09 09:55", "sel", "M"],
+  ["📄", "AUDIT.md", "", "41,207", "2026-10-07 16:21", "sel cursor"],
+  ["📄", "BannedSymbols.txt", "", "1,904", "2026-09-30 11:02", "hover"],
+  ["📄", "CLAUDE.md", "A", "5,118", "2026-10-09 08:44", "", "A"],
+  ["📄", "DanceCommander.sln", "", "3,377", "2026-09-28 14:10"],
+  ["📄", "notes-old.md", "D", "0", "2026-10-02 12:00", "", "D"],
+  ["📄", "PLAN.md", "C", "122,861", "2026-10-09 10:04", "", "C"],
+  ["📄", "scratch.txt", "?", "77", "2026-10-09 10:05", "arrive", "U"],
+  ["📄", "README.md", "", "6,021", "2026-10-03 09:15"],
+  ["📄", "USER_README.md", "", "9,876", "2026-10-09 07:58"],
+];
+const RIGHT_ROWS = [
+  ["📁", "backup-2026-09", "", "", "2026-09-30 22:00"],
+  ["📁", "builds", "", "", "2026-10-09 09:30", "drop"],
+  ["📁", "photos", "", "", "2026-08-14 18:12"],
+  ["📦", "dance-commander-0.9.zip", "", "41,882,112", "2026-10-08 16:00", "sel"],
+  ["📄", "invoice-0931.pdf", "", "211,004", "2026-09-30 10:10", "sel cursor"],
+  ["📄", "notes.txt", "", "1,220", "2026-10-01 13:13"],
+  ["📄", "todo.md", "", "504", "2026-10-09 08:01"],
+];
+
+function pane(el, tabs, path, branch, rows, extra) {
+  el.innerHTML = `
+    <div class="tabs" data-t="TextMutedBrush TextPrimaryBrush Accent">
+      ${tabs.map((t, i) => `<div class="tab${i === 1 ? " cur" : ""}">${t}<span class="x">✕</span></div>`).join("")}
+    </div>
+    <div class="body" data-t="PaneBrush PaneInactiveBrush">
+      <div class="toolbar">
+        <span class="gl" data-t="TextSecondaryBrush HoverBrush">&#xE72B;</span><span class="gl dis" data-t="TextMutedBrush">&#xE72A;</span><span class="gl" data-t="TextSecondaryBrush">&#xE74A;</span>
+        <div class="addr${extra.addrFocus ? " focus" : ""}" data-t="SunkenBrush TextPrimaryBrush Accent">${extra.addrFocus ? `<span class="sel">${path}</span>` : path}</div>
+        ${branch ? `<span class="branch" data-t="TextSecondaryBrush">⎇ ${branch}</span>` : ""}
+        <span class="gl" data-t="TextSecondaryBrush">&#xE734;</span>
+      </div>
+      ${extra.notice || ""}
+      <div class="head" data-t="TextSecondaryBrush TextPrimaryBrush DividerBrush"><span></span><span class="sorted">Name ▴</span><span></span><span style="text-align:right;padding-right:8px">Size</span><span>Modified</span></div>
+      <div class="grid">
+        ${rows.map(r => `<div class="row ${r[5] || ""}" data-t="${rowTokens(r)}">
+            <span class="ic">${r[0]}</span><span>${r[1]}</span>
+            <span class="g ${r[6] ? "g" + r[6] : ""}">${r[2]}</span>
+            <span class="num">${r[3]}</span><span class="date">${r[4]}</span></div>`).join("")}
+        <div class="scroll" data-t="ScrollThumbBrush ScrollThumbHoverBrush"></div>
+        ${extra.popup || ""}
+      </div>
+      ${extra.cmd || ""}
+      <div class="foot" data-t="TextSecondaryBrush TextMutedBrush Accent">${extra.foot}</div>
+    </div>`;
+}
+function rowTokens(r) {
+  const c = r[5] || "";
+  const t = ["TextPrimaryBrush", "TextSecondaryBrush"];
+  if (c.includes("dim")) t.push("TextMutedBrush");
+  if (c.includes("hover")) t.push("HoverBrush");
+  if (c.includes("sel")) t.push("SelectionActiveBrush", "SelectionInactiveBrush");
+  if (c.includes("cursor") || c.includes("drop") || c.includes("arrive")) t.push("Accent");
+  if (r[6]) t.push({ M: "GitModifiedBrush", A: "GitAddedBrush", D: "GitDeletedBrush", U: "GitUntrackedBrush", C: "GitConflictBrush" }[r[6]]);
+  return t.join(" ");
+}
+
+function drawMock() {
+  pane(document.getElementById("left"), ["Downloads", "dance_commander", "about:shelf"],
+    "C:\\src\\dance_commander", "main", LEFT_ROWS, {
+      notice: `<div class="notice warn" data-t="WarningSurfaceBrush WarningBrush">PLAN.md has a merge conflict.<span class="act"><span class="btn">Open</span></span></div>`,
+      popup: document.getElementById("optPopup").checked ? `<div class="popup" data-t="PopupBrush PopupBorderBrush HoverBrush DividerBrush DangerBrush TextMutedBrush">
+          <div class="mi">Open<span class="k">Enter</span></div><div class="mi hover">Open with…<span class="k">Shift+Enter</span></div>
+          <div class="mi">Copy path<span class="k">Ctrl+Shift+C</span></div><div class="sepr"></div>
+          <div class="mi">Rename<span class="k">F2</span></div><div class="mi danger">Delete permanently<span class="k">Shift+Del</span></div></div>` : "",
+      cmd: `<div class="cmd" data-t="SunkenBrush Accent TextMutedBrush TextPrimaryBrush"><span class="p">&gt;</span><span>git log --oneline -- ${"${name}"}<span class="caret"></span></span></div>`,
+      foot: `<span>2 of 15 selected · 129 KB</span><span class="m">3 hidden (Ctrl+H)</span><span class="live">live</span>`,
+    });
+  pane(document.getElementById("right"), ["D:\\", "Archive"], "D:\\Archive", "", RIGHT_ROWS, {
+    notice: `<div class="notice danger" data-t="DangerSurfaceBrush DangerBrush">Could not copy invoice-0931.pdf: it is in use by Acrobat.<span class="act"><span class="btn">Retry</span><span class="btn">Skip</span></span></div>
+             <div class="notice info" data-t="InfoSurfaceBrush TextPrimaryBrush Accent">Replace todo.md (504 B, today) with the one from C:\\ (612 B, yesterday)?<span class="act"><span class="btn primary">Keep both</span><span class="btn">Replace</span></span></div>`,
+    foot: `<span>2 of 7 selected · 40.1 MB</span><span class="m">free 212 GB</span>`,
+  });
+  applyOptions();
+}
+
+function applyOptions() {
+  const right = document.getElementById("optRight").checked;
+  document.getElementById("left").classList.toggle("active", !right);
+  document.getElementById("right").classList.toggle("active", right);
+  document.getElementById("win").classList.toggle("inactive", document.getElementById("optInactive").checked);
+  document.documentElement.style.setProperty("--row", document.getElementById("optCompact").checked ? "18px" : "24px");
+}
+
+// ---- colour state -----------------------------------------------------------------------------
+let base = "dark";
+let colours = { ...PRESETS.dark };
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("dc-palette-lab") || "null");
+    if (saved && saved.colours) { base = saved.base in PRESETS ? saved.base : "dark"; colours = { ...PRESETS[base], ...saved.colours }; }
+  } catch { /* a broken save starts from the preset */ }
+}
+function save() { localStorage.setItem("dc-palette-lab", JSON.stringify({ base, colours })); }
+
+function apply() {
+  for (const k of KEYS) document.documentElement.style.setProperty("--" + k, colours[k]);
+  for (const [name, btn] of Object.entries(presetButtons)) btn.classList.toggle("on", name === base);
+  for (const k of KEYS) {
+    const row = tokenRows[k];
+    row.picker.value = colours[k].toLowerCase();
+    if (document.activeElement !== row.text) row.text.value = colours[k];
+    row.changed.style.visibility = colours[k].toUpperCase() === PRESETS[base][k].toUpperCase() ? "hidden" : "visible";
+  }
+  drawContrast();
+  save();
+}
+
+function set(k, hex) { colours[k] = hex.toUpperCase(); apply(); }
+
+// ---- token list -------------------------------------------------------------------------------
+const tokenRows = {};
+const presetButtons = {};
+function buildTokens() {
+  const host = document.getElementById("tokens");
+  for (const [title, keys] of GROUPS) {
+    const h = document.createElement("h2"); h.textContent = title; host.append(h);
+    for (const k of keys) {
+      const row = document.createElement("div"); row.className = "tok"; row.id = "tok-" + k;
+      row.innerHTML = `<input type="color"><input type="text" maxlength="7"><span class="name" title="${k}">${k}</span><span class="changed" title="Back to the preset's value">●</span>`;
+      const [picker, text, , changed] = row.children;
+      picker.addEventListener("input", () => set(k, picker.value));
+      text.addEventListener("input", () => {
+        const v = normalise(text.value);
+        text.classList.toggle("bad", !v);
+        if (v) set(k, v);
+      });
+      text.addEventListener("blur", () => { text.classList.remove("bad"); text.value = colours[k]; });
+      changed.addEventListener("click", () => set(k, PRESETS[base][k]));
+      tokenRows[k] = { picker, text, changed, row };
+      host.append(row);
+    }
+  }
+}
+function normalise(s) {
+  s = s.trim().replace(/^#?/, "#");
+  if (/^#[0-9a-f]{3}$/i.test(s)) s = "#" + [...s.slice(1)].map(c => c + c).join("");
+  if (/^#[0-9a-f]{8}$/i.test(s)) s = "#" + s.slice(3);   // WPF's #AARRGGBB: the lab ignores alpha
+  return /^#[0-9a-f]{6}$/i.test(s) ? s.toUpperCase() : null;
+}
+
+// ---- contrast: the pairs PaletteContrastTests checks, and the ones it only reports --------------
+function lum(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function ratio(a, b) {
+  const [x, y] = [lum(colours[a]), lum(colours[b])].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+}
+const TEXTS = ["TextPrimaryBrush", "TextSecondaryBrush", "TextMutedBrush", "DangerBrush", "WarningBrush",
+  "GitModifiedBrush", "GitAddedBrush", "GitDeletedBrush", "GitUntrackedBrush", "GitConflictBrush"];
+const ROWS = ["PaneBrush", "PaneInactiveBrush", "HoverBrush", "SelectionActiveBrush", "SelectionInactiveBrush"];
+const short = k => k.replace(/Brush$/, "").replace(/^Text/, "").replace("SelectionActive", "Sel.").replace("SelectionInactive", "Sel. inact.").replace("PaneInactive", "Pane inact.");
+
+function drawContrast() {
+  // Enforced by the tests: every text on both pane surfaces; primary and secondary on a selected
+  // row; each semantic colour on its own surface.
+  const enforced = [];
+  for (const t of TEXTS) for (const p of ["PaneBrush", "PaneInactiveBrush"]) enforced.push([t, p]);
+  enforced.push(["TextPrimaryBrush", "SelectionActiveBrush"], ["TextSecondaryBrush", "SelectionActiveBrush"],
+    ["DangerBrush", "DangerSurfaceBrush"], ["WarningBrush", "WarningSurfaceBrush"], ["TextPrimaryBrush", "InfoSurfaceBrush"]);
+  const failing = enforced.map(([a, b]) => [a, b, ratio(a, b)]).filter(x => x[2] < 4.5);
+
+  // Every text and the accent on every row background: a matrix, the way the test reports it.
+  const cell = (a, b) => {
+    const r = ratio(a, b);
+    return `<td class="r ${r < 4.5 ? "fail" : ""}" title="${a} on ${b}">${r.toFixed(1)}</td>`;
+  };
+  const head = `<tr><td></td>${ROWS.map(r => `<td class="r" style="color:#888">${short(r)}</td>`).join("")}</tr>`;
+  const body = [...TEXTS, "Accent"].map(t => `<tr><td>${short(t)}</td>${ROWS.map(r => cell(t, r)).join("")}</tr>`).join("");
+
+  document.getElementById("contrast").innerHTML =
+    (failing.length
+      ? `<div class="fail">${failing.length} pair${failing.length > 1 ? "s" : ""} would fail the tests:</div><table>${failing.map(([a, b, r]) =>
+          `<tr><td>${short(a)} on ${short(b)}</td><td class="r fail">${r.toFixed(2)}</td></tr>`).join("")}</table>`
+      : `<div class="ok">Every pair the tests enforce passes.</div>`) +
+    `<div class="hint" style="margin-top:8px">Each text on each row background (reported, not enforced):</div>
+     <table style="font-size:10.5px">${head}${body}</table>`;
+}
+
+// ---- import / export ----------------------------------------------------------------------------
+function importXaml(text) {
+  let n = 0;
+  const found = {};
+  for (const m of text.matchAll(/x:Key="(\w+)"[^>]*?Color="(#[0-9A-Fa-f]{6,8})"/g)) found[m[1]] = m[2];
+  for (const m of text.matchAll(/<Color\s+x:Key="AccentColor">\s*(#[0-9A-Fa-f]{6,8})\s*</g)) found.AccentColor = m[1];
+  if (found.AccentColor) found.Accent = found.AccentColor;
+  for (const k of KEYS) { const v = found[k] && normalise(found[k]); if (v) { colours[k] = v; n++; } }
+  // A whole palette is a new starting point, so "changed" is measured from it.
+  if (n === KEYS.length) PRESETS.imported = { ...colours }, base = "imported";
+  apply();
+  return n;
+}
+function xamlLine(k) {
+  return k === "Accent"
+    ? `  <Color x:Key="AccentColor">${colours.Accent}</Color>`
+    : `  <SolidColorBrush x:Key="${k}" Color="${colours[k]}" />`;
+}
+function exportXaml(onlyChanged) {
+  const keys = KEYS.filter(k => !onlyChanged || colours[k].toUpperCase() !== PRESETS[base][k].toUpperCase());
+  return keys.length ? keys.map(xamlLine).join("\n") : "<!-- nothing changed from " + base + " -->";
+}
+
+// ---- wiring -------------------------------------------------------------------------------------
+load();
+buildTokens();
+for (const btn of document.querySelectorAll("[data-preset]")) {
+  presetButtons[btn.dataset.preset] = btn;
+  btn.addEventListener("click", () => { base = btn.dataset.preset; colours = { ...PRESETS[base] }; apply(); });
+}
+document.getElementById("undoAll").addEventListener("click", () => { colours = { ...PRESETS[base] }; apply(); });
+for (const id of ["optInactive", "optRight", "optCompact"]) document.getElementById(id).addEventListener("change", applyOptions);
+document.getElementById("optPopup").addEventListener("change", drawMock);
+const area = document.getElementById("xaml");
+document.getElementById("import").addEventListener("click", () => {
+  const n = importXaml(area.value);
+  area.value = `<!-- imported ${n} of ${KEYS.length} colours -->\n` + area.value;
+});
+document.getElementById("export").addEventListener("click", () => area.value = exportXaml(true));
+document.getElementById("exportAll").addEventListener("click", () => area.value = exportXaml(false));
+document.getElementById("copy").addEventListener("click", () => navigator.clipboard.writeText(area.value));
+
+// Click a piece of the mock to find the colours it is drawn with.
+document.getElementById("stage").addEventListener("click", e => {
+  const el = e.target.closest("[data-t]");
+  if (!el) return;
+  const keys = el.dataset.t.split(" ");
+  for (const r of Object.values(tokenRows)) r.row.classList.remove("flash");
+  keys.forEach(k => tokenRows[k]?.row.classList.add("flash"));
+  tokenRows[keys[0]]?.row.scrollIntoView({ block: "center", behavior: "smooth" });
+});
+
+drawMock();
+apply();
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!--
+  Dark palette. The chrome is deliberately near-monochrome (§1.3): the user owns colour through
+  highlight rules, so the application spends its budget on one accent plus semantic red/amber
+  and leaves every other surface in greys.
+
+  Contrast, measured against PaneBrush (#1F2225): primary 14.4:1, secondary 8.3:1, muted 5.1:1
+  — all clear WCAG AA for body text, with muted above the 4.5:1 floor so that dimmed rows stay
+  readable rather than merely present. Not on a selected row: muted on SelectionActiveBrush is
+  3.4:1 (PLAN.md §4). PaletteContrastTests measures both palettes.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Surfaces: elevation, not outlines, separates regions. -->
+  <SolidColorBrush x:Key="WindowBrush" Color="#16181A" />
+  <SolidColorBrush x:Key="PaneBrush" Color="#1F2225" />
+  <!-- The pane the keyboard is not in: a step back toward the window, so the active one stands a
+       little forward without anything having to be outlined. The accent line confirms it; this is
+       what lets it register without looking for the line. -->
+  <SolidColorBrush x:Key="PaneInactiveBrush" Color="#1B1E21" />
+  <SolidColorBrush x:Key="SunkenBrush" Color="#121416" />
+  <SolidColorBrush x:Key="HoverBrush" Color="#2B2F34" />
+  <SolidColorBrush x:Key="DividerBrush" Color="#33383E" />
+
+  <!--
+    Popups float above a pane, so they cannot be the same colour as one: drawn in PaneBrush they
+    were invisible against the pane they covered, leaving the text apparently hanging in mid-air.
+    A step lighter than any surface it can appear over, and the one place the palette also spends
+    an outline — a shadow alone is too soft to read as an edge at this contrast.
+  -->
+  <SolidColorBrush x:Key="PopupBrush" Color="#2A2E33" />
+  <SolidColorBrush x:Key="PopupBorderBrush" Color="#434A52" />
+
+  <!-- Text -->
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F2F3F4" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B4BCC4" />
+  <SolidColorBrush x:Key="TextMutedBrush" Color="#8A929A" />
+
+  <!-- The single accent. Focus, selection and active pane all use it; nothing else does. -->
+  <Color x:Key="AccentColor">#7AAAFF</Color>
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+  <!-- Lit rather than painted: the cursor has its own accent bar now, so the fill only has to say
+       "selected", and says it more quietly than it did (#33456B). -->
+  <SolidColorBrush x:Key="SelectionActiveBrush" Color="#2F3E5D" />
+  <SolidColorBrush x:Key="SelectionInactiveBrush" Color="#31363C" />
+
+  <!--
+    The square where a horizontal and a vertical scroll bar meet. WPF's ScrollViewer template fills
+    it from SystemColors.ControlBrushKey, which on a light system theme is near-white and lands in
+    the corner of a dark pane like a chip of missing paint. Overriding the system key fixes every
+    ScrollViewer in the application at once rather than retemplating each one.
+  -->
+  <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#23262A" />
+
+  <!-- Scrollbars belong to the palette too; the stock ones are the loudest thing on screen. -->
+  <SolidColorBrush x:Key="ScrollThumbBrush" Color="#454B52" />
+  <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#5C646D" />
+  <SolidColorBrush x:Key="ScrollThumbActiveBrush" Color="#6F7881" />
+
+  <!-- Git status marks. Deliberately the colours every other tool uses for these states: the
+       point of the marks is that nobody has to learn them. -->
+  <SolidColorBrush x:Key="GitModifiedBrush" Color="#E2C08D" />
+  <SolidColorBrush x:Key="GitAddedBrush" Color="#8DD18D" />
+  <SolidColorBrush x:Key="GitDeletedBrush" Color="#E58C8C" />
+  <SolidColorBrush x:Key="GitUntrackedBrush" Color="#7FB5C9" />
+  <SolidColorBrush x:Key="GitConflictBrush" Color="#E06C75" />
+
+  <!-- Semantic only. Never decorative. -->
+  <SolidColorBrush x:Key="DangerBrush" Color="#FF8B82" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#F0C56B" />
+  <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#3A2623" />
+  <SolidColorBrush x:Key="WarningSurfaceBrush" Color="#3A3220" />
+  <SolidColorBrush x:Key="InfoSurfaceBrush" Color="#242E3C" />
+
+</ResourceDictionary>

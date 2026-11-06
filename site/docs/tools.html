@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools and the command line — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Tools and the command line</h1>
+<p>Dance Commander has no plugins. It runs programs you already have. Some of them bring tools of
+their own as soon as they are found on your computer; the rest you describe in one file you own:
+<code>%APPDATA%\DanceCommander\tools.json</code>. A tool appears in the right-click menu, the
+command palette, and on a key if it has one, exactly as a built-in command does.</p>
+
+<h2 id="packs">Tools that come with your programs</h2>
+<p>Dance Commander looks for a few programs and, for each one it finds, offers its tools. It only
+looks; it never runs what it finds to find out.</p>
+<table>
+  <thead><tr><th>Program</th><th>Tools</th></tr></thead>
+  <tbody>
+    <tr><td>Git Bash</td><td><em>Open in bash</em> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>)</td></tr>
+    <tr><td>Windows Terminal</td><td><em>Open in Windows Terminal</em></td></tr>
+    <tr><td>WSL, with a Linux installed</td><td><em>Open in WSL</em></td></tr>
+    <tr><td>VS Code</td><td><em>Open with VS Code</em>, <em>Open folder in VS Code</em>, <em>Open repository in VS Code</em></td></tr>
+    <tr><td>Beyond Compare</td><td><em>Compare in Beyond Compare</em> (two or three marked rows; three is a three-way view),
+      <em>Compare with the other pane</em> (the same name there), <em>Compare folders</em> (the two panes),
+      <em>Git diff in Beyond Compare</em> and <em>Git diff for this</em> (against HEAD),
+      <em>Resolve conflicts</em> and <em>Resolve this conflict</em> (only while git reports one)</td></tr>
+    <tr><td>Fork</td><td><em>Open repository in Fork</em></td></tr>
+    <tr><td>GitKraken</td><td><em>Open repository in GitKraken</em></td></tr>
+    <tr><td>Windows</td><td><em>SHA-256</em> of the marked files</td></tr>
+  </tbody>
+</table>
+<p>When a program is found for the first time, the pane says which tools have arrived. Each set
+can be switched off in Settings (<kbd>Ctrl</kbd>+<kbd>,</kbd>), under <strong>Tools</strong>,
+which also says when a program isn't on this computer. In <code>settings.json</code> that is
+<code>"tools": { "packs": { "beyondcompare": false } }</code>.</p>
+<p>To change one of these tools, give a tool in <code>tools.json</code> the same <code>id</code>:
+yours is used instead. With <code>"enabled": false</code> it simply hides that one. The ids are
+<code>open-in-bash</code>, <code>open-in-terminal</code>, <code>open-in-wsl</code>,
+<code>vscode</code>, <code>vscode-folder</code>, <code>vscode-repository</code>,
+<code>bc-compare</code>, <code>bc-compare-other-pane</code>, <code>bc-compare-folders</code>,
+<code>bc-git-diff</code>, <code>bc-git-diff-file</code>, <code>bc-git-merge</code>,
+<code>bc-git-merge-file</code>, <code>fork</code>, <code>gitkraken</code> and
+<code>sha256</code>.</p>
+
+<figure class="shot" data-file="screenshots/settings-tools.png"><img src="../screenshots/settings-tools.png" alt="The Tools page of the settings window: one switch per program found." onerror="this.parentNode.classList.add('missing')"><figcaption>The Tools page of the settings window: one switch per program found.</figcaption></figure>
+
+<h2 id="tool">A tool of your own</h2>
+<pre><code>{
+  "tools": [
+    {
+      "id": "open-in-pwsh",
+      "title": "Open in PowerShell",
+      "group": "Terminal",
+      "exec": "pwsh",
+      "args": ["-NoExit"],
+      "workingDirectory": "${dir}",
+      "launch": "console",
+      "keybinding": "Ctrl+Shift+K"
+    },
+    {
+      "id": "md5",
+      "title": "MD5",
+      "group": "Inspect",
+      "appliesTo": "file|multi",
+      "exec": "certutil",
+      "args": ["-hashfile", "${path}", "MD5"],
+      "launch": "capture",
+      "forEachSelected": true,
+      "when": { "filesOnly": true }
+    }
+  ]
+}</code></pre>
+<p>Save the file and the change is live. Comments are allowed. If it doesn't parse, the pane says
+so with the line and column, and the last good version stays in use. Dance Commander writes
+<code>tools.json</code> only when there is none, with one example in it, turned off; it never
+overwrites your file.</p>
+
+<h3>Fields</h3>
+<table>
+  <tbody>
+    <tr><td><code>id</code>, <code>title</code></td><td>Required. The id must be unique; the title is what menus show</td></tr>
+    <tr><td><code>group</code></td><td>Groups tools in the menu and the palette</td></tr>
+    <tr><td><code>exec</code></td><td>The program. A bare name like <code>code</code> is looked for on the <code>PATH</code>, then in App Paths, where Windows finds programs such as <code>winword</code>. Never in the folder you are browsing; give a full path for anything else</td></tr>
+    <tr><td><code>args</code></td><td>A list of arguments, with <a href="#placeholders">placeholders</a></td></tr>
+    <tr><td><code>workingDirectory</code></td><td>Where it runs. Default: the folder the pane shows</td></tr>
+    <tr><td><code>launch</code></td><td>How it runs: see <a href="#launch">launch kinds</a>. Default <code>process</code></td></tr>
+    <tr><td><code>keybinding</code></td><td>A key, such as <code>Ctrl+Shift+K</code>. Takes over a built-in command's key if they clash</td></tr>
+    <tr><td><code>appliesTo</code></td><td>Any of <code>file</code>, <code>directory</code>, <code>background</code>, <code>multi</code>, joined with <code>|</code></td></tr>
+    <tr><td><code>when</code></td><td>A condition on the selected entries, written like a <a href="highlighting.html#matching">highlight rule's match</a>: <code>{ "glob": "*.{cs,md}" }</code>, <code>{ "extensions": ["zip", "7z"] }</code>, <code>{ "filesOnly": true, "minSize": "100MB" }</code></td></tr>
+    <tr><td><code>maxSelected</code></td><td>The most rows it takes at once. With <code>3</code>, it leaves the menu when four are marked</td></tr>
+    <tr><td><code>schemes</code></td><td>Which kinds of place it works in. Default: local files only. A tool that uses <code>${otherPaneDir}</code> also needs the other pane on screen and showing such a place</td></tr>
+    <tr><td><code>inRepository</code></td><td>Offer it only inside a git repository</td></tr>
+    <tr><td><code>remoteMatches</code></td><td>Offer it only in repositories whose remote URL matches, e.g. <code>"*/orbit.git"</code>. A bare word means “contains”</td></tr>
+    <tr><td><code>inConflict</code></td><td>Offer it only where git reports a merge conflict: on the conflicted files and the folders holding them, or, for a tool about the folder, anywhere in a repository that has one</td></tr>
+    <tr><td><code>forEachSelected</code></td><td>Run once per selected item rather than once for all</td></tr>
+    <tr><td><code>outputDirectory</code></td><td>For a job: where its result lands. Success offers to open it in the other pane</td></tr>
+    <tr><td><code>outputEncoding</code></td><td>For <code>capture</code> and <code>job</code>: how the program writes its output, e.g. <code>"utf-8"</code>. Unset, it is read in the console's code page, which suits <code>cmd.exe</code> but not git or anything from the Unix side</td></tr>
+    <tr><td><code>edits</code></td><td><code>true</code> lets it take <kbd>F4</kbd> for the files its <code>when</code> matches. See <a href="#edit">F4</a></td></tr>
+    <tr><td><code>subject</code></td><td><code>selection</code> or <code>location</code>. Usually worked out for you, see below</td></tr>
+    <tr><td><code>enabled</code></td><td><code>false</code> keeps it out of the menus without deleting it</td></tr>
+  </tbody>
+</table>
+
+<h3>About the selection, or about the folder?</h3>
+<p>A tool that only uses <code>${dir}</code>, <code>${otherPaneDir}</code>, the repository tokens
+or <code>${env:…}</code> is about <strong>the folder</strong>: it appears in the folder's menu
+(the location chip, <kbd>Ctrl</kbd>+<kbd>.</kbd>, right-click on empty space). One that uses
+<code>${path}</code>, <code>${name}</code>, <code>${selection}</code> and the like is about
+<strong>the selection</strong> and appears on rows. Set <code>subject</code> to override.</p>
+
+<h2 id="placeholders">Placeholders</h2>
+<table>
+  <thead><tr><th>Placeholder</th><th>Becomes</th></tr></thead>
+  <tbody>
+    <tr><td><code>${path}</code></td><td>The full path of the row under the cursor</td></tr>
+    <tr><td><code>${selection}</code></td><td>Every selected path, each as its own argument</td></tr>
+    <tr><td><code>${name}</code>, <code>${stem}</code>, <code>${ext}</code></td><td><code>report.final.pdf</code>, <code>report.final</code>, <code>.pdf</code></td></tr>
+    <tr><td><code>${dir}</code></td><td>The folder the pane shows</td></tr>
+    <tr><td><code>${otherPaneDir}</code></td><td>The folder the other pane shows</td></tr>
+    <tr><td><code>${uri}</code></td><td>The row's full address, for places that have no Windows path</td></tr>
+    <tr><td><code>${repoRoot}</code>, <code>${branch}</code>, <code>${remoteUrl}</code></td><td>The repository you are in, from anywhere inside it. <code>${branch}</code> has no value when HEAD is detached</td></tr>
+    <tr><td><code>${env:NAME}</code></td><td>An environment variable</td></tr>
+    <tr><td><code>${prompt:Label}</code></td><td>Asks you, inline, before running</td></tr>
+    <tr><td><code>${repoRoot|lowerDrive}</code></td><td>A filter: the drive letter in lower case (<code>c:\work\orbit</code>), the spelling dev containers use</td></tr>
+  </tbody>
+</table>
+<p><strong>Arguments are passed as a list, never pasted into a command string</strong>, so a file
+name containing a space, a quote or an <code>&amp;</code> reaches the program intact. If a
+repository placeholder has no value here (not in a repository, HEAD detached, no remote), the tool
+isn't offered at all, rather than running with an empty argument.</p>
+<div class="note">A <code>.cmd</code> or <code>.bat</code> target re-reads its arguments by cmd's
+own rules, so for those an argument containing <code>&amp; | &lt; &gt; ^ % "</code> is refused with
+a notice instead of passed on. VS Code's <code>code</code> is one; point <code>exec</code> at
+<code>Code.exe</code> to avoid it.</div>
+
+<h2 id="launch">Launch kinds</h2>
+<table>
+  <tbody>
+    <tr><td><code>process</code></td><td>Start it through Windows, as a double-click would. For GUI programs</td></tr>
+    <tr><td><code>console</code></td><td>Start it in its own console window. For terminals and shells, and for programs that ask questions</td></tr>
+    <tr><td><code>capture</code></td><td>Run it, wait, and show what it printed in the pane's output panel</td></tr>
+    <tr><td><code>job</code></td><td>Run it in the background: output streams into the pane, the strip at the bottom shows it running with a Cancel button, and it tells you when it's done</td></tr>
+  </tbody>
+</table>
+<h3>Jobs</h3>
+<p>A job is for something that takes a while: a build, a test run, a deploy.</p>
+<pre><code>{
+  "id": "devcontainer-build",
+  "title": "Build in devcontainer",
+  "group": "Build",
+  "exec": "devcontainer",
+  "args": ["exec", "--workspace-folder", "${repoRoot}", "make"],
+  "workingDirectory": "${repoRoot}",
+  "outputDirectory": "${repoRoot}/build",
+  "launch": "job"
+}</code></pre>
+<p>This one is in the first <code>tools.json</code>, turned off: what “build” means is your
+project's business.</p>
+<ul>
+  <li>The output panel follows the job live and keeps the last 4,000 lines. Closing the panel doesn't
+  stop the job; the strip's <strong>Output</strong> button brings it back.</li>
+  <li><strong>Cancel</strong> ends the program and everything it started.</li>
+  <li>If it fails, the strip shows the exit code and the program's own last words, with
+  <strong>Copy error</strong> beside them.</li>
+  <li>If it succeeds and has an <code>outputDirectory</code>, the strip offers <strong>Open output
+  folder</strong>, in the other pane.</li>
+  <li>If the window isn't in front when it finishes, the taskbar button flashes and Windows shows a
+  notification.</li>
+  <li>Closing the window while a job runs asks first: <strong>Keep open</strong>, <strong>Close
+  when finished</strong> or <strong>Cancel and close</strong>. While jobs run, Windows doesn't
+  go to sleep on its own, and shutting down names what is still running.</li>
+</ul>
+
+<figure class="shot" data-file="screenshots/job-strip.png"><img src="../screenshots/job-strip.png" alt="A build running as a job: output streaming into the pane, Cancel in the strip." onerror="this.parentNode.classList.add('missing')"><figcaption>A build running as a job: output streaming into the pane, Cancel in the strip.</figcaption></figure>
+
+<h2 id="edit">F4: edit, never run</h2>
+<p><kbd>F4</kbd> opens a file to change it. Text goes to whatever opens your <code>.txt</code>
+files, and anything else to Windows' own “Edit” (Paint for an image). It never runs the file, so
+it's the safe key on a script you don't trust.</p>
+<p>A tool with <code>"edits": true</code> takes <kbd>F4</kbd> for the files its <code>when</code>
+matches, ahead of both. The first such tool that applies wins, in file order.</p>
+<pre><code>{
+  "id": "edit-in-code",
+  "title": "Edit in VS Code",
+  "group": "Edit",
+  "appliesTo": "file|multi",
+  "exec": "C:/Users/me/AppData/Local/Programs/Microsoft VS Code/Code.exe",
+  "args": ["${selection}"],
+  "edits": true,
+  "when": { "glob": "*.{html,py}" }
+}</code></pre>
+<p>Its <code>args</code> must name the file (<code>${path}</code> or <code>${selection}</code>),
+and its <code>exec</code> can't be the file itself; a tool that breaks either rule is not used for
+<kbd>F4</kbd>, and the log says why.</p>
+
+<h2 id="command-line">The command line: Ctrl+E</h2>
+<p><kbd>Ctrl</kbd>+<kbd>E</kbd> opens a line at the bottom of the pane. <kbd>Enter</kbd> runs it in
+the folder you are looking at.</p>
+<ul>
+  <li><strong>Locally</strong> it runs in Git Bash if it's installed, and in <code>cmd.exe</code>
+  otherwise. The shell is named in grey at the prompt, because the same line means different
+  things in each. <code>commandLine.shell</code> in <code>settings.json</code> chooses:
+  <code>"auto"</code>, <code>"bash"</code>, <code>"pwsh"</code> or <code>"cmd"</code>. The line
+  reaches the shell exactly as typed, so quotes, <code>&amp;&amp;</code>, pipes and redirection
+  mean what they mean there: <code>git commit -m "fix the parser"</code>.</li>
+  <li><strong>On an SFTP server</strong> it runs on the server, over SSH, in that folder, in the
+  account's own shell (asked once per account). Servers whose shell isn't a POSIX one, such as a
+  Windows server's, aren't supported yet.</li>
+  <li>Placeholders work here too, and are quoted for the shell they are going to:
+  <code>git log --oneline -- ${selection}</code>.</li>
+  <li>Not inside an archive, or anywhere else without a folder on this machine.</li>
+</ul>
+<h3>What comes back</h3>
+<ul>
+  <li>A line that succeeds and prints nothing says so in passing, <code>✓ touch notes.md</code>,
+  and fades. Nothing to dismiss.</li>
+  <li>Output opens just above the line, at the foot of the pane, with <strong>Copy</strong> and
+  <kbd>Esc</kbd> to close it. A line that fails says so, with its exit code. Colour codes
+  programs print are taken out.</li>
+  <li>A line still running after 3 seconds moves to the job strip, where its output streams, it can
+  be cancelled, and it says when it's done. End a line with <code>&amp;</code> to send it there at
+  once.</li>
+  <li>Every line is a new process that starts in the pane's folder, so a <code>cd</code> lasts only
+  for the rest of its own line. A <code>cd</code> on its own says so instead of running;
+  <kbd>Ctrl</kbd>+<kbd>L</kbd> is the way to go somewhere.</li>
+</ul>
+<p><kbd>Up</kbd> and <kbd>Down</kbd> bring back earlier lines. There is one history per shell, and
+one per server account, since a line written for one rarely means anything to another. They are
+kept between sessions, the last 300 lines of each. A line with a <code>${prompt:…}</code> is kept
+as typed, never with your answer in it.</p>
+<figure class="shot" data-file="screenshots/command-line.png"><img src="../screenshots/command-line.png" alt="Ctrl+E: a git command run in the current folder, output at the foot of the pane." onerror="this.parentNode.classList.add('missing')"><figcaption>Ctrl+E: a git command run in the current folder, output at the foot of the pane.</figcaption></figure>
+
+<h3 id="terminal">A real terminal, one step away</h3>
+<p>The command line runs a line and shows what it printed; it is not a terminal. When you need
+one:</p>
+<ul>
+  <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> opens a shell where you are: Git Bash in a local
+  folder (when it's installed), and on an SFTP server, Windows Terminal with <code>ssh</code> already in the pane's folder
+  (<em>Open a shell on the server</em>). That is Windows' own ssh and a second login: a key or an
+  agent makes it invisible, otherwise you type the password there. It keeps its own list of known
+  hosts, so it may ask about the server's key once more.</li>
+  <li>A line that starts a program wanting a terminal of its own (<code>vim</code>,
+  <code>nano</code>, <code>less</code>, <code>top</code>, <code>ssh</code>, a bare
+  <code>python</code> or <code>node</code>, and the like) isn't run in the pane. The pane offers
+  to open it in Windows Terminal instead, in the same folder, locally or on the server.</li>
+</ul>
+<div class="note">A command that asks for input, such as <code>sudo</code>'s password, has nowhere
+to ask on the command line. Run it in a terminal.</div>
+
+<figure class="shot" data-file="screenshots/needs-terminal.png"><img src="../screenshots/needs-terminal.png" alt="“vim needs a terminal”: the pane offers Windows Terminal instead of hanging." onerror="this.parentNode.classList.add('missing')"><figcaption>“vim needs a terminal”: the pane offers Windows Terminal instead of hanging.</figcaption></figure>
+
+<h3 id="run">Running a script: Shift+Enter</h3>
+<p><kbd>Enter</kbd> opens a file the way Explorer would: a <code>.bat</code> flashes a console
+that closes before you can read it, and a <code>.ps1</code> opens in Notepad.
+<kbd>Shift</kbd>+<kbd>Enter</kbd> runs the file under the cursor through the command line instead,
+so its output stays in the pane and <kbd>Up</kbd> brings the line back to run it again:</p>
+<table>
+  <tbody>
+    <tr><td><code>.exe</code>, <code>.com</code>, <code>.bat</code>, <code>.cmd</code></td><td>Run as they are: <code>./setup.exe</code></td></tr>
+    <tr><td><code>.ps1</code></td><td>PowerShell 7 if you have it, else Windows PowerShell, with <code>-NoProfile -File</code>. The execution policy is left as it is</td></tr>
+    <tr><td><code>.py</code></td><td>The <code>py</code> launcher if you have it, else <code>python</code></td></tr>
+    <tr><td><code>.sh</code></td><td>Git Bash</td></tr>
+  </tbody>
+</table>
+<p>The line names the interpreter by its full path, found on the <code>PATH</code>, so a
+<code>py.cmd</code> lying beside the script can't stand in for Python.
+<strong>Run with arguments…</strong> (palette or right-click) puts the same line on the command
+line for you to finish. A file Windows marked as downloaded from the internet is asked about
+first. A file whose path holds characters a shell would read as commands or placeholders isn't
+put on a line at all; the pane says so, and you can type the line yourself.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

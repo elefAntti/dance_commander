@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Git</h1>
+<p>Dance Commander shows you what git thinks, everywhere you look, and leaves committing to
+whatever you already commit with: the <a href="tools.html#command-line">command line</a>, a
+terminal, or a git client it can open for you. All of it is for repositories on this machine;
+one on an SFTP server shows no branch or letters.</p>
+
+<h2 id="branch">The branch</h2>
+<p>Inside a repository, the pane's footer shows the branch, or <code>detached abc1234</code>. In a
+folder full of repositories, each one's row carries its branch, so you can see them all at once.
+A bookmark that points into a repository shows its branch too, and so does the head of the menu.
+Switch branch in a terminal and the footer follows straight away.</p>
+
+<h2 id="status">Changed files</h2>
+<p>Files git considers changed carry git's own letter in git's own colour, beside the icon:</p>
+<table>
+  <tbody>
+    <tr><td><code style="color:var(--git-modified)">M</code></td><td>Modified</td></tr>
+    <tr><td><code style="color:var(--git-added)">A</code></td><td>Added</td></tr>
+    <tr><td><code style="color:#e58c8c">D</code></td><td>Deleted</td></tr>
+    <tr><td><code style="color:var(--git-added)">R</code></td><td>Renamed</td></tr>
+    <tr><td><code style="color:var(--git-untracked)">?</code></td><td>Untracked</td></tr>
+    <tr><td><code style="color:#e06c75">!</code></td><td>Conflicted</td></tr>
+  </tbody>
+</table>
+<p>A folder with a changed file anywhere below it is marked too, so you can follow the letters down
+to what changed. Unchanged and ignored files get
+no letter, so the few that matter stand out.</p>
+<p>The rows appear first and the letters a moment later, so a large repository never holds up the
+listing. When something in the repository changes, git is asked again, and the letters it gave
+last time stay up until it answers. A repository so large that <code>git status</code> takes more
+than ten seconds goes without letters.</p>
+<p>Dance Commander runs <code>git status</code> with <code>--no-optional-locks</code>, so it never
+takes git's index lock and can't be the reason a commit in your terminal fails. It needs
+<code>git</code> on the <code>PATH</code>; without it, the branch still shows.</p>
+
+<figure class="shot" data-file="screenshots/git-status.png"><img src="../screenshots/git-status.png" alt="Git's letters on changed files, rolled up to the folders that contain them." onerror="this.parentNode.classList.add('missing')"><figcaption>Git's letters on changed files, rolled up to the folders that contain them.</figcaption></figure>
+
+<h2 id="commands">Git commands</h2>
+<p>Inside a repository, the menus and the palette offer read-only git commands. Their output opens
+in the pane:</p>
+<ul>
+  <li>For the folder: <strong>Git status</strong>, <strong>Git log</strong>.</li>
+  <li>For a file: <strong>Git diff</strong>, <strong>Git log for this</strong>, <strong>Git blame</strong>.</li>
+</ul>
+<p>Staging and committing are deliberately left out.</p>
+
+<h2 id="clients">Your git programs</h2>
+<p>When they are installed, a few programs bring git tools of their own (see
+<a href="tools.html#packs">tools that come with your programs</a>):</p>
+<ul>
+  <li><strong>Fork</strong> and <strong>GitKraken</strong>: <em>Open repository in Fork</em> or
+  <em>in GitKraken</em>, from any folder inside it.</li>
+  <li><strong>VS Code</strong>: <em>Open repository in VS Code</em>.</li>
+  <li><strong>Beyond Compare</strong>: <em>Git diff in Beyond Compare</em> compares the whole
+  working tree with HEAD, staged or not, and <em>Git diff for this</em> the marked files. Both
+  run as jobs, since git waits until you close the comparison.</li>
+  <li><strong>Beyond Compare</strong> again, only while git reports a merge conflict:
+  <em>Resolve conflicts</em> for the repository and <em>Resolve this conflict</em> on a conflicted
+  file. They run <code>git mergetool</code> in a console, because it asks questions, and keep a
+  <code>.orig</code> backup of each file whatever your git config says.</li>
+</ul>
+
+<h2 id="worktrees">Worktrees</h2>
+<p><strong>Worktrees</strong> (in the folder's menu, inside a repository) lists every worktree of
+the repository with its branch. Because the list comes from <code>git worktree list</code> each
+time, it stays current as worktrees come and go: useful when several checkouts of one repository
+are being worked on side by side. A worktree that no longer exists is shown as <em>not found</em>
+rather than dropped.</p>
+<p>A listing like this can be your own. <a href="scripts.html#deleted-files">Files git
+remembers</a> is an example script that lists the files deleted below a folder, with the commit
+that removed each, and copies one back out.</p>
+
+<figure class="shot" data-file="screenshots/worktrees.png"><img src="../screenshots/worktrees.png" alt="The Worktrees listing, with each checkout's branch." onerror="this.parentNode.classList.add('missing')"><figcaption>The Worktrees listing, with each checkout's branch.</figcaption></figure>
+
+<h2 id="tools">Repository-aware tools</h2>
+<p>Your own tools can use <code>${repoRoot}</code>, <code>${branch}</code> and
+<code>${remoteUrl}</code>, which have the same value from anywhere inside the repository, and can
+be offered only inside a repository (<code>"inRepository": true</code>), only in repositories whose
+remote matches a pattern (<code>"remoteMatches": "*/orbit.git"</code>), or only while there is a
+merge conflict to resolve (<code>"inConflict": true</code>). A tool that needs
+<code>${branch}</code> isn't offered while HEAD is detached, nor one that needs
+<code>${remoteUrl}</code> in a repository without a remote. <code>${remoteUrl}</code> is the
+branch's upstream remote, else <code>origin</code>, and a linked worktree shares it with its main
+repository. See <a href="tools.html">Tools and the command line</a>.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

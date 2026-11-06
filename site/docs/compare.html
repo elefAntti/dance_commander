@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Choosing a file manager — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Choosing a file manager</h1>
+<p>Dance Commander is one of several ways to manage files on Windows, and not the right one for
+everybody. This page sets it beside the three you are most likely to be weighing it against:
+Windows' own <strong>File Explorer</strong>; <strong><a href="https://www.ghisler.com/">Total
+Commander</a></strong>, the two-pane commander that has been around since the nineties; and
+<strong><a href="https://www.gpsoft.com.au/">Directory Opus</a></strong>, the most capable file
+manager on Windows.</p>
+<p>It doesn't list every difference, only the ones that tend to decide the choice. The others
+were checked against their own pages and manuals in October 2026; if something here has gone out of
+date, please say so in an issue.</p>
+
+<h2 id="table">Side by side</h2>
+<div class="table-wrap">
+<table class="compare">
+  <thead><tr><th></th><th>File Explorer</th><th>Total Commander</th><th>Directory Opus</th><th>Dance Commander</th></tr></thead>
+  <tbody>
+    <tr><td>Cost</td>
+      <td>Part of Windows</td>
+      <td>Shareware: 30-day trial, then €42 + VAT once</td>
+      <td>From about AUD 89, 30-day trial; updates after the first year need a yearly fee</td>
+      <td>Open source (MIT), free</td></tr>
+    <tr><td>Getting it</td>
+      <td>Already there</td>
+      <td>Installer, or a portable copy</td>
+      <td>Installer</td>
+      <td>A per-user installer (MSI) or a zip; no admin rights needed. Not signed yet</td></tr>
+    <tr><td>Maturity</td>
+      <td>Decades, and used by everyone</td>
+      <td>Thirty years, a large community and forum</td>
+      <td>Over thirty years, from the Amiga on; an active forum and script library</td>
+      <td>Young (version 0.9), built by its author for daily use. Some recent features are not yet confirmed in daily use</td></tr>
+    <tr><td>How much to learn</td>
+      <td>Next to nothing</td>
+      <td>A lot: hundreds of options, menus and buttons</td>
+      <td>The most: nearly everything has a preference, and much of its power is in scripts and custom commands</td>
+      <td>Little at a time: a deliberately short list of features, and a legend that shows the keys while you hold a modifier</td></tr>
+    <tr><td>Layout</td>
+      <td>One pane with tabs</td>
+      <td>Two panes with tabs, button bar, drive bar</td>
+      <td>One or two panes, tabs, folder trees, toolbars, all of it rearrangeable</td>
+      <td>Two panes with tabs in each, or one; five fixed regions and nothing else permanent</td></tr>
+    <tr><td>Keyboard</td>
+      <td>The usual shortcuts; not changeable</td>
+      <td>Everything on a key, every key changeable</td>
+      <td>Everything on a key, every key changeable, keys for your own commands</td>
+      <td>Everything on a key, every key changeable, a command palette</td></tr>
+    <tr><td>Drag and drop</td>
+      <td>Drop on a folder; the folder tree opens while you hover</td>
+      <td>Drop on a folder, a pane or a tab</td>
+      <td>Hover over a tab to switch to it; folders can expand in place while you hover</td>
+      <td>Hold over a folder, a tab, or Back, Forward or Up and it opens, as in the Mac Finder; the list scrolls at its edges. The shelf window (<kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>, from anywhere) holds files from several folders to drag out later</td></tr>
+    <tr><td>Servers</td>
+      <td>Mapped network drives; FTP and WebDAV through Windows' older network locations</td>
+      <td>FTP and FTPS built in; SFTP and much else through plugins</td>
+      <td>FTP, SFTP and WebDAV built in</td>
+      <td>SFTP (password only for now) and WebDAV, including Nextcloud. No FTP</td></tr>
+    <tr><td>Archives</td>
+      <td>Opens zip, 7z, rar and tar; makes zip, 7z and tar on recent Windows 11</td>
+      <td>Browses and packs many formats, more through plugins</td>
+      <td>Browses and packs many formats</td>
+      <td>Browses zip, 7z, rar, tar and gz/bz2/xz as folders, nested and on servers; makes zip only</td></tr>
+    <tr><td>Git</td>
+      <td>Branch and last commit for repository folders you choose (Windows 11, Advanced settings)</td>
+      <td>Not built in</td>
+      <td>Not built in; a community script adds status columns</td>
+      <td>Git's status letter on every changed file, rolled up to its folders; branch in the footer; a worktrees listing. Read-only: commits are left to your git program</td></tr>
+    <tr><td>Search</td>
+      <td>Windows Search index, including file contents</td>
+      <td>Search by name, content, date and more; duplicate finder</td>
+      <td>Search by name, content and metadata; duplicate finder</td>
+      <td>Names only, no index: walks the disk, nearest places first, results streaming in. Content search is coming, grep-style rather than indexed</td></tr>
+    <tr><td>Bulk work</td>
+      <td>Basic</td>
+      <td>Multi-rename tool, folder compare and synchronise, split and join, checksums</td>
+      <td>Batch rename with preview, synchronise, metadata editing, image conversion and more</td>
+      <td>Split and join with a checksum. No pattern rename; folder compare through Beyond Compare if you have it</td></tr>
+    <tr><td>Mistakes</td>
+      <td>Undo for recent operations; confirmations in dialogs</td>
+      <td>Confirmations in dialogs; no general undo</td>
+      <td>Undo for most operations; confirmations in dialogs</td>
+      <td>Every operation can be undone and is logged with its shell command. Nothing is written under a file's real name until it is complete. No dialogs: questions wait in the pane</td></tr>
+    <tr><td>Extending</td>
+      <td>Shell extensions from other programs</td>
+      <td>A large plugin ecosystem, user commands, buttons</td>
+      <td>Scripting, plugins, custom commands, toolbars and columns</td>
+      <td>Tools in one JSON file, and scripts that turn anything into a browsable place. No plugins</td></tr>
+    <tr><td>Preview</td>
+      <td>Any format with a preview handler (Office, PDF and more)</td>
+      <td>Lister for text, images and more, extended by plugins</td>
+      <td>Its own viewers for many formats, plus Windows' preview handlers</td>
+      <td>Text (stating encoding and line endings), images, a PDF's first page, and for other files on your own disk the thumbnail Windows has for them (a video's first frame, for instance).</td></tr>
+    <tr><td>Runs on</td>
+      <td>Windows</td>
+      <td>Windows, 32 and 64 bit, from very old versions up</td>
+      <td>Windows</td>
+      <td>Windows 10 2004 or later, x64 only</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="which">Which one is for you</h2>
+
+<h3>File Explorer</h3>
+<p>Stay with it if you open a folder a few times a day, mostly by mouse, and your files live in
+OneDrive. It is already installed, every program knows how to talk to it, it previews nearly any
+format through the handlers other programs install, and its search reads inside your documents.
+What it doesn't do is two folders side by side, servers over SSH, or doing everything from the
+keyboard.</p>
+
+<h3>Total Commander</h3>
+<p>Pick it if you want the classic two-pane commander at its most complete, for a modest one-off
+price. Thirty years of features are hard to match: the multi-rename tool, folder synchronisation, a
+plugin for almost any protocol or format, and it runs on anything Windows has ever run on. The cost
+is a busy window, a lot of configuration, and decisions asked in dialogs that stop you until you
+answer.</p>
+
+<h3>Directory Opus</h3>
+<p>Pick it if you want one program that can do everything, and you enjoy shaping a tool to your
+hand. It is probably the closest to Dance Commander in what it can do, and the furthest from it in
+temperament: nearly every feature has a preference, a toolbar button or a script behind it. That
+breadth is real, and so is its price: much of it is rarely needed, hard to remember when it is,
+and saves only a little time when you do.</p>
+
+<h3>Dance Commander</h3>
+<p>Pick it if you are a developer or look after servers, live on the keyboard, and want the
+commander's two panes with a browser's address bar, tabs and history. Its strengths are being
+quiet until you need it, git status in every listing, SFTP servers and archives that behave like
+any other folder, and the promise that every change can be undone and is never half-written under
+a real name. It keeps its feature list short on purpose: what isn't used every week doesn't earn
+a place.</p>
+<p>Be honest with yourself about the cost. It is a young product built
+around the features its author uses and some features are still missing. Content search is coming (grep-style, not indexed), as are pattern rename and SSH keys for SFTP, and it writes only zip archives. If you need FTP, cloud accounts, a plugin for some format or a
+forty-format preview, one of the other three will serve you better. It is also very likely to still have bugs.</p>
+
+<h2 id="others">Also worth a look</h2>
+<ul>
+  <li><strong><a href="https://files.community/">Files</a></strong>: Explorer, modernised. Mouse first, with tabs, tags,
+  an optional second pane, cloud drives in the sidebar and git actions such as switching branches
+  and pushing. Open source.</li>
+  <li><strong><a href="https://www.farmanager.com/">Far Manager</a></strong>: a keyboard-only two-pane commander in a console window, with a
+  strong command line and plugins for servers and archives. Open source.</li>
+  <li><strong><a href="https://doublecmd.sourceforge.io/">Double Commander</a></strong>: an open-source Total Commander for Windows, Linux and
+  macOS.</li>
+  <li><strong><a href="https://yazi-rs.github.io/">yazi</a></strong>, <strong><a href="https://github.com/gokcehan/lf">lf</a></strong>
+  or <strong><a href="https://midnight-commander.org/">Midnight Commander</a></strong>, if you would
+  rather never leave the terminal. They give up Windows' shell, drag and drop and Explorer's
+  menus in exchange.</li>
+</ul>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

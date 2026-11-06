@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- The 10.0.19041.0 suffix is only a target for API surface: it projects the WinRT APIs
+         (here, Windows.Data.Pdf) so the compiler can see them. It has no effect on which Windows
+         versions the app runs on; that is TargetPlatformMinVersion below, left at the OS this
+         app already requires. -->
+    <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>DanceCommander</AssemblyName>
+    <!-- Embedded as a Win32 resource, so Windows uses it for the taskbar, Alt+Tab, Explorer and
+         the title bar without the window having to set anything itself. -->
+    <ApplicationIcon>../../assets/DanceCommander.ico</ApplicationIcon>
+    <!-- Startup (IMPLEMENTATION_LOG.md, "Startup and listing speed"). Our own assemblies are
+         compiled ahead of time when published, instead of being JIT-compiled method by method on
+         the way to the first window; it only affects `dotnet publish -r`, not debug builds. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Windows' own globalisation (NLS) rather than ICU: this app runs on nothing else, and
+         initialising ICU was a measurable slice of every launch before the first line of ours. -->
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A Page, so WPF generates no Main of its own: Program.Main runs first and shows the launch
+         placeholder before the framework has loaded. -->
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.11" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- What a finished-job notification shows as its icon; Windows wants an image file, not the
+         .ico embedded in the executable. -->
+    <Content Include="../../assets/icon-512.png" Link="icon.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The README's licence section: a published build carries its licence and the third-party
+         notices beside the executable (scripts/notices.ps1 writes the second). about:app lists both. -->
+    <Content Include="../../USER_README.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DanceCommander.Core\DanceCommander.Core.csproj" />
+    <ProjectReference Include="..\DanceCommander.Extensibility\DanceCommander.Extensibility.csproj" />
+    <ProjectReference Include="..\DanceCommander.Providers.Local\DanceCommander.Providers.Local.csproj" />
+    <ProjectReference Include="..\DanceCommander.Providers.Sftp\DanceCommander.Providers.Sftp.csproj" />
+    <ProjectReference Include="..\DanceCommander.Providers.WebDav\DanceCommander.Providers.WebDav.csproj" />
+    <ProjectReference Include="..\DanceCommander.Providers.Archive\DanceCommander.Providers.Archive.csproj" />
+  </ItemGroup>
+
+</Project>

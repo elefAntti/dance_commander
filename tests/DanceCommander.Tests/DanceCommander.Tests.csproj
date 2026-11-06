@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DanceCommander.Core\DanceCommander.Core.csproj" />
+    <ProjectReference Include="..\..\src\DanceCommander.Extensibility\DanceCommander.Extensibility.csproj" />
+    <ProjectReference Include="..\..\src\DanceCommander.Providers.Local\DanceCommander.Providers.Local.csproj" />
+    <ProjectReference Include="..\..\src\DanceCommander.Providers.Archive\DanceCommander.Providers.Archive.csproj" />
+    <ProjectReference Include="..\..\src\DanceCommander.Providers.Sftp\DanceCommander.Providers.Sftp.csproj" />
+    <ProjectReference Include="..\..\src\DanceCommander.Providers.WebDav\DanceCommander.Providers.WebDav.csproj" />
+  </ItemGroup>
+
+</Project>

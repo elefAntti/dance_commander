@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Keyboard reference — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Keyboard reference</h1>
+<p>Commander keys where they don't fight Windows, browser keys where a browser already taught you.
+Every key here is also in the command palette (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>), and
+holding a modifier shows its layer on the legend. These are the keys it comes with; any of them
+can be <a href="#rebinding">changed</a>.</p>
+
+<figure class="shot" data-file="screenshots/palette.png"><img src="../screenshots/palette.png" alt="The command palette (Ctrl+Shift+P): every command that applies here, with its key." onerror="this.parentNode.classList.add('missing')"><figcaption>The command palette (Ctrl+Shift+P): every command that applies here, with its key.</figcaption></figure>
+
+<h2 id="files">Files</h2>
+<table>
+  <tbody>
+    <tr><td><kbd>Enter</kbd></td><td>Open: go into a folder or archive, start a file in its application</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Open in a new tab</td></tr>
+    <tr><td><kbd>F2</kbd></td><td>Rename, in place</td></tr>
+    <tr><td><kbd>F3</kbd></td><td>Preview; <kbd>F3</kbd> or <kbd>Esc</kbd> closes it</td></tr>
+    <tr><td><kbd>F4</kbd></td><td>Edit: text in whatever opens your <code>.txt</code> files, anything else in Windows' own “Edit”. It never runs the file</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>F4</kbd></td><td>New file: name it, and it is made empty here and opened as <kbd>F4</kbd> opens one. A file of that name already here is opened as it is</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Run the script or program under the cursor through the command line, with its output in the pane</td></tr>
+    <tr><td><kbd>F5</kbd></td><td>Copy to the other pane</td></tr>
+    <tr><td><kbd>F6</kbd></td><td>Move to the other pane</td></tr>
+    <tr><td><kbd>F7</kbd></td><td>New folder</td></tr>
+    <tr><td><kbd>Del</kbd></td><td>Delete to the Recycle Bin</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>Del</kbd></td><td>Delete permanently</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td><td>Group the selection into a new folder</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo the last operation</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut and paste through the Windows clipboard. Pasting an image or text makes a new file of it</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>Copy path</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Open containing folder (from a search, a flattened tree or a collection)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="selection">Marking and selection</h2>
+<table>
+  <tbody>
+    <tr><td><kbd>Insert</kbd> or <kbd>Space</kbd></td><td>Mark or unmark the row and move down</td></tr>
+    <tr><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>PgUp</kbd> <kbd>PgDn</kbd> <kbd>Home</kbd> <kbd>End</kbd></td><td>Move the cursor. While anything is marked, the marks stay put</td></tr>
+    <tr><td><kbd>Shift</kbd>+arrows</td><td>Extend the selection</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select all</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>I</kbd></td><td>Invert the selection</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd></td><td>Unmark all</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close what is open (a preview, a question, the filter), then unmark</td></tr>
+  </tbody>
+</table>
+<p><kbd>Enter</kbd>, <kbd>F2</kbd> and <kbd>F3</kbd> act on the row under the cursor;
+<kbd>F5</kbd>, <kbd>F6</kbd> and <kbd>Del</kbd> act on the marked rows.</p>
+
+<h2 id="navigation">Getting around</h2>
+<table>
+  <tbody>
+    <tr><td><kbd>Tab</kbd></td><td>Switch pane</td></tr>
+    <tr><td><kbd>Backspace</kbd></td><td>Up to the parent folder (up from a drive goes to <code>about:computer</code>)</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>Alt</kbd>+<kbd>→</kbd></td><td>Back and forward. The mouse's back and forward buttons work too</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td><td>Go to a location: the address bar. Pressed again there, it selects everything in it, as in a browser</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>Home</kbd></td><td>This computer (<code>about:computer</code>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd></td><td>Bookmarks (<code>about:bookmarks</code>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd></td><td>History (<code>about:history</code>)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Bookmark this location</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>R</kbd></td><td>Refresh</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>.</kbd></td><td>This folder's commands (the location chip's menu)</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>F10</kbd> or the Menu key</td><td>The right-click menu, for what the keyboard is on: the marked rows, or else the folder</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Run a command here (the command line)</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd></td><td>A shell here: Git Bash in a local folder, if it is installed, or the server's own shell on an SFTP server</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></td><td>Command palette</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>,</kbd></td><td>Settings</td></tr>
+  </tbody>
+</table>
+
+<h2 id="tabs">Tabs and panes</h2>
+<table>
+  <tbody>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>T</kbd></td><td>New tab, at the same place</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>W</kbd></td><td>Close tab</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>PgDn</kbd> / <kbd>Ctrl</kbd>+<kbd>PgUp</kbd></td><td>Next and previous tab</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Tab</kbd></td><td>Cycle through tabs</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td>Move the tab one place left or right along the strip</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd> / <kbd>→</kbd></td><td>Move the tab to the left or right pane</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd> / <kbd>Ctrl</kbd>+<kbd>2</kbd></td><td>One pane, two panes. With one pane, <kbd>Tab</kbd> swaps which pane is on screen</td></tr>
+  </tbody>
+</table>
+
+<h2 id="view">View, search and sorting</h2>
+<table>
+  <tbody>
+    <tr><td><em>just type</em></td><td>Quick filter: narrow the listing to names that match. <kbd>Backspace</kbd> deletes, <kbd>Esc</kbd> clears</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Search here, through every folder below</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Flatten this tree: every file below, in one listing</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>H</kbd></td><td>Show or hide hidden entries and dotfiles</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>F3</kbd></td><td>Sort by name</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>F4</kbd></td><td>Sort by type</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>F5</kbd></td><td>Sort by date</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>F6</kbd></td><td>Sort by size. Pressing the same sort key again reverses it</td></tr>
+  </tbody>
+</table>
+
+<h2 id="gathering">Shelf and collections</h2>
+<table>
+  <tbody>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td><td>Put the selection on the shelf</td></tr>
+    <tr><td><kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd></td><td>Show or hide the shelf window (the shelf in a small window that stays on top), from any program</td></tr>
+  </tbody>
+</table>
+<p>If another program already holds <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>, the application
+says so, and the window is still in the palette as <em>Show or hide the shelf window</em>.</p>
+<p>On the application's own pages some keys take a meaning of their own: in a collection or the
+shelf <kbd>Del</kbd> takes the file out of the list and never touches it on disk, and
+<kbd>F7</kbd> makes a new collection or saves the shelf as one. On <code>about:bookmarks</code>,
+<kbd>F2</kbd> renames a bookmark, <kbd>F6</kbd> moves it to a group and <kbd>Del</kbd> removes it;
+on <code>about:history</code>, <kbd>Del</kbd> forgets a visit. See
+<a href="gathering.html">Marks, shelf, collections</a>.</p>
+
+<h2 id="mouse">The mouse</h2>
+<table>
+  <tbody>
+    <tr><td>Middle click on a folder or archive</td><td>Opens it in a new tab, as in a browser. Settings can make it open in the other pane instead</td></tr>
+    <tr><td>The mouse's back and forward buttons</td><td>Back and forward</td></tr>
+    <tr><td>Holding Back, Forward or Up</td><td>A list of where they would go, to jump several steps at once. Right-clicking Back or Forward does the same</td></tr>
+    <tr><td>Dragging a tab</td><td>Along its strip to reorder it, or onto the other pane to move it there</td></tr>
+    <tr><td>Dragging files</td><td>Between the panes, onto a folder, or to and from Explorer. Held over a tab or a folder for a moment, it opens</td></tr>
+  </tbody>
+</table>
+
+<h2 id="rebinding">Changing keys</h2>
+<p>The <em>Keyboard</em> page of Settings (<kbd>Ctrl</kbd>+<kbd>,</kbd>) lists every command with its
+key. Click the key, then press the one you want; <kbd>Esc</kbd> cancels. <em>Remove</em> leaves a
+command without a key, and <em>Reset</em> gives it back its own. The filters at the top show all
+commands, only the ones you have changed (<em>Yours</em>), or only those with something to note
+(<em>Clashes</em>).</p>
+<p>A key you choose wins over any command that had it. Nothing is refused: the command that lost the
+key is left without one, and the page says so beside both. It also warns when the key you chose
+means something else in most programs, such as <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> for
+“select none”. The legend, the menus and the palette follow the new key at once.</p>
+<p>Your keys are kept in <code>settings.json</code>, by command id, and can be written there by hand
+too:</p>
+<pre><code>{ "keys": { "dc.search": "Ctrl+F", "dc.copyPath": null } }</code></pre>
+<p><code>null</code> takes a key away. The search box on the Keyboard page finds a command by its
+id as well as its name.</p>
+<p><kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> is the one key that can't be changed: it belongs to
+Windows as a whole, not to the window.</p>
+
+<h2 id="tools">Keys for your own tools</h2>
+<p>A tool in <code>tools.json</code> can claim a key with <code>"keybinding": "Ctrl+Shift+K"</code>.
+The Git Bash tools' <em>Open in bash</em> has <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>. A
+tool's key takes over a built-in command's, and the takeover is written to the log at startup so a
+collision never goes unnoticed. Tools are on the Keyboard page too, and a key chosen there wins over
+the one in <code>tools.json</code>.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

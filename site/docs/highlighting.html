@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Highlight rules — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Highlight rules</h1>
+<p>The application's own chrome is almost colourless on purpose: colour in the listing is yours.
+Rules in <code>%APPDATA%\DanceCommander\highlighting.json</code> decide which rows stand out, and
+how.</p>
+
+<pre><code>{
+  "rules": [
+    { "name": "Secrets",
+      "match": { "regex": "(?i)(secret|credential|\\.pem$|\\.pfx$|id_rsa)" },
+      "foreground": "#FF8B82", "bold": true },
+
+    { "name": "Build output",
+      "match": { "glob": "{bin,obj,node_modules,.vs,target}", "directoriesOnly": true },
+      "foreground": "#7E868E", "italic": true },
+
+    { "name": "Big files",
+      "match": { "minSize": "100MB" },
+      "background": "#3A2A00" },
+
+    { "name": "Today",
+      "match": { "newerThan": "12h", "filesOnly": true },
+      "bold": true, "sortGroup": 1 }
+  ]
+}</code></pre>
+<p>Rules are tried from the top and <strong>the first match wins</strong>. Save the file and every
+open listing updates. Comments are allowed, and if the file has a mistake, the app says so and
+keeps the rules it had.</p>
+<p>Out of the box the listing has no colours of its own. The file starts with a few examples to
+edit, all switched off: secrets, build output, archives, files over a gigabyte and source files.
+Set a rule's <code>"enabled"</code> to <code>true</code> to turn it on.</p>
+
+<figure class="shot" data-file="screenshots/highlighting.png"><img src="../screenshots/highlighting.png" alt="The example rules at work: secrets in red, build output dimmed." onerror="this.parentNode.classList.add('missing')"><figcaption>The example rules at work: secrets in red, build output dimmed.</figcaption></figure>
+
+<h2 id="matching">Matching</h2>
+<p>All the conditions in one <code>match</code> must hold. The same conditions are used by a tool's
+<code>when</code>.</p>
+<table>
+  <tbody>
+    <tr><td><code>glob</code></td><td>A name pattern: <code>*.log</code>, <code>*.{cs,xaml}</code>, <code>{bin,obj}</code></td></tr>
+    <tr><td><code>regex</code></td><td>A .NET regular expression against the name. <code>(?i)</code> for case-insensitive</td></tr>
+    <tr><td><code>extensions</code></td><td>A list, without dots: <code>["zip", "7z", "tar"]</code></td></tr>
+    <tr><td><code>directoriesOnly</code>, <code>filesOnly</code></td><td>Only folders, or only files</td></tr>
+    <tr><td><code>minSize</code>, <code>maxSize</code></td><td><code>"512"</code>, <code>"100kB"</code>, <code>"2MB"</code>, <code>"1.5GB"</code></td></tr>
+    <tr><td><code>newerThan</code>, <code>olderThan</code></td><td>By modified time: <code>"30m"</code>, <code>"12h"</code>, <code>"7d"</code>, <code>"2w"</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="styling">Styling</h2>
+<table>
+  <tbody>
+    <tr><td><code>foreground</code></td><td>Text colour, <code>#RRGGBB</code></td></tr>
+    <tr><td><code>background</code></td><td>Row colour, <code>#RRGGBB</code></td></tr>
+    <tr><td><code>bold</code>, <code>italic</code></td><td><code>true</code> or <code>false</code></td></tr>
+    <tr><td><code>sortGroup</code></td><td>Pins matching rows above the rest. Higher is nearer the top</td></tr>
+    <tr><td><code>enabled</code></td><td><code>false</code> turns a rule off without deleting it</td></tr>
+  </tbody>
+</table>
+
+<h2 id="advice">A little restraint</h2>
+<p>A few rules that mean something are worth more than many: once every row is coloured, none of
+them stand out. Keep red for things that really need care.</p>
+
+<h2 id="schemes">Light, dark and high contrast</h2>
+<p>A rule's colours are used exactly as written, in the dark scheme, in the light one and under
+Windows' high contrast themes alike. Unlike the accent colour, they are not adjusted to stay
+readable, and a rule can't give one colour for dark and another for light. Pick them for the
+scheme you use: the dark listing is <code>#1F2225</code>, the light one <code>#FAFBFC</code>, and
+4.5:1 against it is a good aim for text.</p>
+<p>The shipped examples' colours are chosen for the dark scheme. On the light one, their red, gold and grey
+text is faint and the large-file background makes the text on it hard to read, so if you work in
+light, change those colours, or rely on <code>bold</code> and <code>italic</code>, which read the
+same in both.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

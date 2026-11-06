@@ -1,0 +1,57 @@
+<!--
+  High contrast: the same keys as Dark.xaml and Light.xaml, drawn from the colours the user chose
+  in Windows' contrast theme (SystemColors), so what they asked for is what they get. Colour is
+  not the carrier here: every surface is the theme's window colour and edges, text and marks are
+  its text, GrayText and HotTrack colours. The three fills that need a colour of their own (hover
+  and the two selections) are mixed from the theme's window and text colours by ColourScheme, since
+  no system colour is promised to be readable under the theme's text.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <SolidColorBrush x:Key="WindowBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="PaneBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="PaneInactiveBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="SunkenBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="HoverBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="DividerBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+
+  <!-- Popups have no lighter step to take, so the outline does all the work. -->
+  <SolidColorBrush x:Key="PopupBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="PopupBorderBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <!-- Not GrayText: in a contrast theme that colour says "disabled", and extensions, keys in the
+       legend and sizes drawn in it looked switched off. Muted is a step back in the other
+       palettes; here nothing steps back from the text colour. -->
+  <SolidColorBrush x:Key="TextMutedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+
+  <x:Static x:Key="AccentColor" Member="SystemColors.HotTrackColor" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{x:Static SystemColors.HotTrackColor}" />
+  <SolidColorBrush x:Key="SelectionActiveBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="SelectionInactiveBrush" Color="{x:Static SystemColors.WindowColor}" />
+
+  <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="{x:Static SystemColors.WindowColor}" />
+
+  <!-- GrayText, not the text colour: at rest a thumb drawn as loud as the text was the brightest
+       thing in the window (the tab strip's, a white bar above the tabs). Still clear of the window
+       colour; hover and drag light it in the theme's hot-track colour. -->
+  <SolidColorBrush x:Key="ScrollThumbBrush" Color="{x:Static SystemColors.GrayTextColor}" />
+  <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="{x:Static SystemColors.HotTrackColor}" />
+  <SolidColorBrush x:Key="ScrollThumbActiveBrush" Color="{x:Static SystemColors.HotTrackColor}" />
+
+  <!-- Git marks carry a letter as well as a colour, so the letter carries it here. -->
+  <SolidColorBrush x:Key="GitModifiedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="GitAddedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="GitDeletedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="GitUntrackedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="GitConflictBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+
+  <SolidColorBrush x:Key="DangerBrush" Color="{x:Static SystemColors.HotTrackColor}" />
+  <SolidColorBrush x:Key="WarningBrush" Color="{x:Static SystemColors.HotTrackColor}" />
+  <SolidColorBrush x:Key="DangerSurfaceBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="WarningSurfaceBrush" Color="{x:Static SystemColors.WindowColor}" />
+  <SolidColorBrush x:Key="InfoSurfaceBrush" Color="{x:Static SystemColors.WindowColor}" />
+
+</ResourceDictionary>

@@ -1,0 +1,42 @@
+<!--
+  Design tokens. Per §1.2/8 these exist before there is a second view to be inconsistent
+  between. Nothing in the app hard-codes a colour, a font size or a margin: it references a
+  token from here or from the active palette.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!-- Type: one UI sans for chrome, monospace only where it means something (§1.3). -->
+  <FontFamily x:Key="UiFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
+  <!-- The system icon font, for the navigation glyphs only (DESIGN.md §1.3). MDL2 on Windows 10. -->
+  <FontFamily x:Key="GlyphFontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+  <FontFamily x:Key="MonoFontFamily">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+  <!-- At most three sizes in the whole application. -->
+  <sys:Double x:Key="FontSizeSmall">11.5</sys:Double>
+  <sys:Double x:Key="FontSizeBody">13</sys:Double>
+  <sys:Double x:Key="FontSizeTitle">15</sys:Double>
+
+  <!-- Spacing scale. Regions are separated by space, not by borders. -->
+  <sys:Double x:Key="SpaceXs">4</sys:Double>
+  <sys:Double x:Key="SpaceS">8</sys:Double>
+  <sys:Double x:Key="SpaceM">12</sys:Double>
+  <sys:Double x:Key="SpaceL">16</sys:Double>
+
+  <Thickness x:Key="PanePadding">8</Thickness>
+  <Thickness x:Key="ToolbarPadding">8,6</Thickness>
+  <Thickness x:Key="CellPadding">8,0</Thickness>
+
+  <CornerRadius x:Key="RadiusS">4</CornerRadius>
+  <CornerRadius x:Key="RadiusM">6</CornerRadius>
+  <!-- A tab: rounded where it stands free, square where it joins the pane under it. -->
+  <CornerRadius x:Key="RadiusTab">6,6,0,0</CornerRadius>
+
+  <!-- Comfortable by default; compact is a setting, not the imposed default (§1.3). -->
+  <sys:Double x:Key="RowHeight">24</sys:Double>
+  <sys:Double x:Key="RowHeightCompact">18</sys:Double>
+  <sys:Double x:Key="HeaderHeight">26</sys:Double>
+  <sys:Double x:Key="IconSize">16</sys:Double>
+
+</ResourceDictionary>

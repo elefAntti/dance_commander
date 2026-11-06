@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One screen, then the install: what goes where, the Explorer entry's tick box, Install. No licence
+  page to click through (the MIT licence is beside the program and on about:app), no folder to
+  choose (a per-user install has one place). Progress, errors, files in use and the end are
+  WiX's own dialogs; Repair and Remove from a second run are WixUI_Minimal's.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <UI Id="DanceCommanderUI">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="9" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="9" Bold="yes" />
+      <TextStyle Id="WixUI_Font_Emphasized" FaceName="Segoe UI" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="Minimal" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="ExitDialog" />
+      <DialogRef Id="MaintenanceWelcomeDlg" />
+
+      <Dialog Id="InstallDlg" Width="370" Height="270" Title="Dance Commander Setup">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="40" Transparent="yes" NoPrefix="yes"
+                 Text="{\WixUI_Font_Bigger}Install Dance Commander [ProductVersion]" />
+        <Control Id="Description" Type="Text" X="135" Y="64" Width="220" Height="80" Transparent="yes" NoPrefix="yes"
+                 Text="Dance Commander is installed for you alone, in your own Programs folder, without asking for administrator rights. A shortcut goes in the Start menu.&#13;&#10;&#13;&#10;Your settings and bookmarks are kept, through this install and any later uninstall." />
+        <!-- Windows 11 puts it under "Show more options" (Package.wxs). Two lines tall: the label
+             wraps at this width, and one line's height cut the second off. -->
+        <Control Id="ExplorerEntryBox" Type="CheckBox" X="135" Y="160" Width="220" Height="26"
+                 Property="EXPLORERENTRY" CheckBoxValue="1"
+                 Text="Add &quot;Open in Dance Commander&quot; to Explorer's menu for folders and drives" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+        <Control Id="Install" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Install">
+          <Publish Event="AddLocal" Value="ExplorerEntry" Condition="EXPLORERENTRY" Order="1" />
+          <Publish Event="Remove" Value="ExplorerEntry" Condition="NOT EXPLORERENTRY" Order="2" />
+          <Publish Event="EndDialog" Value="Return" Order="3" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
+
+      <InstallUISequence>
+        <Show Dialog="InstallDlg" Before="ProgressDlg" Condition="NOT Installed" />
+      </InstallUISequence>
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+    </UI>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+</Wix>

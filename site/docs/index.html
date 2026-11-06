@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting started — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Getting started</h1>
+<p>Dance Commander is a two-pane file manager you drive from the keyboard. If you have used Norton
+Commander, Total Commander or Far, your hands already know most of it. If you haven't, the
+F-key legend along the bottom of the window will teach you as you go.</p>
+
+<h2 id="install">Installing</h2>
+<p>You need Windows 10 version 2004 (build 19041) or later on x64. Download one of two files from the
+<a href="https://github.com/elefAntti/dance_commander/releases">releases page</a>:</p>
+<ul>
+  <li><strong>The MSI</strong> (<code>DanceCommander-&lt;version&gt;-win-x64.msi</code>) is the recommended
+  one. It installs for your user only, so it needs no administrator rights, adds Dance Commander to
+  the Start menu and to Installed apps, and offers an <em>Open in Dance Commander</em> entry in
+  Explorer's menu. Installing a newer version replaces the old one.</li>
+  <li><strong>The zip</strong> (<code>DanceCommander-&lt;version&gt;-win-x64.zip</code>) is for trying it
+  without installing. Unpack it anywhere and run <code>DanceCommander.exe</code>. It touches no
+  registry; delete the folder and it is gone.</li>
+</ul>
+<p>Your settings live in <code>%APPDATA%\DanceCommander\</code> and stay when you uninstall or update.
+Pin the program to the taskbar if you like.</p>
+<div class="note">The program isn't signed yet, so Windows may show “Windows protected your PC”
+the first time: <em>More info</em>, then <em>Run anyway</em>, starts it.</div>
+
+<h3 id="from-source">Building it yourself</h3>
+<p>You need the <a href="https://dotnet.microsoft.com/download/dotnet/9.0">.NET 9 SDK</a>.</p>
+<pre><code>git clone https://github.com/elefAntti/dance_commander
+cd dance_commander
+scripts\publish-local.bat</code></pre>
+<p>This publishes a single, self-contained <code>DanceCommander.exe</code> to
+<code>%LOCALAPPDATA%\DanceCommander\</code>. It force-closes a running Dance Commander before
+replacing it, so finish what you are doing first. To try a build beside an installed copy, run it
+with <code>--new-window</code>:</p>
+<pre><code>dotnet run --project src/DanceCommander.App -- --new-window</code></pre>
+
+<h2 id="first-launch">The first launch</h2>
+<p>The first time it starts, Dance Commander sets itself up from what is on your computer:</p>
+<ul>
+  <li><strong>Bookmarks</strong> for Home, Desktop, Documents and Downloads, and for the folders you
+  have pinned in Explorer's Quick access, in a group of that name.</li>
+  <li><strong>Tools</strong> for the programs it finds: Git Bash, Windows Terminal, WSL, VS Code,
+  Beyond Compare, Fork and GitKraken, and SHA-256 from Windows itself. They appear in the menus and
+  the palette where they apply, and each set can be switched off in Settings.</li>
+  <li>A <code>tools.json</code> holding one example of a tool of your own, switched off.</li>
+</ul>
+<p>It says so once, in a line in the pane that doesn't take the keyboard, with <em>Show
+bookmarks</em> and <em>Settings…</em> beside it. The files are plain JSON with comments allowed
+in <code>%APPDATA%\DanceCommander\</code>, and the application picks up your edits as soon as you
+save. See <a href="configuration.html">Configuration files</a>.</p>
+<p>After that it opens where you left it: the tabs in each pane, which one was in front, one pane or
+two, and each tab's back and forward history.</p>
+<p>Dance Commander runs once per user. Starting it again brings the window you already have
+forward, and a folder or file handed to it (from the command line, “Open with”, or a program
+asking it to show a file) opens there in a new tab.</p>
+
+<h2 id="settings">Settings</h2>
+<p><kbd>Ctrl</kbd>+<kbd>,</kbd> opens the settings window. It has four pages: <em>General</em> (the
+command line's shell, what the middle mouse button does, whether folders sort before files),
+<em>Appearance</em>, <em>Tools</em> (the tools of each program found, on or off) and
+<em>Keyboard</em>, where any command's key can be changed. The search box at the top finds a
+setting or a command by name. A choice takes effect as you make it; there is no Apply, and closing
+the window is all there is to leaving it.</p>
+<p>Dark and light are both first-class. By default the colours follow Windows' app mode and change
+when it does, and the one accent colour is Windows' own. Either can be fixed in
+<em>Appearance</em>, along with compact rows and a larger or smaller text size. Windows' contrast
+themes are followed too: the application takes the theme's own colours.</p>
+<p>Every setting is also in the command palette, as “Colour scheme: Light” and the like, so one
+you change often needs no window at all.</p>
+
+<figure class="shot" data-file="screenshots/settings.png"><img src="../screenshots/settings.png" alt="The settings window (Ctrl+,): its four pages, the search box, and each setting's choices." onerror="this.parentNode.classList.add('missing')"><figcaption>The settings window (Ctrl+,): its four pages, the search box, and each setting's choices.</figcaption></figure>
+
+<h2 id="tour">The window</h2>
+<p>The window has five parts, and that is all it will ever have permanently on screen. Everything
+else (questions, previews, the command palette, output) appears when it is needed and leaves when
+you are done with it.</p>
+<table>
+  <thead><tr><th>Part</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>Pane toolbar</td><td>Back, forward and up (hold one, or right-click Back or Forward, for a list to jump along); the <strong>location chip</strong> (the folder's icon at the left of the address); the address bar; and the Bookmarks button.</td></tr>
+    <tr><td>Tab strip</td><td>Each pane has its own tabs, each with its own history.</td></tr>
+    <tr><td>Listing</td><td>The files. Name, size and modified date by default; a server adds permissions and owner, a search adds where each match lives.</td></tr>
+    <tr><td>Pane footer</td><td>What is true of this folder: how many items, how many selected, how many hidden and the key that shows them, the git branch, and whether the folder is <em>live</em> (updating by itself).</td></tr>
+    <tr><td>Legend</td><td>The F-key row. It shares its line with running jobs (copies, builds), the shelf count and the <strong>Activity</strong> button.</td></tr>
+  </tbody>
+</table>
+<p>One pane is <em>active</em>, marked by the accent line along its top. It is where commands act,
+and the other pane is where copies and moves go. <kbd>Tab</kbd> switches between them.
+<kbd>Ctrl</kbd>+<kbd>1</kbd> shows only the active pane; <kbd>Ctrl</kbd>+<kbd>2</kbd> brings the
+second one back.</p>
+
+<figure class="shot" data-file="screenshots/window-tour.png"><img src="../screenshots/window-tour.png" alt="The window: two panes, each with its toolbar, tabs, listing and footer, and the legend along the bottom." onerror="this.parentNode.classList.add('missing')"><figcaption>The window: two panes, each with its toolbar, tabs, listing and footer, and the legend along the bottom.</figcaption></figure>
+
+<h2 id="legend">Let the legend teach you</h2>
+<p>At rest the legend shows the function keys: <kbd>F2</kbd> Rename, <kbd>F3</kbd> Preview,
+<kbd>F5</kbd> Copy, <kbd>F6</kbd> Move, <kbd>F7</kbd> New folder. <strong>Hold
+<kbd>Ctrl</kbd>, <kbd>Shift</kbd> or <kbd>Alt</kbd></strong> and it changes to show everything on
+that layer of the keyboard, grouped by kind. If a layer doesn't fit on one line it pages by itself
+while you keep holding the key; to turn the page sooner, tap the modifier again, or turn the mouse
+wheel over the legend. Clicking an entry runs it.</p>
+<p>For the rest, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>. The command palette lists
+every command that applies where you are, with its key beside it, so a few trips through the
+palette are how you stop needing it. Type words from a command's name, in any order. The palette
+remembers what you pick, so the command you use most comes first for the letters you usually
+type. <kbd>Ctrl</kbd>+<kbd>.</kbd> is a shorter list: what can be done with the folder you are
+in.</p>
+
+<figure class="shot" data-file="screenshots/legend-ctrl.png"><img src="../screenshots/legend-ctrl.png" alt="Holding Ctrl: the legend shows that whole layer of the keymap." onerror="this.parentNode.classList.add('missing')"><figcaption>Holding Ctrl: the legend shows that whole layer of the keymap.</figcaption></figure>
+
+<h2 id="first-minutes">Five minutes with it</h2>
+<ol>
+  <li><strong>Go somewhere.</strong> <kbd>Ctrl</kbd>+<kbd>L</kbd>, type the start of a path or a bookmark name; it completes inline. <kbd>Enter</kbd>.</li>
+  <li><strong>Find a file.</strong> Just start typing in the listing. Rows that don't match disappear and the best match gets the cursor. <kbd>Esc</kbd> clears it.</li>
+  <li><strong>Pick a few.</strong> <kbd>Insert</kbd> or <kbd>Space</kbd> marks the row and moves down. Arrow keys keep the marks. <kbd>Esc</kbd> drops them.</li>
+  <li><strong>Copy them across.</strong> <kbd>Tab</kbd> to the other pane, go where they should land, <kbd>Tab</kbd> back, <kbd>F5</kbd>. The copied files light up briefly where they arrived.</li>
+  <li><strong>Change your mind.</strong> <kbd>Ctrl</kbd>+<kbd>Z</kbd>. The <strong>Activity</strong> button shows what was done and the shell command for each step.</li>
+  <li><strong>Look inside something.</strong> <kbd>F3</kbd> on a text file or an image. <kbd>Enter</kbd> on a zip goes into it like a folder.</li>
+</ol>
+
+<h2 id="no-dialogs">Questions are asked in the pane</h2>
+<p>Dance Commander has no modal dialogs. When it needs a decision (a file already exists, a server
+wants a password, a host key is new), the question appears inside the pane that needs it. You can
+leave it there, keep working in the other pane or another tab, and answer when you're ready.
+<kbd>Esc</kbd> dismisses whatever is showing.</p>
+
+<figure class="shot" data-file="screenshots/inline-question.png"><img src="../screenshots/inline-question.png" alt="A question asked in the pane, not in a dialog. The other pane carries on." onerror="this.parentNode.classList.add('missing')"><figcaption>A question asked in the pane, not in a dialog. The other pane carries on.</figcaption></figure>
+
+<h2 id="help">Starting from the command line</h2>
+<pre><code>DanceCommander                      <span class="c">where you left off</span>
+DanceCommander PATH                 <span class="c">open PATH</span>
+DanceCommander LEFT RIGHT           <span class="c">one place per pane</span>
+DanceCommander /select,PATH         <span class="c">PATH's folder, cursor on PATH (as explorer.exe)</span>
+DanceCommander --one-pane | --two-panes | --new-window | --help</code></pre>
+<p>A PATH can be any address, such as <code>sftp://user@host/var/log</code> or
+<code>flat:C:\src</code>. A PATH that is an archive opens it like a folder, and any other file opens
+its folder with the cursor on it. Because Explorer's own syntax is accepted as it is, a program's
+“Show in folder” can open Dance Commander instead. See
+<a href="configuration.html#command-line">Configuration files</a> for the whole list.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

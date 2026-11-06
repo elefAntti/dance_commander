@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+artifacts/
+TestResults/
+temp
+# The author's private working notes: a repository of their own, never published.
+plans/

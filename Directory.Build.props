@@ -1,0 +1,54 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Product>Dance Commander</Product>
+    <!-- Shown on about:app, followed by the commit the SDK adds from git. 1.0.0 is the release. -->
+    <Version>0.9.0</Version>
+    <Authors>Antti Valli</Authors>
+    <Company>Antti Valli</Company>
+    <Copyright>Copyright (c) 2026 Antti Valli</Copyright>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <!-- A banned API (BannedSymbols.txt) fails the build rather than warning about it. -->
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    A Release build records its sources as /_/src/… rather than as the folder this machine keeps
+    the repository in: the executable and its symbols carry those paths, and a published build is
+    no place for one's own folder names (2026-10-17). Stack traces keep their file and line.
+    No Source Link either: it maps those folders to the git remote inside every symbol file, and
+    the remote this is built from is a private repository, not the published one.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
+    <EnableSourceLink>false</EnableSourceLink>
+  </PropertyGroup>
+
+  <!--
+    Windows only, by design (DESIGN.md §1.1: "cross-platform is not a goal"), said once for every
+    assembly whose target doesn't already say it (a net9.0-windows one declares it itself). Without
+    it the analyser takes plain net9.0 to mean any platform, and warns (CA1416) on each Windows API.
+  -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatformAttribute">
+      <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- DESIGN.md §1.2/2, no modal dialogs: enforced here rather than remembered. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
+  </ItemGroup>
+
+  <!-- DESIGN.md §1.6, files are never lost: deleting and overwriting are banned in the application,
+       so each use left carries a "§1.6:" reason. Not in the tests, which make their own files. -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Files.txt" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNet.Glob" Version="3.1.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.11" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- The drop rules and path helpers are implementation detail, and exactly the parts worth
+         testing directly. -->
+    <InternalsVisibleTo Include="DanceCommander.Tests" />
+  </ItemGroup>
+
+</Project>

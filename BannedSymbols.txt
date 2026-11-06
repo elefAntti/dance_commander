@@ -1,0 +1,9 @@
+# DESIGN.md §1.2/2: no modal dialogs, ever. A decision is an async request the pane or the
+# transfer strip renders inline and awaits (DecisionViewModel); these are the APIs that would
+# block the whole window on one instead. Enforced as an error by Directory.Build.props (RS0030).
+T:System.Windows.MessageBox;Ask inline instead: raise a decision request the pane renders (DESIGN.md §1.2/2)
+M:System.Windows.Window.ShowDialog;No modal windows: render the decision inline in the pane (DESIGN.md §1.2/2)
+T:Microsoft.Win32.OpenFileDialog;Pick files in a pane, not a modal dialog (DESIGN.md §1.2/2)
+T:Microsoft.Win32.SaveFileDialog;Pick the target in a pane, not a modal dialog (DESIGN.md §1.2/2)
+T:Microsoft.Win32.OpenFolderDialog;Pick the folder in a pane, not a modal dialog (DESIGN.md §1.2/2)
+T:Microsoft.VisualBasic.Interaction;InputBox and MsgBox are modal: ask inline instead (DESIGN.md §1.2/2)

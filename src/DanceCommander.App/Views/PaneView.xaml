@@ -1,0 +1,883 @@
+<UserControl x:Class="DanceCommander.App.Views.PaneView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:DanceCommander.App.Converters"
+             xmlns:vm="clr-namespace:DanceCommander.App.ViewModels"
+             xmlns:views="clr-namespace:DanceCommander.App.Views"
+             FontFamily="{DynamicResource UiFontFamily}"
+             FontSize="{DynamicResource FontSizeBody}"
+             Foreground="{DynamicResource TextPrimaryBrush}">
+
+  <UserControl.Resources>
+    <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
+    <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    <conv:BoolToVisibilityConverter x:Key="NotBoolToVisibility" Invert="True" />
+    <conv:SeverityToBrushConverter x:Key="SeveritySurface" />
+    <conv:SeverityToBrushConverter x:Key="SeverityText" Foreground="True" />
+    <conv:WrapConverter x:Key="WrapToTextWrapping" />
+    <conv:WrapConverter x:Key="WrapToScrollBar" ForScrollBar="True" />
+  </UserControl.Resources>
+
+  <!-- The whole pane is a drop target, not just the list: dropping into the empty space below
+       the last row plainly means "this folder". -->
+  <!--
+    Transparent rather than the pane's colour: the pane's surface is the Body border below, which
+    starts under the tab strip when there is one. Transparent still takes drops and clicks.
+  -->
+  <Border Background="Transparent" AllowDrop="True"
+          DragOver="OnPaneDragOver" DragLeave="OnPaneDragLeave" Drop="OnPaneDrop">
+    <Grid x:Name="PaneRoot">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="2" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <!--
+        The pane's surface. With one tab it is the whole pane. With several it starts below the
+        strip, so the tabs stand on the window like tabs in a browser and the current one — the
+        same surface as this, joined to it — reads as the front of what is underneath. As a lighter
+        pill floating inside the pane it read as a button, and the tab it belonged to was the one
+        least visibly tied to it.
+      -->
+      <!-- Its corners are set from code (ShowBodyCorners): square under the current tab where that
+           tab reaches the pane's edge, so the two join without a notch between them. -->
+      <Border x:Name="Body" Background="{DynamicResource PaneSurfaceBrush}" CornerRadius="{DynamicResource RadiusM}">
+        <Border.Style>
+          <!-- Row and span as setters, not attributes: a local value would beat the trigger. -->
+          <Style TargetType="Border">
+            <Setter Property="Grid.Row" Value="0" />
+            <Setter Property="Grid.RowSpan" Value="12" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding ShowTabStrip}" Value="True">
+                <Setter Property="Grid.Row" Value="2" />
+                <Setter Property="Grid.RowSpan" Value="10" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
+      </Border>
+
+      <!-- The active pane's accent, along its top. With tabs it moves onto the current tab. Grey
+           while another window has the keyboard (PaneView.ShowWindowActive). -->
+      <Border Grid.Row="0" Background="{DynamicResource PaneAccentBrush}" CornerRadius="6,6,0,0">
+        <Border.Style>
+          <Style TargetType="Border">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+              <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                  <Condition Binding="{Binding IsActive}" Value="True" />
+                  <Condition Binding="{Binding ShowTabStrip}" Value="False" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Visibility" Value="Visible" />
+              </MultiDataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
+      </Border>
+
+      <!--
+        Tab strip. Absent entirely when there is only one tab. Tabs narrow before they overflow
+        (TabStripPanel); past that the strip scrolls, and the side with more tabs fades out. The
+        fade is also the control: a click there pages along, a held press keeps paging, a drag held
+        there scrolls too (PaneView.TabStrip.cs). It replaced a scroll bar that appeared above the
+        tabs only on overflow, so the next tab opened pushed the pane down under the hand.
+      -->
+      <Grid x:Name="TabStripArea" Grid.Row="1"
+            PreviewMouseWheel="OnTabStripWheel"
+            Visibility="{Binding ShowTabStrip, Converter={StaticResource BoolToVisibility}}">
+      <ScrollViewer x:Name="TabScroller" Margin="0"
+                    HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                    ScrollChanged="OnTabStripScrollChanged">
+      <ItemsControl x:Name="TabStrip" ItemsSource="{Binding Tabs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <views:TabStripPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border x:Name="Chip" Margin="0,0,2,0" Padding="11,5,9,5" CornerRadius="{DynamicResource RadiusTab}"
+                    Background="Transparent" BorderBrush="{DynamicResource PaneAccentBrush}" BorderThickness="0"
+                    MouseLeftButtonDown="OnTabClicked" MouseMove="OnTabMouseMove" MouseUp="OnTabMouseUp" Cursor="Hand"
+                    ToolTip="{Binding Title}" ToolTipOpening="OnTabToolTipOpening">
+              <!--
+                The close button only over a tab the pointer is on: beside the title while the tab
+                has its natural width, over the title's end once the strip has narrowed it
+                (TabChipPanel). Middle-click and Ctrl+W close without it. Hidden and its colour come
+                from a style, not attributes: a local value would beat the triggers below.
+              -->
+              <views:TabChipPanel>
+                <TextBlock x:Name="ChipTitle" Text="{Binding Title}" MaxWidth="150"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <Button x:Name="CloseButton" Content="✕" Margin="4,0,0,0" VerticalAlignment="Center"
+                        Padding="3,0" FontSize="{DynamicResource FontSizeSmall}" MinWidth="0"
+                        Click="OnCloseTabClicked" ToolTip="Close tab (Ctrl+W, or middle-click the tab)">
+                  <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource ChromeButtonStyle}">
+                      <Setter Property="Visibility" Value="Hidden" />
+                      <Setter Property="Background" Value="{DynamicResource WindowBrush}" />
+                    </Style>
+                  </Button.Style>
+                </Button>
+              </views:TabChipPanel>
+            </Border>
+            <DataTemplate.Triggers>
+              <Trigger SourceName="Chip" Property="IsMouseOver" Value="True">
+                <Setter TargetName="ChipTitle" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                <Setter TargetName="CloseButton" Property="Visibility" Value="Visible" />
+              </Trigger>
+              <!-- The current tab is the pane's own surface, and its text the pane's own. -->
+              <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                <Setter TargetName="Chip" Property="Background" Value="{DynamicResource PaneSurfaceBrush}" />
+                <Setter TargetName="ChipTitle" Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter TargetName="CloseButton" Property="Background" Value="{DynamicResource PaneSurfaceBrush}" />
+              </DataTrigger>
+              <!-- In the active pane it also carries the accent that says so. -->
+              <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                  <Condition Binding="{Binding IsCurrent}" Value="True" />
+                  <Condition Binding="{Binding DataContext.IsActive, RelativeSource={RelativeSource AncestorType=views:PaneView}}" Value="True" />
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="Chip" Property="BorderThickness" Value="0,2,0,0" />
+                <Setter TargetName="Chip" Property="Padding" Value="11,3,9,5" />
+              </MultiDataTrigger>
+            </DataTemplate.Triggers>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      </ScrollViewer>
+      <!-- Shown only on a side with more tabs (ShowTabEdges). The left one is the right one mirrored. -->
+      <RepeatButton x:Name="TabEdgeLeft" HorizontalAlignment="Left" Style="{StaticResource TabStripEdgeStyle}"
+                    Click="OnTabEdgeClick" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+        <RepeatButton.RenderTransform>
+          <ScaleTransform ScaleX="-1" />
+        </RepeatButton.RenderTransform>
+      </RepeatButton>
+      <RepeatButton x:Name="TabEdgeRight" HorizontalAlignment="Right" Style="{StaticResource TabStripEdgeStyle}"
+                    Click="OnTabEdgeClick" Visibility="Collapsed" />
+      </Grid>
+
+      <!-- Toolbar -->
+      <Grid Grid.Row="2" Margin="{DynamicResource ToolbarPadding}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,8,0">
+          <!-- Back, Forward, Up: the browser's own glyphs, from the system icon font. -->
+          <!-- Held or right-clicked, Back and Forward list where they would go (PaneView.HistoryMenus.cs). -->
+          <Button x:Name="BackButton" Content="&#xE72B;" Style="{StaticResource GlyphButtonStyle}" Click="OnBackClick"
+                  ToolTip="Back (Alt+Left) — hold or right-click for the list" IsEnabled="{Binding ActiveTab.CanGoBack}"
+                  PreviewMouseLeftButtonDown="OnHistoryButtonPressed" PreviewMouseLeftButtonUp="OnHistoryButtonReleased"
+                  MouseRightButtonUp="OnHistoryButtonRightClicked" />
+          <Button x:Name="ForwardButton" Content="&#xE72A;" Style="{StaticResource GlyphButtonStyle}" Click="OnForwardClick"
+                  ToolTip="Forward (Alt+Right) — hold or right-click for the list" IsEnabled="{Binding ActiveTab.CanGoForward}"
+                  PreviewMouseLeftButtonDown="OnHistoryButtonPressed" PreviewMouseLeftButtonUp="OnHistoryButtonReleased"
+                  MouseRightButtonUp="OnHistoryButtonRightClicked" />
+          <!-- Up is also the parent as a thing you can point at: drop on it, right-click it
+               (PaneView.UpButton.cs). It replaced the ".." row. -->
+          <Button x:Name="UpButton" Content="&#xE74A;" Style="{StaticResource GlyphButtonStyle}" Click="OnUpClick"
+                  ToolTip="Go to parent folder (Backspace)&#x0a;Hold for the folders above, right-click for its menu, or drop files here to put them there."
+                  AllowDrop="True" DragOver="OnUpDragOver" DragLeave="OnUpDragLeave" Drop="OnUpDrop"
+                  PreviewMouseLeftButtonDown="OnHistoryButtonPressed" PreviewMouseLeftButtonUp="OnHistoryButtonReleased"
+                  MouseRightButtonUp="OnUpRightClicked" />
+        </StackPanel>
+
+        <!-- MinWidth, because the address is the one thing in this row that must never be squeezed:
+             a star column yields to its Auto neighbours, and a long branch name is an Auto neighbour. -->
+        <Grid Grid.Column="1" MinWidth="180">
+          <!-- Left padding makes room for the location icon, which sits inside the box's edge. Half of
+               what it looks like it should be: this template's padding is applied twice, once as
+               the content host's margin and again by the text view inside it. -->
+          <TextBox x:Name="AddressBox" Style="{StaticResource InputStyle}" Padding="16,4,8,4"
+                   Text="{Binding ActiveTab.AddressText, UpdateSourceTrigger=PropertyChanged}"
+                   PreviewKeyDown="OnAddressKeyDown" GotKeyboardFocus="OnAddressFocused"
+                   PreviewMouseLeftButtonDown="OnAddressMouseDown"
+                   LostKeyboardFocus="OnAddressLostFocus"
+                   TextChanged="OnAddressTextChanged" SizeChanged="OnAddressSizeChanged" />
+
+          <!--
+            The address as it reads when you are not editing it: the scheme and a view's parameter
+            muted, the way a file's extension is, so "flat:" and "sftp://" read as what kind of
+            place this is rather than as part of its name. A TextBox cannot colour part of its text,
+            so this lies over it, placed on the box's own first character, and steps aside the moment
+            the box has the keyboard. Only for addresses that have a scheme.
+          -->
+          <TextBlock x:Name="AddressDisplay" IsHitTestVisible="False" Visibility="Collapsed"
+                     HorizontalAlignment="Left" VerticalAlignment="Top" ClipToBounds="True"
+                     TextTrimming="None" FontFamily="{DynamicResource UiFontFamily}"
+                     FontSize="{DynamicResource FontSizeBody}"><Run x:Name="AddressScheme" Foreground="{DynamicResource TextMutedBrush}" /><Run x:Name="AddressBody" Foreground="{DynamicResource TextPrimaryBrush}" /><Run x:Name="AddressParameter" Foreground="{DynamicResource TextMutedBrush}" /></TextBlock>
+
+          <!--
+            The location icon (§6.18): this folder, drawn the way its bookmark is — which is why it
+            is not an icon-only toolbar button (§1.3). It is the place, not a tool. Click or
+            right-click for the folder's menu; drag it to carry the folder itself to the other pane
+            or to Explorer; drop files on it to put them here. It is the stand-in for the current
+            folder that ".." was being pressed into service as, and that ".." is not.
+          -->
+          <Border x:Name="LocationChip" HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Margin="5,0,0,0" Width="24" Height="22" CornerRadius="{DynamicResource RadiusS}"
+                  BorderThickness="1" AllowDrop="True" Cursor="Hand"
+                  ToolTip="This folder (Ctrl+.) — click for its commands, drag to take it elsewhere"
+                  PreviewMouseLeftButtonDown="OnChipPressed" MouseMove="OnChipMouseMove"
+                  MouseLeftButtonUp="OnChipReleased" MouseRightButtonUp="OnChipRightClicked"
+                  DragOver="OnChipDragOver" DragLeave="OnChipDragLeave" Drop="OnChipDrop">
+            <Border.Style>
+              <Style TargetType="Border">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Style.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+                  </Trigger>
+                  <!-- Where dropped files would land: the same mark a folder row wears. -->
+                  <Trigger Property="Tag" Value="drop">
+                    <Setter Property="Background" Value="{DynamicResource SelectionActiveBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                  </Trigger>
+                </Style.Triggers>
+              </Style>
+            </Border.Style>
+            <Image Source="{Binding ActiveTab.LocationIcon}" Width="16" Height="16"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+
+          <!-- Completion popup: bookmarks first, then recent locations. -->
+          <Popup x:Name="SuggestionPopup" PlacementTarget="{Binding ElementName=AddressBox}"
+                 Placement="Bottom" AllowsTransparency="True" StaysOpen="False"
+                 Width="{Binding ActualWidth, ElementName=AddressBox}">
+            <ContentControl Style="{StaticResource PopupSurfaceStyle}" Padding="4" Margin="0,3,0,0">
+              <!-- A long path trims to an ellipsis rather than growing a horizontal scroll bar:
+                   the popup is as wide as the address bar and scrolling it sideways to read a
+                   path you are about to navigate to helps nobody. -->
+              <ListBox x:Name="SuggestionList" Background="Transparent" BorderThickness="0"
+                       MaxHeight="220"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                       PreviewMouseLeftButtonUp="OnSuggestionClicked">
+                <!--
+                  Nothing in this list takes keyboard focus. The address bar keeps it the whole
+                  time the popup is up: the arrow keys move the highlight from there, and a click
+                  cannot pull focus out of the box and close the popup out from under itself.
+                -->
+                <ListBox.ItemContainerStyle>
+                  <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                    <Setter Property="Focusable" Value="False" />
+                  </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                        <!-- Absent for a recent location, whose label is already the whole path. -->
+                        <TextBlock Text="{Binding Detail}" Style="{StaticResource SecondaryTextStyle}"
+                                   Visibility="{Binding Detail, Converter={StaticResource NullToVisibility}}" />
+                      </StackPanel>
+                      <!-- The branch, for a bookmark that points into a repository. Same chip as
+                           the pane footer, so it reads as the same fact in both places. -->
+                      <TextBlock Grid.Column="1" Text="{Binding Branch}" Margin="10,0,0,0"
+                                 VerticalAlignment="Center" MaxWidth="120"
+                                 TextTrimming="CharacterEllipsis"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 Visibility="{Binding Branch, Converter={StaticResource NullToVisibility}}" />
+                      <!-- Says why this one is being offered, which its name cannot. -->
+                      <TextBlock Grid.Column="2" Text="bookmark" Margin="10,0,0,0"
+                                 VerticalAlignment="Center"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 Foreground="{DynamicResource TextMutedBrush}"
+                                 Visibility="{Binding IsBookmark, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </ContentControl>
+          </Popup>
+        </Grid>
+
+        <!-- The branch lives in the pane footer, not here: this row belongs to the location. -->
+        <Button x:Name="BookmarksButton" Grid.Column="2" Content="&#xE728;" Margin="8,0,0,0"
+                Style="{StaticResource GlyphButtonStyle}" ToolTip="Bookmarks" />
+
+      </Grid>
+
+      <!--
+        Loading. A long walk is this app's version of a page load, so it gets what a browser gives
+        one: something that moves, a count so you can judge whether to wait, and a stop that is
+        visible rather than remembered. It sits where notices sit because it is the same kind of
+        thing, the pane telling you about itself. It floats over the foot of the listing rather than
+        sitting above it: in the row above, it pushed every row down when it arrived and pulled them
+        back up when a long search finished, under the eyes of someone already reading the results.
+      -->
+      <ContentControl Grid.Row="9" Panel.ZIndex="2" VerticalAlignment="Bottom" Margin="8,0,8,8" Padding="10,7"
+              Style="{StaticResource PopupSurfaceStyle}" DataContext="{Binding ActiveTab}"
+              Visibility="{Binding ShowLoading, Converter={StaticResource BoolToVisibility}}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+            <TextBlock Style="{StaticResource SecondaryTextStyle}"><Run Text="{Binding LoadingText, Mode=OneWay}" /><Run Foreground="{DynamicResource TextMutedBrush}"><Run.Style><Style TargetType="Run"><Setter Property="Text" Value="" /><Style.Triggers><DataTrigger Binding="{Binding InFoundOrder}" Value="True"><Setter Property="Text" Value=" · in the order found, sorted when done" /></DataTrigger></Style.Triggers></Style></Run.Style></Run></TextBlock>
+            <ProgressBar Style="{StaticResource ThinProgressStyle}" Margin="0,4,0,0"
+                         IsIndeterminate="True" />
+          </StackPanel>
+          <Button Grid.Column="1" Style="{StaticResource ChromeButtonStyle}" Content="Stop (Esc)"
+                  VerticalAlignment="Center" Click="OnStopLoading" />
+        </Grid>
+      </ContentControl>
+
+      <!--
+        Starting an application. The same quiet surface as loading, for the same reason: between
+        Enter and the program's window Windows shows nothing, and a slow start read as "didn't
+        register" (a second Enter, a second copy). Gone when the program comes forward.
+      -->
+      <ContentControl Grid.Row="9" Panel.ZIndex="2" VerticalAlignment="Bottom" Margin="8,0,8,8" Padding="10,7"
+              Style="{StaticResource PopupSurfaceStyle}" DataContext="{Binding ActiveTab}"
+              Visibility="{Binding StartingText, Converter={StaticResource NullToVisibility}}">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{Binding StartingText}" />
+          <ProgressBar Style="{StaticResource ThinProgressStyle}" Margin="0,4,0,0" IsIndeterminate="True" />
+        </StackPanel>
+      </ContentControl>
+
+      <!-- Notice -->
+      <Border Grid.Row="3" Margin="8,0,8,8" Padding="10,7" CornerRadius="{DynamicResource RadiusS}"
+              DataContext="{Binding ActiveTab}"
+              Background="{Binding Notice.Severity, Converter={StaticResource SeveritySurface}}"
+              Visibility="{Binding Notice, Converter={StaticResource NullToVisibility}}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+            <TextBlock Text="{Binding Notice.Message}" TextWrapping="Wrap"
+                       Foreground="{Binding Notice.Severity, Converter={StaticResource SeverityText}}" />
+            <TextBlock Text="{Binding Notice.Detail}" TextWrapping="Wrap" Margin="0,3,0,0"
+                       Style="{StaticResource SecondaryTextStyle}"
+                       Visibility="{Binding Notice.Detail, Converter={StaticResource NullToVisibility}}" />
+          </StackPanel>
+          <Button Grid.Column="1" Style="{StaticResource ChromeButtonStyle}" Content="Dismiss (Esc)"
+                  VerticalAlignment="Top" Click="OnDismissNotice" />
+        </Grid>
+      </Border>
+
+      <!-- Inline decision -->
+      <Border Grid.Row="5" Margin="8,0,8,8" Padding="10,7" CornerRadius="{DynamicResource RadiusS}"
+              DataContext="{Binding ActiveTab}"
+              Background="{DynamicResource InfoSurfaceBrush}"
+              Visibility="{Binding Decision, Converter={StaticResource NullToVisibility}}">
+        <StackPanel>
+          <!-- Wraps: a title that names a long file or path was cut off at the pane's edge. -->
+          <TextBlock Text="{Binding Decision.Title}" Margin="0,0,0,6" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Decision.Detail}" Style="{StaticResource SecondaryTextStyle}"
+                     Margin="0,0,0,6" TextWrapping="Wrap"
+                     Visibility="{Binding Decision.Detail, Converter={StaticResource NullToVisibility}}" />
+
+          <StackPanel Visibility="{Binding Decision.IsTextInput, Converter={StaticResource BoolToVisibility}}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="DecisionText" Grid.Column="0" Style="{StaticResource InputStyle}"
+                       Text="{Binding Decision.Text, UpdateSourceTrigger=PropertyChanged}"
+                       KeyDown="OnDecisionTextKeyDown"
+                       DataObject.Pasting="OnDecisionTextPasting"
+                       Visibility="{Binding Decision.IsSecret, Converter={StaticResource NotBoolToVisibility}}" />
+
+              <!-- A password gets a real PasswordBox: it keeps the characters off the screen and
+                   out of the view model, where everything else in this pane is observable. -->
+              <PasswordBox x:Name="DecisionSecret" Grid.Column="0" Style="{StaticResource PasswordStyle}"
+                           PasswordChanged="OnDecisionSecretChanged"
+                           KeyDown="OnDecisionTextKeyDown"
+                           Visibility="{Binding Decision.IsSecret, Converter={StaticResource BoolToVisibility}}" />
+              <Button Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource PrimaryButtonStyle}"
+                      Content="{Binding Decision.ConfirmLabel}" Command="{Binding Decision.ConfirmCommand}" />
+              <Button Grid.Column="2" Margin="4,0,0,0" Style="{StaticResource ToolButtonStyle}"
+                      Content="Cancel" Command="{Binding Decision.CancelCommand}" />
+            </Grid>
+            <CheckBox Content="{Binding Decision.RememberLabel}" Margin="0,7,0,0"
+                      IsChecked="{Binding Decision.Remember}"
+                      Foreground="{DynamicResource TextSecondaryBrush}"
+                      Visibility="{Binding Decision.RememberLabel, Converter={StaticResource NullToVisibility}}" />
+
+            <TextBlock Text="{Binding Decision.ValidationError}" Margin="0,5,0,0"
+                       Foreground="{DynamicResource DangerBrush}"
+                       Style="{StaticResource SecondaryTextStyle}"
+                       Visibility="{Binding Decision.ValidationError, Converter={StaticResource NullToVisibility}}" />
+          </StackPanel>
+
+          <!-- Arrow keys move between the options and Enter takes one; Escape cancels through
+               the usual dismiss command. A prompt you can only answer with the mouse does not
+               belong in a keyboard-first file manager. -->
+          <ItemsControl x:Name="DecisionOptions" ItemsSource="{Binding Decision.Options}"
+                        KeyboardNavigation.DirectionalNavigation="Cycle"
+                        KeyboardNavigation.TabNavigation="Cycle"
+                        Visibility="{Binding Decision.IsTextInput, Converter={StaticResource NotBoolToVisibility}}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button x:Name="Option" Content="{Binding Label}" Margin="0,0,6,0"
+                        Style="{StaticResource ToolButtonStyle}"
+                        CommandParameter="{Binding Id}"
+                        Command="{Binding DataContext.ActiveTab.Decision.ChooseCommand,
+                                          RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                <DataTemplate.Triggers>
+                  <!-- The safe answer looks like the safe answer, and it is the one focused. -->
+                  <DataTrigger Binding="{Binding IsDefault}" Value="True">
+                    <Setter TargetName="Option" Property="FontWeight" Value="SemiBold" />
+                    <Setter TargetName="Option" Property="Foreground"
+                            Value="{DynamicResource TextPrimaryBrush}" />
+                  </DataTrigger>
+                </DataTemplate.Triggers>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!--
+        Captured tool output, in the pane rather than a window: just above the command line, where
+        a terminal would answer, rather than under the address bar at the other end of the pane
+        (COMMAND_LINE_PLAN.md B). At the foot it shortens the list from below instead of pushing
+        every row down (§1.3: nothing moves under the hand).
+      -->
+      <Border Grid.Row="10" Margin="8,6,8,0" Padding="10,7" CornerRadius="{DynamicResource RadiusS}"
+              DataContext="{Binding ActiveTab}"
+              Background="{DynamicResource SunkenBrush}"
+              Visibility="{Binding Output, Converter={StaticResource NullToVisibility}}">
+        <!--
+          The buttons share a row with the title, not with the output. Putting them beside it made
+          the scroller a column rather than the panel: its scroll bar landed in the middle of the
+          border with empty space to its right, and every line of output wrapped or clipped two
+          buttons early for no reason.
+        -->
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <Grid Grid.Row="0" Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding Output.Title}" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
+              <!-- The reason to run a command is usually the output; being able to take it with
+                   you is the difference between reading it and using it. -->
+              <Button Style="{StaticResource ChromeButtonStyle}" Content="Copy"
+                      ToolTip="Copy this output to the clipboard" Click="OnCopyOutput" />
+              <Button Style="{StaticResource ChromeButtonStyle}" Content="Dismiss (Esc)"
+                      Click="OnDismissOutput" />
+            </StackPanel>
+          </Grid>
+          <ScrollViewer x:Name="OutputScroller" Grid.Row="1" MaxHeight="180"
+                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <!-- A job's output grows while you watch it; OnOutputTextUpdated keeps the newest
+                 line in view unless you have scrolled up to read something. -->
+            <TextBlock Text="{Binding Output.Text, NotifyOnTargetUpdated=True}" TextWrapping="NoWrap"
+                       TargetUpdated="OnOutputTextUpdated"
+                       FontFamily="{DynamicResource MonoFontFamily}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!--
+        Preview: raised with F3, dismissed with Escape. It covers the listing rather than taking a
+        region of its own, because a permanent panel would cost screen space on every folder you
+        ever open in exchange for the few files you actually look inside (SS1.3).
+      -->
+      <!--
+        The quick filter. Immediately above the listing, because it is a lens on what is below it
+        and the one thing it must never be is invisible: rows disappearing from a pane with nothing
+        on screen to say why is indistinguishable from a bug. It carries the accent for the same
+        reason, and says how to get out.
+      -->
+      <Border Grid.Row="7" Margin="8,0,8,6" Padding="10,5" CornerRadius="{DynamicResource RadiusS}"
+              DataContext="{Binding ActiveTab}"
+              Background="{DynamicResource SelectionActiveBrush}"
+              Visibility="{Binding IsFiltering, Converter={StaticResource BoolToVisibility}}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Grid.Column="0" Text="Filter" VerticalAlignment="Center" Margin="0,0,10,0"
+                     FontSize="{DynamicResource FontSizeSmall}"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Grid.Column="1" Text="{Binding QuickFilter}" VerticalAlignment="Center"
+                     FontFamily="{DynamicResource MonoFontFamily}"
+                     TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Column="2" Text="Esc to clear" VerticalAlignment="Center" Margin="10,0,0,0"
+                     FontSize="{DynamicResource FontSizeSmall}"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </Grid>
+      </Border>
+
+      <!--
+        Nothing matched. An empty pane otherwise reads as an empty folder, which is a different and
+        much more alarming thing than a filter that is too narrow.
+      -->
+      <!-- Both drawn in the list's own space, under its headers, where the rows would be; not hit
+           testable, so a double-click there still goes up. -->
+      <TextBlock Grid.Row="9" Panel.ZIndex="1" Margin="14,38,14,0" VerticalAlignment="Top"
+                 IsHitTestVisible="False" DataContext="{Binding ActiveTab}"
+                 Style="{StaticResource SecondaryTextStyle}"
+                 Text="Nothing here matches what you typed."
+                 Visibility="{Binding HasNoMatches, Converter={StaticResource BoolToVisibility}}" />
+      <TextBlock Grid.Row="9" Panel.ZIndex="1" Margin="14,38,14,0" VerticalAlignment="Top"
+                 IsHitTestVisible="False" DataContext="{Binding ActiveTab}"
+                 Style="{StaticResource SecondaryTextStyle}" Text="{Binding EmptyText}"
+                 Visibility="{Binding EmptyText, Converter={StaticResource NullToVisibility}}" />
+
+      <Border Grid.Row="9" Panel.ZIndex="1" Background="{DynamicResource PaneSurfaceBrush}"
+              DataContext="{Binding ActiveTab}"
+              Visibility="{Binding Preview, Converter={StaticResource NullToVisibility}}">
+        <Grid Margin="8,0,8,4">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <Grid Grid.Row="0" Margin="2,2,2,8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Column="0" Text="{Binding Preview.Title}" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+            <!-- The whole width under the title and the controls: in a half-width pane the controls
+                 left it so little that "7 CRLF, 6 LF", the reason to look, was trimmed away. -->
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Preview.Facts}"
+                       Style="{StaticResource SecondaryTextStyle}" />
+
+            <!-- Only where it means something: a file with no tabs has nothing to reveal. -->
+            <CheckBox Grid.Column="1" Content="Whitespace" Margin="10,0,10,0" VerticalAlignment="Center"
+                      Foreground="{DynamicResource TextSecondaryBrush}"
+                      IsChecked="{Binding Preview.ShowWhitespace}"
+                      ToolTip="Show tabs and trailing spaces"
+                      Visibility="{Binding Preview.IsText, Converter={StaticResource BoolToVisibility}}" />
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+              <CheckBox Content="Wrap" Margin="0,0,10,0" VerticalAlignment="Center"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
+                        IsChecked="{Binding Preview.Wrap}"
+                        ToolTip="Fold long lines to the width of the pane"
+                        Visibility="{Binding Preview.IsText, Converter={StaticResource BoolToVisibility}}" />
+              <Button Style="{StaticResource ChromeButtonStyle}" Content="Copy"
+                      ToolTip="Copy the selected lines, or the whole file when nothing is selected"
+                      Click="OnCopyPreview"
+                      Visibility="{Binding Preview.IsText, Converter={StaticResource BoolToVisibility}}" />
+              <Button Style="{StaticResource ChromeButtonStyle}" Content="Close (Esc)"
+                      Click="OnClosePreview" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Grid.Row="1" Text="{Binding Preview.Message}" TextWrapping="Wrap" Margin="2,10,2,0"
+                     VerticalAlignment="Top" Style="{StaticResource SecondaryTextStyle}"
+                     Visibility="{Binding Preview.HasMessage, Converter={StaticResource BoolToVisibility}}" />
+
+          <Image Grid.Row="1" Source="{Binding Preview.Image}" Stretch="Uniform"
+                 StretchDirection="DownOnly" RenderOptions.BitmapScalingMode="HighQuality"
+                 Visibility="{Binding Preview.Image, Converter={StaticResource NullToVisibility}}" />
+
+          <!--
+            A ListBox rather than an ItemsControl, so lines can be picked out with the mouse and
+            Copy can take what was picked. Selection is by line and not by character: a preview of
+            a megabyte has to stay virtualised, and character selection needs a document WPF holds
+            all of at once. Whole lines are what you want out of a file you are not opening anyway.
+
+            Focused when the preview opens, so Page Up, Page Down, Home, End and Ctrl+A reach it.
+          -->
+          <ListBox x:Name="PreviewLines" Grid.Row="1" ItemsSource="{Binding Preview.Lines}"
+                   Background="Transparent" BorderThickness="0" Padding="0"
+                   FocusVisualStyle="{x:Null}"
+                   SelectionMode="Extended"
+                   KeyDown="OnPreviewLinesKeyDown"
+                   ScrollViewer.HorizontalScrollBarVisibility="{Binding Preview.Wrap, Converter={StaticResource WrapToScrollBar}}"
+                   VirtualizingStackPanel.IsVirtualizing="True"
+                   VirtualizingStackPanel.VirtualizationMode="Recycling"
+                   Visibility="{Binding Preview.IsText, Converter={StaticResource BoolToVisibility}}">
+              <ListBox.ItemContainerStyle>
+                <!--
+                  BasedOn, and not optional: an implicit style declared without it replaces the
+                  themed one entirely rather than extending it, so the Foreground setter went with
+                  it and every line of every preview came out in WPF's default black on a dark
+                  panel. The same trap as a non-inheriting property falling back past the theme,
+                  wearing different clothes.
+                -->
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  <!-- No dashed focus rectangle round the current line: the selection already says
+                       where you are, and WPF's stock rectangle was the one un-themed thing in the
+                       panel. -->
+                  <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                  <Setter Property="Template">
+                    <Setter.Value>
+                      <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Row" Background="Transparent">
+                          <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                          <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Row" Property="Background"
+                                    Value="{DynamicResource SelectionActiveBrush}" />
+                          </Trigger>
+                        </ControlTemplate.Triggers>
+                      </ControlTemplate>
+                    </Setter.Value>
+                  </Setter>
+                </Style>
+              </ListBox.ItemContainerStyle>
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Top-aligned, because a wrapped line is several rows tall and its number
+                         belongs beside the first of them. -->
+                    <TextBlock Grid.Column="0" Text="{Binding Number}" MinWidth="42" Margin="0,0,10,0"
+                               TextAlignment="Right" TextTrimming="None" VerticalAlignment="Top"
+                               FontFamily="{DynamicResource MonoFontFamily}"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <TextBlock Grid.Column="1" views:InlineBinder.Segments="{Binding Segments}"
+                               TextTrimming="None"
+                               TextWrapping="{Binding DataContext.Preview.Wrap, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource WrapToTextWrapping}}"
+                               FontFamily="{DynamicResource MonoFontFamily}"
+                               FontSize="{DynamicResource FontSizeSmall}" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <!-- IsTextSearchEnabled off: typing is the quick filter now, and WPF's own type-ahead
+           would otherwise move the cursor underneath it. -->
+      <ListView x:Name="FileGrid" Grid.Row="9" Style="{StaticResource FileGridStyle}"
+                IsTextSearchEnabled="False"
+                PreviewTextInput="OnGridTextInput"
+                ItemsSource="{Binding ActiveTab.Rows}"
+                AllowDrop="True"
+                PreviewMouseLeftButtonDown="OnGridPreviewLeftButtonDown"
+                SelectionChanged="OnSelectionChanged"
+                PreviewMouseRightButtonDown="OnGridRightButtonDown"
+                ContextMenuOpening="OnContextMenuOpening"
+                MouseDoubleClick="OnGridDoubleClick"
+                MouseDown="OnGridMouseDown" MouseUp="OnGridMouseUp" />
+
+      <!--
+        "✓ touch foo": a line that finished and said nothing, said in passing where the command
+        line was, and gone again (§1.3: completion is boring). Never over the command line itself.
+      -->
+      <TextBlock Grid.Row="11" Margin="10,6,10,8" Text="{Binding ActiveTab.CommandEcho}"
+                 Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis">
+        <TextBlock.Style>
+          <Style TargetType="TextBlock">
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding ActiveTab.CommandEcho}" Value="{x:Null}">
+                <Setter Property="Visibility" Value="Collapsed" />
+              </DataTrigger>
+              <DataTrigger Binding="{Binding ShowCommandLine}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </TextBlock.Style>
+      </TextBlock>
+
+      <!-- Command line: hidden until Ctrl+E, so it costs no permanent chrome (§1.3). -->
+      <Grid Grid.Row="11" Margin="8,6,8,8"
+            Visibility="{Binding ShowCommandLine, Converter={StaticResource BoolToVisibility}}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <!-- The shell a line goes to, in grey: chrome, not something to read twice (DESIGN.md §1.3). -->
+        <TextBlock Grid.Column="0" Text="{Binding ActiveTab.CommandPrompt}" VerticalAlignment="Center"
+                   Margin="2,0,7,0" MaxWidth="320" TextTrimming="CharacterEllipsis"
+                   ToolTip="The shell a line typed here runs in (settings.json: commandLine.shell). Ctrl+E again for the next one."
+                   Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBox x:Name="CommandBox" Grid.Column="1" Style="{StaticResource InputStyle}"
+                 FontFamily="{DynamicResource MonoFontFamily}"
+                 PreviewKeyDown="OnCommandKeyDown" />
+      </Grid>
+
+      <!--
+        The pane's own footer. A pane describes its location; the window-level strip describes
+        operations. Putting the count and the branch here means both panes state their own, side
+        by side, and the splitter aligns them for free.
+      -->
+      <Grid Grid.Row="12" Margin="10,3,10,7">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                   Style="{StaticResource SecondaryTextStyle}"
+                   Text="{Binding ActiveTab.StatusText}" />
+
+        <!--
+          The folder is being watched: the dot says "on", the word says what, the tooltip says what
+          that means. Never animated: it is a state, not an activity, and a pulsing dot in the
+          corner of every pane would be the one moving thing on an otherwise still screen.
+        -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0"
+                    Background="Transparent"
+                    ToolTip="Watching this folder: files added, changed or removed on disk appear here on their own."
+                    Visibility="{Binding ActiveTab.IsLive, Converter={StaticResource BoolToVisibility}}">
+          <Ellipse Width="5" Height="5" Margin="0,1,5,0" VerticalAlignment="Center"
+                   Fill="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="live" />
+        </StackPanel>
+
+        <!-- Where "live" would be, for a place that is not: the key it needs, worded as the legend
+             words its keys, and a click for a mouse. -->
+        <Button Grid.Column="1" Margin="4,-3,-7,-3" Padding="7,3" VerticalAlignment="Center"
+                Style="{StaticResource ChromeButtonStyle}" Click="OnRefreshClick"
+                ToolTip="Not watched: changes made elsewhere appear when you refresh."
+                Visibility="{Binding ActiveTab.OffersRefresh, Converter={StaticResource BoolToVisibility}}">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Style="{StaticResource SecondaryTextStyle}" Margin="0,0,5,0" Text="Ctrl+R"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="Refresh" />
+          </StackPanel>
+        </Button>
+
+        <!-- What the archive really is, when the name said something else. -->
+        <Border Grid.Column="2" Margin="10,0,0,0" Padding="7,1" CornerRadius="{DynamicResource RadiusS}"
+                Background="{DynamicResource HoverBrush}" VerticalAlignment="Center"
+                ToolTip="Detected by reading the file, not its extension"
+                Visibility="{Binding ActiveTab.ArchiveLabel, Converter={StaticResource NullToVisibility}}">
+          <TextBlock Style="{StaticResource SecondaryTextStyle}"
+                     Text="{Binding ActiveTab.ArchiveLabel}" />
+        </Border>
+
+        <!-- Roomy here, but still bounded: a branch name has no length limit worth trusting. -->
+        <Border Grid.Column="3" Margin="10,0,0,0" Padding="7,1" CornerRadius="{DynamicResource RadiusS}"
+                Background="{DynamicResource HoverBrush}" VerticalAlignment="Center"
+                Visibility="{Binding ActiveTab.Branch, Converter={StaticResource NullToVisibility}}">
+          <TextBlock Style="{StaticResource SecondaryTextStyle}" MaxWidth="320"
+                     TextTrimming="CharacterEllipsis"
+                     Text="{Binding ActiveTab.Branch, StringFormat=⎇ {0}}"
+                     ToolTip="{Binding ActiveTab.Branch}" />
+        </Border>
+      </Grid>
+
+      <!-- Bookmarks live in a transient popup, so they cost no permanent chrome (§1.3). -->
+      <Popup x:Name="BookmarksPopup" Placement="Bottom" AllowsTransparency="True" StaysOpen="False">
+        <ContentControl Style="{StaticResource PopupSurfaceStyle}" Padding="4" MinWidth="260" MaxWidth="440">
+          <StackPanel>
+            <!-- The list scrolls and the two ways out below it stay put: grown past the screen, it
+                 was clipped there with nothing to scroll, and took Manage bookmarks with it
+                 (2026-10-17). As the activity popup does, at a height that fits any screen. -->
+            <ScrollViewer MaxHeight="480" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
+            <ItemsControl x:Name="BookmarksList">
+              <ItemsControl.Resources>
+                <DataTemplate DataType="{x:Type vm:BookmarkGroupHeader}">
+                  <TextBlock Text="{Binding Name}" Style="{StaticResource SecondaryTextStyle}"
+                             Margin="9,9,9,3" />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type vm:BookmarkItemViewModel}">
+                  <Button Style="{StaticResource ToolButtonStyle}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                          Click="OnBookmarkChosen" Tag="{Binding Uri}">
+                    <!-- A DockPanel, not a horizontal StackPanel, so the text has a width to trim to. -->
+                    <DockPanel>
+                      <Image DockPanel.Dock="Left" Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0"
+                             VerticalAlignment="Center" SnapsToDevicePixels="True" />
+                      <StackPanel>
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Display}" Style="{StaticResource SecondaryTextStyle}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </DockPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.Resources>
+            </ItemsControl>
+            </ScrollViewer>
+
+            <!-- The page is where they are managed with the full listing; the file stays reachable. -->
+            <Button Content="Manage bookmarks" Margin="0,4,0,0"
+                    Style="{StaticResource ToolButtonStyle}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Click="OnManageBookmarksClick" />
+            <Button Content="Edit bookmarks.json…"
+                    Style="{StaticResource ToolButtonStyle}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Click="OnEditBookmarksClick" />
+          </StackPanel>
+        </ContentControl>
+      </Popup>
+
+      <!--
+        The wait before a drag opens what it is held on (PaneView.DragDrop.cs, SpringLoad): a line
+        under the tab, row or button that fills from the left and opens it when full. Laid over
+        everything and placed on the target in code, because one line serves tabs, rows and buttons
+        alike; it takes no input, so the drag sees what is underneath.
+      -->
+      <!-- Where a dragged tab would land (PaneView.TabDrag.cs): a bar between two tabs, or a line
+           along the top of a pane with no strip. Sized and placed in code. -->
+      <Rectangle x:Name="TabDropMark" Grid.RowSpan="13" IsHitTestVisible="False"
+                 HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"
+                 Fill="{DynamicResource AccentBrush}" />
+
+      <Rectangle x:Name="SpringLine" Grid.RowSpan="13" Height="2" IsHitTestVisible="False"
+                 HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"
+                 Fill="{DynamicResource AccentBrush}">
+        <Rectangle.RenderTransform>
+          <ScaleTransform x:Name="SpringFill" ScaleX="0" />
+        </Rectangle.RenderTransform>
+      </Rectangle>
+    </Grid>
+  </Border>
+</UserControl>

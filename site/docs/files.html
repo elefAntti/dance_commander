@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Working with files — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Working with files</h1>
+<p>Copying, moving, renaming and deleting, between the two panes, through the clipboard or by
+dragging. Every change is recorded with an undo and the shell command that would have done the
+same thing.</p>
+
+<h2 id="marking">Marking</h2>
+<p>Marking works the commander way. <kbd>Insert</kbd> or <kbd>Space</kbd> marks the row under the
+cursor and moves down. Once something is marked, the arrow keys move only the cursor and leave the
+marks alone, so you can walk the list picking rows. <kbd>Esc</kbd> unmarks everything.
+<kbd>Ctrl</kbd>+<kbd>A</kbd> marks all, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> unmarks all
+and <kbd>Ctrl</kbd>+<kbd>I</kbd> inverts.</p>
+<p>Commands that change files (<kbd>F5</kbd>, <kbd>F6</kbd>, <kbd>Del</kbd>) act on the marked
+rows; commands that look at one file (<kbd>Enter</kbd>, <kbd>F2</kbd>, <kbd>F3</kbd>) act on the row
+under the cursor. With nothing marked, both act on the cursor's row. The mouse works as in Explorer:
+click, <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click.</p>
+
+<h2 id="copy-move">Copy and move: F5 and F6</h2>
+<p><kbd>F5</kbd> copies the selection into the folder the other pane shows; <kbd>F6</kbd> moves it
+there. Both work between any two kinds of place: local to server, server to server, out of an
+archive. Copies run in the background, in the strip along the bottom of the window, with an
+estimate of the time left, so you can keep working; when they are done the new files are washed in
+the accent colour for a moment, so you can see where they landed.</p>
+<p>Local copies go through Windows' own copy, as Explorer's do, so a file keeps its modified date,
+its attributes and the mark that makes Windows warn before running a downloaded program.</p>
+<h3>When something is already there</h3>
+<p>A file of the same name asks, in the pane: <strong>Keep both</strong> (the default, giving the
+new one a <code>(2)</code> name), <strong>Replace</strong>, <strong>Skip</strong> or
+<strong>Cancel</strong>. The answer holds for the rest of that copy. <strong>Replace</strong> swaps
+the new file in only once it is complete, so a cancelled or failed copy leaves the old one whole.
+The file it replaces doesn't go to the Recycle Bin, so choose Keep both when in doubt. A read-only
+file is not replaced, and the pane says so.</p>
+<p>A folder onto a folder of the same name <strong>merges</strong> by default, and asks nothing
+when merging and replacing would leave the same files. Otherwise it asks before anything is copied:
+<strong>Merge into it</strong>, <strong>Replace it entirely</strong> (the question says how many
+files that would remove; the old folder goes to the Recycle Bin), or <strong>Skip this
+folder</strong>. Where there is no Recycle Bin (a stick, a network share, a server) the button
+reads <strong>Replace it, deleting the old one</strong> and the question says the old folder would
+be gone for good.</p>
+<h3>Files too big for the target</h3>
+<p>A FAT32 stick holds files of up to 4 GB. A copy with a larger file in it asks before anything is
+written: skip it, or cancel. Everything else is copied, and the activity log names what was left
+out.</p>
+
+<figure class="shot" data-file="screenshots/conflict-question.png"><img src="../screenshots/conflict-question.png" alt="A name clash during a copy, answered inline." onerror="this.parentNode.classList.add('missing')"><figcaption>A name clash during a copy, answered inline.</figcaption></figure>
+
+<h2 id="clipboard">Clipboard</h2>
+<p><kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>Ctrl</kbd>+<kbd>X</kbd> and <kbd>Ctrl</kbd>+<kbd>V</kbd> work
+with Explorer and every other program, beside <kbd>F5</kbd> and <kbd>F6</kbd>. Paste always lands
+in the folder the pane shows, never in a folder that happens to be selected.</p>
+<p>Paste does the most faithful thing the clipboard allows:</p>
+<ol>
+  <li><strong>Files</strong> are copied (or moved, after a cut), as a drop would be.</li>
+  <li><strong>An image</strong>, such as a screenshot, becomes a new PNG file named from the clock,
+  <code>Pasted image 2026-09-21 14-30-45.png</code>.</li>
+  <li><strong>Text</strong> becomes a new UTF-8 text file the same way,
+  <code>Pasted text 2026-09-21 14-30-45.txt</code>.</li>
+</ol>
+<p>The new file arrives selected, so <kbd>F2</kbd> names it. A pasted image or text never
+overwrites anything.</p>
+<p>Copying files and pasting them into the folder they came from makes a duplicate, named with
+<code>(2)</code> as in Explorer. A cut pasted where it already is does nothing, and says so.</p>
+<p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> copies the selection's paths as text. <strong>Copy
+name</strong> and <strong>Copy this folder's path</strong> are in the right-click menu and the
+palette.</p>
+
+<h2 id="drag-drop">Drag and drop</h2>
+<p>Drag between the panes, onto a folder row, onto the location chip, or to and from Explorer and
+other programs. The defaults follow Explorer: within one drive a drag moves and across drives it
+copies; hold <kbd>Ctrl</kbd> to copy or <kbd>Shift</kbd> to move. Between your computer and a
+server, between two servers, and out of an archive, a drag copies. The folder under the pointer is
+highlighted, and drops that make no sense (a folder into itself, files onto the folder they are
+already in) are refused before you let go.</p>
+<p>Dragging one of several selected rows takes all of them. A drag has to travel a row's height
+before it starts, so a click that slips stays a click.</p>
+<p>While dragging, hold the pointer still over another tab or over a folder row for a moment and it
+opens, so the drop can land there. Near the top or bottom edge of the list, the list scrolls.</p>
+<h3>Dropping things that are not files</h3>
+<ul>
+  <li><strong>Attachments dragged out of Outlook</strong> arrive as new files. A name already taken
+  gets <code>(2)</code>; nothing is overwritten. They are marked as coming from the internet, as a
+  download is, so Windows warns before opening them.</li>
+  <li><strong>Text</strong> dragged from an editor or a browser becomes a new file,
+  <code>Dropped text 2026-09-21 14-30-45.txt</code>, as a paste would. If the drag also carries a
+  file (an image from a web page, say), the file wins.</li>
+</ul>
+<p>Each of these is an operation like any other: <kbd>Ctrl</kbd>+<kbd>Z</kbd> sends the new file
+to the Recycle Bin.</p>
+<div class="note">Files on a server or inside an archive can be dragged to the other pane, but not
+yet out to other programs: copy them somewhere local first.</div>
+
+<h2 id="rename">Rename, new folder and new file</h2>
+<p><kbd>F2</kbd> renames in place, with the name selected and the extension left out of the
+selection. <kbd>F7</kbd> makes a new folder and puts you straight into naming it; a name with
+slashes, such as <code>docs/2026</code>, makes the folders inside each other in one go.</p>
+<p><kbd>Shift</kbd>+<kbd>F4</kbd> makes a <strong>new file</strong> where you are: name it, and
+it is made empty and opened in your editor, the same one <kbd>F4</kbd> uses. No writing it first
+and finding the folder again in a save dialog. As with <kbd>F7</kbd>, a name with slashes, such as
+<code>docs/notes.md</code>, makes the folders it needs first. A file of that name already there is
+opened as it is, never replaced. <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes the new file away while it is still empty;
+once you have written in it, to the Recycle Bin. On local folders only, where <kbd>F4</kbd> edits.</p>
+<p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> <strong>groups the selection into a new
+folder</strong>: it proposes a name from what the selected files have in common, makes the folder,
+and moves them in. If the name is taken it asks again. One <kbd>Ctrl</kbd>+<kbd>Z</kbd> puts
+everything back.</p>
+<p>Renaming is one file at a time; there is no rename of many files by a pattern.</p>
+
+<h2 id="split">Split and join</h2>
+<p><strong>Split into parts</strong> (right-click or the palette) cuts a large file into pieces of
+a size you choose, 100 MB unless you say otherwise, for a server or a stick that won't take it
+whole. The parts land beside it as <code>name.001</code>, <code>name.002</code> and so on, with
+<code>name.sha256</code> to check the result. <strong>Join parts</strong> on the <code>.001</code>
+puts the file back together beside them, and checks its size and checksum before it takes its
+name. If the original is still there, the joined file gets a <code>(2)</code> name rather than
+replacing it.</p>
+<p>The parts are ordinary files: 7-Zip opens a <code>.001</code>, and <code>copy /b</code> or
+<code>cat</code> joins them. Undo removes the parts, or the joined file, only while they are as
+they were made and what they came from is still there.</p>
+
+<h2 id="delete">Delete</h2>
+<p><kbd>Del</kbd> sends the selection to the Recycle Bin, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> brings
+back exactly what that delete sent, even if something of the same name has been deleted since.
+<kbd>Shift</kbd>+<kbd>Del</kbd> deletes permanently, after asking inline, with Cancel as the
+default.</p>
+<p>Only the computer's own fixed drives have a Recycle Bin. On a network share, a USB stick or a
+server, <kbd>Del</kbd> asks <em>“Delete … permanently?”</em> too, because that is what it would
+be.</p>
+<p>If a program has the file or folder open, the pane asks you to close it there and Retry, and
+names the program, for example <em>“Open in Windows PowerShell in Windows Terminal (process 33536).
+Close it there, then Retry.”</em> That includes a terminal whose current folder is the one you are
+deleting. The same goes for rename, move and copy.</p>
+
+<figure class="shot" data-file="screenshots/in-use-question.png"><img src="../screenshots/in-use-question.png" alt="A delete stopped by a folder a terminal is standing in: the question names the program." onerror="this.parentNode.classList.add('missing')"><figcaption>A delete stopped by a folder a terminal is standing in: the question names the program.</figcaption></figure>
+
+<h2 id="undo">Undo and the activity log</h2>
+<p>Every change Dance Commander makes to your files is an operation with a description, an undo,
+and its shell equivalent. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes the most recent ones in turn: copies,
+moves, renames, new folders, grouping, pastes and drops, zips, splits and joins, and deletes that
+went to the Recycle Bin.</p>
+<p>Undo is careful about what has happened since. Undoing a copy sends the copies to the Recycle
+Bin rather than deleting them, and keeps any that have been changed since, saying so. Undoing a
+move that replaced a folder brings the old folder back out of the Recycle Bin. What cannot come
+back is said rather than skipped over: a permanent delete, or a file that a <strong>Replace</strong>
+wrote over.</p>
+<p>The <strong>Activity</strong> button at the bottom right lists what was done this session, each
+with the command that would do the same in a shell:</p>
+<pre><code>move C:\src\a.cs C:\src\old\a.cs</code></pre>
+<p>The activity log, like the undo, lasts for the session. The log files keep a record beyond
+it.</p>
+
+<h2 id="safety">Files are never lost</h2>
+<p>This is the promise the rest of the design serves. Whatever stops an operation part way (a
+cancel, an error, a full disk, a dropped connection, a crash), every file you had is still somewhere
+you can find it: where it was, where it was going, or in the Recycle Bin.</p>
+<ul>
+  <li>Nothing is ever opened for writing at a name that holds a file. New content is written beside it under a
+  temporary name, <code>name.part</code> on your disk and on an SFTP server,
+  <code>name.dc-upload-…</code> on a WebDAV server, and takes the real name only once it is complete.
+  A file left under one of those names after a failure is the unfinished copy, never the
+  original.</li>
+  <li>A move removes each original only once its copy is whole. A move from a server to your disk
+  writes each file through to the disk first.</li>
+  <li>A folder replaced goes to the Recycle Bin. Where there is none, as on a server or a stick, it
+  is set aside under a recognisable name and removed only once the new one is in place.</li>
+  <li>Permanent deletion happens only when you asked for exactly that.</li>
+</ul>
+
+<h2 id="jobs">Copies in the background, and closing</h2>
+<p>Copies, moves and extractions are jobs in the strip along the bottom: each shows its progress and
+can be cancelled there. A question a job needs answered, such as a name clash, waits in the pane
+without stopping the rest of the window.</p>
+<p>Closing the window while a job runs asks first: <strong>Keep open</strong> (the default),
+<strong>Close when finished</strong>, or <strong>Cancel and close</strong>. A cancelled job leaves
+no <code>.part</code> files behind.</p>
+
+<figure class="shot" data-file="screenshots/close-with-jobs.png"><img src="../screenshots/close-with-jobs.png" alt="Closing the window while a copy runs: the question, in the pane." onerror="this.parentNode.classList.add('missing')"><figcaption>Closing the window while a copy runs: the question, in the pane.</figcaption></figure>
+<p>While a job runs, Windows doesn't put the computer to sleep for being idle, and signing out or
+shutting down shows the job by name on Windows' own screen, as Explorer's copies do. Closing a
+laptop's lid or choosing Sleep still sleeps.</p>
+
+<h2 id="preview">Preview: F3</h2>
+<p><kbd>F3</kbd> shows the file under the cursor over the listing; <kbd>F3</kbd> or <kbd>Esc</kbd>
+closes it and puts you back where you were. It works the same for local files, files on a server
+and files inside an archive.</p>
+<ul>
+  <li><strong>Text</strong> is shown with its <strong>encoding and line endings</strong> stated: CRLF,
+  LF, or <em>mixed</em> with the counts of each. Tabs are drawn as faint arrows so indentation
+  looks the way a tool reads it, and trailing spaces are marked. You can select lines and copy just
+  those.</li>
+  <li><strong>Images</strong> (PNG, JPEG, GIF, BMP, WebP, TIFF, ICO) are shown as images, turned
+  the way the camera recorded, so a phone's portrait photo stands upright. The size in the header is
+  the turned one.</li>
+  <li><strong>PDFs</strong> show their first page and say how many pages there are.</li>
+  <li><strong>Anything Windows can draw a thumbnail for</strong> is shown that way on your own
+  disks, such as a video's first frame, or HEIC and camera raw photos when Windows has their
+  extensions installed.</li>
+  <li><strong>What it can't show, it names:</strong> a binary says so, and an archive says what kind
+  it is and that <kbd>Enter</kbd> goes inside.</li>
+</ul>
+<p>A OneDrive file that is only online is not downloaded to preview it: you see OneDrive's own
+picture of it, or a line saying that previewing would download it. Arrowing through a OneDrive
+folder with the preview open leaves the files where they were. A cloud after the name marks a file
+that is only online, and a pin one that is always kept on this device; by default they show on the
+cursor row only, and Settings can show them on every row, as Explorer does.</p>
+<p>What a file is comes from its content, not its name: a screenshot saved as <code>.txt</code>
+still previews as an image. There is no hex view, and no preview of rich formats beyond their
+picture: they belong in their own applications, and <kbd>Enter</kbd> opens them there.</p>
+
+<figure class="shot" data-file="screenshots/preview-text.png"><img src="../screenshots/preview-text.png" alt="F3 on a file with mixed line endings: the counts are in the header, tabs are drawn." onerror="this.parentNode.classList.add('missing')"><figcaption>F3 on a file with mixed line endings: the counts are in the header, tabs are drawn.</figcaption></figure>
+
+<h2 id="archives">Archives</h2>
+<p><kbd>Enter</kbd> on a zip, 7z, rar or tar (plain, or compressed as gz, bz2 or xz) goes inside
+it as if it were a folder, and archives inside archives work the same. Copying out of one is an
+ordinary <kbd>F5</kbd>. Office documents (<code>.docx</code> and friends), OpenDocument files and
+EPUBs are zips too, but <kbd>Enter</kbd> opens them in their application.</p>
+<p>From the menu: <strong>Extract here</strong> unpacks into a folder named after the archive,
+beside it, and <strong>Extract to other pane</strong> does the same in the other pane's folder; both
+run as jobs. <strong>Compress into a zip</strong> asks for a name and makes a zip of the selection
+in this folder, on your disk or on a server. Zip is the only format it writes. Archives are
+read-only, so changing what is inside one means extracting, changing and zipping again. See
+<a href="remote.html#archives">Servers and archives</a> for more.</p>
+
+<h2 id="tasks">Running things</h2>
+<p><kbd>Enter</kbd> on a program or document starts it as Explorer would. If the program is slow
+to appear, the pane says it is starting, and a second <kbd>Enter</kbd> doesn't start it twice.
+<kbd>F4</kbd> opens a file's text for editing and never runs it, which makes it the safe key on a
+script. Both work on files on your own disks; a file on a server or inside an archive has to be
+copied somewhere local first, though <kbd>F3</kbd> previews it where it is.</p>
+<p>Right-click (or <kbd>Shift</kbd>+<kbd>F10</kbd>, or the Menu key) shows the commands for the
+selection, including your own tools; see <a href="tools.html">Tools and the command line</a>.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

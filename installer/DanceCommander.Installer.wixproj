@@ -1,0 +1,28 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    The MSI (PLAN.md §3, Packaging): per user, no admin prompt, built from a published folder by
+    scripts/build-release.ps1, which passes PublishDir and ProductVersion. Not in the solution, so
+    an ordinary build doesn't need WiX or a publish first.
+  -->
+  <PropertyGroup>
+    <OutputName>DanceCommander-$(ProductVersion)-win-x64</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- The standard dialogs' text, which the app's own screen (UI.wxs) matches. -->
+    <Cultures>en-US</Cultures>
+    <!-- ICE91 warns that a file in a per-user folder won't reach other users' profiles if the
+         package is installed per machine. This one is per user only (Package.wxs, Scope). -->
+    <SuppressIces>ICE91</SuppressIces>
+    <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(ProductVersion);Assets=$(MSBuildThisFileDirectory)..\assets</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <Target Name="RequirePublishDir" BeforeTargets="Build">
+    <Error Condition="'$(PublishDir)' == '' Or !Exists('$(PublishDir)DanceCommander.exe')"
+           Text="PublishDir must name a published Dance Commander folder (scripts/build-release.ps1 does this)." />
+    <Error Condition="'$(ProductVersion)' == ''" Text="ProductVersion is not set (scripts/build-release.ps1 reads it from Directory.Build.props)." />
+  </Target>
+</Project>

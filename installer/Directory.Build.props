@@ -1,0 +1,6 @@
+<Project>
+  <!--
+    Stops the repository's Directory.Build.props at this folder: its C# settings and analysers mean
+    nothing to a WiX project, and the analyser package would be restored into it for nothing.
+  -->
+</Project>

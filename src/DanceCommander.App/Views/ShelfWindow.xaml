@@ -1,0 +1,42 @@
+<Window x:Class="DanceCommander.App.Views.ShelfWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Shelf" Width="280" Height="320" MinWidth="180" MinHeight="120"
+        WindowStyle="ToolWindow" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
+        AllowDrop="True"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource UiFontFamily}"
+        FontSize="{DynamicResource FontSizeBody}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+  <!--
+    The shelf in a window above everything (PLAN.md, Brainstorming): a place to drop onto and drag
+    from while the window that matters is full screen. It shows the same list as about:shelf;
+    nothing is copied to it.
+  -->
+  <Grid Margin="4">
+    <ListBox x:Name="Items" SelectionMode="Extended" Background="Transparent" BorderThickness="0"
+             Foreground="{DynamicResource TextPrimaryBrush}"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+             PreviewMouseLeftButtonDown="OnItemsPreviewLeftButtonDown"
+             PreviewMouseLeftButtonUp="OnItemsPreviewLeftButtonUp"
+             PreviewMouseMove="OnItemsPreviewMouseMove"
+             KeyDown="OnItemsKeyDown">
+      <ListBox.ItemTemplate>
+        <DataTemplate>
+          <DockPanel ToolTip="{Binding Where}">
+            <Image Source="{Binding Icon}" Width="{DynamicResource IconSize}" Height="{DynamicResource IconSize}"
+                   Margin="0,0,6,0" DockPanel.Dock="Left" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          </DockPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <TextBlock x:Name="EmptyHint" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
+               TextAlignment="Center" VerticalAlignment="Center" Margin="16" IsHitTestVisible="False"
+               Text="Drop files here to put them on the shelf; drag them out to hand them over." />
+  </Grid>
+</Window>

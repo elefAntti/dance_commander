@@ -1,0 +1,232 @@
+<Window x:Class="DanceCommander.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DanceCommander.App.ViewModels"
+        Title="Settings" Width="760" Height="600" MinWidth="520" MinHeight="320"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
+        FontFamily="{DynamicResource UiFontFamily}"
+        FontSize="{DynamicResource FontSizeBody}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+  <!--
+    SETTINGS_PLAN.md §2: a window rather than a page in a pane, because settings are a form and you
+    want to watch the panes change while you choose. No OK, no Apply: a choice is written to
+    settings.json as it is made. Esc closes, Ctrl+PageUp/PageDown step between sections.
+  -->
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Visible" />
+
+    <!-- A line with something to say, and no gap where it has nothing. -->
+    <Style x:Key="CollapsedWhenEmpty" TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="TextTrimming" Value="None" />
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+          <Setter Property="Visibility" Value="Collapsed" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+          <Setter Property="Visibility" Value="Collapsed" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- A setting: what it is, its key in the file, its choices, and Reset when it is yours. -->
+    <DataTemplate x:Key="SettingRow" DataType="{x:Type vm:SettingRowViewModel}">
+      <Grid Margin="0,0,0,16">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="3" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <!-- Changed from the default: the accent bar the active pane wears, so yours stands out. -->
+        <Border Background="{DynamicResource AccentBrush}" CornerRadius="1"
+                Visibility="{Binding IsChanged, Converter={StaticResource Visible}}" />
+        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Reset" Style="{StaticResource ToolButtonStyle}"
+                    ToolTip="Back to the default, and out of settings.json"
+                    Visibility="{Binding IsChanged, Converter={StaticResource Visible}}"
+                    Click="OnResetSetting" />
+            <TextBlock Text="{Binding Title}" Style="{StaticResource BodyTextStyle}" VerticalAlignment="Center" />
+          </DockPanel>
+          <TextBlock Text="{Binding Description}" Style="{StaticResource SecondaryTextStyle}"
+                     TextWrapping="Wrap" TextTrimming="None" Margin="0,2,0,6" />
+          <WrapPanel>
+            <ItemsControl ItemsSource="{Binding Choices}" KeyboardNavigation.DirectionalNavigation="Cycle">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:ChoiceViewModel}">
+                  <RadioButton Content="{Binding Label}" IsChecked="{Binding IsChosen, Mode=OneWay}"
+                               Style="{StaticResource ChoiceStyle}" Checked="OnChoose"
+                               GroupName="{Binding DataContext.Key, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding Other}" Style="{StaticResource SecondaryTextStyle}"
+                       Foreground="{DynamicResource WarningBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+          </WrapPanel>
+          <TextBlock Text="{Binding Status}" Style="{StaticResource CollapsedWhenEmpty}"
+                     Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" />
+          <TextBlock Text="{Binding Caveat}" Style="{StaticResource CollapsedWhenEmpty}"
+                     Foreground="{DynamicResource WarningBrush}" Margin="0,4,0,0" />
+          <TextBlock Text="{Binding Key}" FontFamily="{DynamicResource MonoFontFamily}"
+                     FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource TextMutedBrush}"
+                     Margin="0,4,0,0" />
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+
+    <!-- A command's key: what it is, the key, and the ways to change it. -->
+    <DataTemplate x:Key="KeyRow" DataType="{x:Type vm:KeyRowViewModel}">
+      <Grid Margin="0,0,0,10">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="3" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Border Background="{DynamicResource AccentBrush}" CornerRadius="1"
+                Visibility="{Binding IsChanged, Converter={StaticResource Visible}}" />
+        <StackPanel Grid.Column="1" Margin="12,0,12,0" VerticalAlignment="Center">
+          <TextBlock Style="{StaticResource BodyTextStyle}">
+            <Run Text="{Binding Title, Mode=OneWay}" />
+            <Run Text="{Binding Group, Mode=OneWay}" Foreground="{DynamicResource TextMutedBrush}"
+                 FontSize="{DynamicResource FontSizeSmall}" />
+          </TextBlock>
+          <TextBlock Text="{Binding Note}" TextWrapping="Wrap"
+                     TextTrimming="None" Foreground="{DynamicResource WarningBrush}" Margin="0,2,0,0">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Note}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{Binding Default}" Style="{StaticResource SecondaryTextStyle}"
+                     Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <!-- The key itself is the button that changes it: click, then press the new one. -->
+          <Button x:Name="KeyButton" Content="{Binding Key}" MinWidth="120" Click="OnRecordKey"
+                  ToolTip="Click, then press the key you want. Esc cancels.">
+            <Button.Style>
+              <Style TargetType="Button" BasedOn="{StaticResource ToolButtonStyle}">
+                <Setter Property="Background" Value="{DynamicResource SunkenBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding HasKey}" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+                    <Setter Property="FontFamily" Value="{DynamicResource UiFontFamily}" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+          <Button Content="Remove" Style="{StaticResource ToolButtonStyle}" Click="OnRemoveKey"
+                  ToolTip="Leave this command without a key"
+                  Visibility="{Binding HasKey, Converter={StaticResource Visible}}" />
+          <Button Content="Reset" Style="{StaticResource ToolButtonStyle}" Click="OnResetKey"
+                  ToolTip="Back to its own key, and out of settings.json"
+                  Visibility="{Binding IsChanged, Converter={StaticResource Visible}}" />
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+  </Window.Resources>
+
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="140" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Search: every setting and every key, by title, description, key in the file or key itself. -->
+    <Grid Grid.ColumnSpan="2" Margin="0,0,0,16">
+      <TextBox x:Name="SearchBox" Style="{StaticResource InputStyle}"
+               Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBlock Text="Search settings and keys"
+                 Foreground="{DynamicResource TextMutedBrush}" Margin="10,0" VerticalAlignment="Center"
+                 IsHitTestVisible="False">
+        <TextBlock.Style>
+          <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding Search}" Value="">
+                <Setter Property="Visibility" Value="Visible" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </TextBlock.Style>
+      </TextBlock>
+    </Grid>
+
+    <!-- Sections. Plain text in a list, the selection colour on the one shown. -->
+    <ListBox x:Name="SectionList" Grid.Row="1" ItemsSource="{Binding Sections}" SelectedItem="{Binding Section}"
+             Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}"
+             VerticalAlignment="Top" Margin="0,0,16,0" />
+
+    <ScrollViewer x:Name="Page" Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled" Focusable="False">
+      <StackPanel Margin="0,0,8,0">
+        <TextBlock Text="{Binding Heading}" FontSize="{DynamicResource FontSizeTitle}" Margin="0,0,0,12" />
+
+        <!-- Tools: what a pack is, and where your own tools are, since this page doesn't edit them. -->
+        <DockPanel Margin="0,0,0,16" Visibility="{Binding ShowsTools, Converter={StaticResource Visible}}">
+          <Button DockPanel.Dock="Right" Content="Show tools.json" Style="{StaticResource ToolButtonStyle}"
+                  VerticalAlignment="Top" ToolTip="In the active pane, where F4 edits it" Click="OnShowToolsFile" />
+          <TextBlock Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" TextTrimming="None"
+                     Text="Programs found on this computer bring their tools to the menus. Your own tools are in tools.json, and one there with the same id as a pack's is used instead of it." />
+        </DockPanel>
+
+        <ItemsControl ItemsSource="{Binding VisibleSettings}" ItemTemplate="{StaticResource SettingRow}"
+                      Focusable="False" />
+
+        <StackPanel Visibility="{Binding ShowsKeys, Converter={StaticResource Visible}}">
+          <DockPanel Margin="0,0,0,12">
+            <!-- On the page, a way to see only your own keys or only the ones with something to say. -->
+            <StackPanel x:Name="KeyFilters" DockPanel.Dock="Right" Orientation="Horizontal">
+              <RadioButton Content="All" Style="{StaticResource ChoiceStyle}" GroupName="KeyFilter" Tag="All"
+                           IsChecked="True" Checked="OnKeyFilter" />
+              <RadioButton Content="Yours" Style="{StaticResource ChoiceStyle}" GroupName="KeyFilter" Tag="Changed"
+                           Checked="OnKeyFilter" />
+              <RadioButton Content="Clashes" Style="{StaticResource ChoiceStyle}" GroupName="KeyFilter" Tag="Notes"
+                           Checked="OnKeyFilter" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource SecondaryTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
+                       TextTrimming="None"
+                       Text="Click a key, then press the new one. A key you choose wins over any command that had it." />
+          </DockPanel>
+          <ItemsControl ItemsSource="{Binding VisibleKeys}" ItemTemplate="{StaticResource KeyRow}" Focusable="False" />
+          <TextBlock Text="{Binding OrphanKeys}" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
+                     TextTrimming="None" Foreground="{DynamicResource WarningBrush}" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <TextBlock Text="Nothing matches. Settings search their names, descriptions and keys in the file; commands their names, groups, ids and keys."
+                   Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap" TextTrimming="None"
+                   Visibility="{Binding NothingFound, Converter={StaticResource Visible}}" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- The file is the interface (§2): it is named and one click away. -->
+    <DockPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,12,0,0">
+      <Button DockPanel.Dock="Right" Content="Show settings.json" Style="{StaticResource ToolButtonStyle}"
+              ToolTip="In the active pane, where F4 edits it" Click="OnShowFile" />
+      <TextBlock x:Name="ProblemText" Text="{Binding Problem}" Style="{StaticResource SecondaryTextStyle}"
+                 Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" TextTrimming="None"
+                 VerticalAlignment="Center" />
+    </DockPanel>
+  </Grid>
+</Window>

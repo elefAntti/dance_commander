@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Listings and script locations — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Listings and script locations</h1>
+<p>A place doesn't have to be a folder. A command can print a list of paths and that list becomes
+a listing; a script can answer “what is in here?” and become a whole browsable tree, such as your
+CI pipelines, with artifacts you can open and copy from like any zip.</p>
+<p>Both go in the <code>listings</code> array of <code>tools.json</code>, beside <code>tools</code>.
+Each appears in the menu of any local folder and in the palette under its <code>title</code>, and
+the place it opens can be bookmarked. Save the file and the menus follow; <code>"enabled":
+false</code> takes one out without deleting it.</p>
+
+<h2 id="listings">Listings from a command</h2>
+<p>The command runs in the folder you are in. Whatever it prints is matched against
+<code>extract</code>, a regular expression applied to the whole output; each match is a row, and the
+path comes from the group named <code>path</code> (or the first group).</p>
+<pre><code>"listings": [
+  {
+    "id": "todo-paths",
+    "title": "Paths in TODO.md",
+    "exec": "rg",
+    "args": ["-o", "[A-Za-z]:[\\\\/][^\\s]+", "TODO.md"],
+    "extract": "^(?&lt;path&gt;.+)$"
+  }
+]</code></pre>
+<ul>
+  <li><strong>Rows are real files.</strong> Open, copy, preview and “open containing folder” work as
+  they would in the folder where each file lives.</li>
+  <li><strong>Other named groups can be columns.</strong> Declare them in <code>columns</code> to
+  give them a header and an order: <code>{ "group": "branch", "header": "Branch", "width": 160,
+  "flexible": true }</code>. One column may be <code>flexible</code> and take the spare width.</li>
+  <li><strong>A path that no longer exists is shown</strong>, marked <em>not found</em>, rather than
+  silently dropped.</li>
+  <li><strong>A failing command shows its own error</strong>, not a generic one.</li>
+  <li>Other fields: <code>inRepository</code> (offer it only inside a repository) and
+  <code>showModified: false</code> (hide the Modified column when it means nothing).</li>
+  <li>Its <code>args</code> are passed as they are. Placeholders are filled in only for
+  <a href="#scripts">script locations</a>.</li>
+</ul>
+<p>The built-in <strong>Worktrees</strong> listing is one of these: <code>git worktree list
+--porcelain</code>, with the branch as a column.</p>
+<p>A listing's address is <code>from:&lt;folder&gt;?&lt;id&gt;</code>, such as
+<code>from:C:/src/app?todo-paths</code>. The command itself is never in the address, so a bookmark
+can only ever name something already in your own configuration.</p>
+
+<h2 id="scripts">Script locations</h2>
+<p>Set <code>"script": true</code> and the command becomes a small file system. Dance Commander
+calls it with your <code>args</code>, then one of two verbs and the path of the level being looked
+at:</p>
+<table>
+  <tbody>
+    <tr><td><code>list &lt;crumbs&gt;</code></td><td>Print the rows one level down</td></tr>
+    <tr><td><code>read &lt;crumbs&gt;</code></td><td>Write one file's bytes to stdout</td></tr>
+  </tbody>
+</table>
+<p>The <em>crumbs</em> are the levels so far, joined with <code>/</code>, and empty at the top. By
+default each row is one tab-separated line:</p>
+<pre><code>kind    name            size    modified                crumb
+d       Pipeline 4711                   2026-10-01T09:12:00Z    4711
+f       job.log         20480   2026-10-01T09:20:41Z    job.log</code></pre>
+<p>Only the name is required. <code>kind</code> <code>d</code> makes a folder; the
+<code>crumb</code> (letters, digits and <code>. _ ~ - %</code>, but not <code>.</code> or
+<code>..</code> alone) defaults to the name and is what you get back when the user goes into that
+row. A row whose crumb breaks the rule is shown with the reason, not dropped. Give an
+<code>extract</code> with named groups (<code>name</code>, <code>kind</code>, <code>crumb</code>,
+<code>size</code>, <code>modified</code>, and any column you declared) to read some other format.
+<code>"sort"</code> says what it starts sorted by: <code>name</code> (the default),
+<code>modified</code> or <code>size</code>, the last two newest or largest first.</p>
+<p>Because a script location is an ordinary place, everything else comes for free: sorting,
+filtering, preview, <kbd>F5</kbd> to copy out, bookmarks, history, and session restore. A file
+it returns that is an archive opens as one, so a CI job's <code>artifacts.zip</code> can be
+browsed, and a single file copied out of it.</p>
+<p>Script locations are read-only. To send something to a service, write a
+<a href="tools.html">tool</a>; <code>${otherPaneDir}</code> can tell it which item the other pane
+is showing.</p>
+
+<h3>Tokens and secrets</h3>
+<p><code>${repoRoot}</code>, <code>${branch}</code>, <code>${remoteUrl}</code> and <code>${dir}</code>
+are filled in in a script location's <code>args</code>, so one script can serve every repository and work out which
+project it is from the remote.</p>
+<p>List the secrets it needs in <code>"secrets"</code>. Each arrives as an environment variable,
+never on the command line: <code>gitlab-token</code> becomes <code>DC_SECRET_GITLAB_TOKEN</code>.
+The first time, the pane asks for it inline; tick <em>remember</em> to keep it in Windows
+Credential Manager.</p>
+<div class="note warn">Whatever a script writes to stderr is shown in the pane and the log as it
+is. Don't let your script print its token.</div>
+
+<h3>Example: GitLab pipelines</h3>
+<p>The repository has a working example, <code>scripts/gitlab-pipelines.ps1</code>: the branch's
+merge requests and pipelines, then each pipeline's jobs, then each job's <code>artifacts.zip</code>
+and <code>job.log</code>.</p>
+<pre><code>"listings": [
+  {
+    "id": "gitlab",
+    "title": "Pipelines",
+    "exec": "pwsh",
+    "args": ["-NoProfile", "-File", "C:/tools/gitlab-pipelines.ps1",
+             "${remoteUrl}", "${branch}"],
+    "script": true,
+    "secrets": ["gitlab-token"],
+    "inRepository": true,
+    "sort": "modified"
+  }
+]</code></pre>
+<p>A personal access token with the <code>read_api</code> scope is enough. The application itself
+knows nothing about GitLab: the script does, and you can write the same for any service.</p>
+
+<figure class="shot" data-file="screenshots/pipeline.png"><img src="../screenshots/pipeline.png" alt="A GitLab pipeline's jobs as a folder, served by a script." onerror="this.parentNode.classList.add('missing')"><figcaption>A GitLab pipeline's jobs as a folder, served by a script.</figcaption></figure>
+
+<h3 id="deleted-files">Example: files git remembers</h3>
+<p>The second example, <code>scripts/git-history.ps1</code>, lists every file that used to be
+below the folder you open it from and isn't any more, one row each, with the commit that took it
+away. A tracked file deleted and not yet committed comes first. <kbd>F3</kbd> shows the last
+content it had; <kbd>F5</kbd> copies it out, which restores it, with the line endings a checkout
+would give it. It reads git and writes nothing. It has its own row format, so it gives an
+<code>extract</code> and its columns:</p>
+<pre><code>"listings": [
+  {
+    "id": "git-gone",
+    "title": "Deleted files",
+    "exec": "pwsh",
+    "args": ["-NoProfile", "-File", "C:/tools/git-history.ps1", "${repoRoot}"],
+    "script": true,
+    "inRepository": true,
+    "extract": "^(?&lt;name&gt;[^\\t\\n]+)\\t(?&lt;size&gt;\\d*)\\t(?&lt;crumb&gt;[^\\t\\n]+)\\t(?&lt;when&gt;[^\\t\\n]*)\\t(?&lt;folder&gt;[^\\t\\n]*)\\t(?&lt;change&gt;[^\\t\\n]*)\\t(?&lt;by&gt;[^\\t\\n]*)\\t(?&lt;commit&gt;[^\\t\\r\\n]*)\\r?$",
+    "columns": [
+      { "group": "folder", "header": "Was in", "width": 200 },
+      { "group": "change", "header": "Change", "width": 140 },
+      { "group": "when", "header": "When", "width": 130 },
+      { "group": "by", "header": "By", "width": 110 },
+      { "group": "commit", "header": "Commit", "width": 240, "flexible": true }
+    ],
+    "showModified": false
+  }
+]</code></pre>
+<p>On a long history it takes a few seconds to list.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Getting around — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Getting around</h1>
+<p>Moving between places is the thing Dance Commander most wants to be fast at. Nearly everything
+here works the same in a local folder, on a server, inside an archive or in a search result; the
+few exceptions say so.</p>
+
+<h2 id="address-bar">The address bar</h2>
+<p><kbd>Ctrl</kbd>+<kbd>L</kbd> puts you in it with the whole address selected, as in a browser, so
+you can type over it straight away. <kbd>Esc</kbd> closes the suggestions; pressed again, it puts
+the address back as it was and returns you to the listing. It accepts a Windows path, a full address such as
+<code>sftp://deploy@build01/var/log</code> (see <a href="remote.html#addresses">addresses</a>), or
+the name of a bookmark.</p>
+<p>It also takes the path of a file on this computer. An archive such as <code>C:\dl\pack.zip</code> opens as a
+folder; any other file opens the folder it is in, with the cursor on it.</p>
+<ul>
+  <li><strong>It completes as you type</strong>, the way a browser does. The rest of the best
+  match is filled in after the caret, selected: <kbd>Enter</kbd> goes there, <kbd>Tab</kbd> accepts
+  it and leaves the caret at the end so you can keep typing, and <kbd>Backspace</kbd> drops it. A
+  bookmark whose name starts with what you typed wins; otherwise the shortest place you have been
+  that carries on from it. A folder that no longer exists is not filled in.</li>
+  <li><strong>The list below it</strong> starts with the folders on disk that carry on from what
+  you typed: <code>C:\Users\An</code> offers the folders in <code>C:\Users</code> starting with
+  “An”. Bookmarks and recent places that contain what you typed, anywhere in them, follow.
+  <kbd>↑</kbd> and <kbd>↓</kbd> write the highlighted entry into the box, so you can type a
+  <code>\</code> and carry on into it. Folders are offered for local disks and network shares, not
+  for servers, which would have to be connected to while you type.</li>
+  <li><strong>It searches when the text can't be an address.</strong> A bare word with no
+  <code>\</code>, <code>/</code> or <code>:</code> is a <a href="#search">search of the whole
+  computer</a>, unless it names a bookmark. Start with <code>?</code> to always search:
+  <code>?dow</code> searches even though <code>dow</code> would go to Downloads. The search is
+  always the last entry in the list, so it never pushes a place out of the way. A mistyped path is
+  still an error, not a search for itself.</li>
+</ul>
+
+<figure class="shot" data-file="screenshots/address-completion.png"><img src="../screenshots/address-completion.png" alt="The address bar completing a bookmark name as you type." onerror="this.parentNode.classList.add('missing')"><figcaption>The address bar completing a bookmark name as you type.</figcaption></figure>
+
+<h2 id="history">Back, forward, up</h2>
+<p>Each tab keeps its own history. <kbd>Alt</kbd>+<kbd>←</kbd> and <kbd>Alt</kbd>+<kbd>→</kbd>, or
+the mouse's side buttons, go back and forward. <kbd>Backspace</kbd> goes up to the parent; up from
+a drive's root goes to <code>about:computer</code>, with the cursor on the drive you left.</p>
+<p>Right-click the Back or Forward button, or hold it down, and it lists the places behind or ahead,
+nearest first, so three steps back are one pick. Hold the Up button for the folders above this one,
+up to This computer. Right-clicking Up opens the parent folder's own menu, and files dropped on Up
+go into the parent folder.</p>
+
+<figure class="shot" data-file="screenshots/back-menu.png"><img src="../screenshots/back-menu.png" alt="The Back button held down, listing the places behind it." onerror="this.parentNode.classList.add('missing')"><figcaption>The Back button held down, listing the places behind it.</figcaption></figure>
+<p>Every place you visit also goes into the global history, which feeds the address bar's
+completion and the <code>about:history</code> page. A server's address is recorded without its
+password.</p>
+
+<h2 id="tabs">Tabs</h2>
+<p>Each pane has its own tabs, and the strip of them appears once a pane has more than one.</p>
+<ul>
+  <li><strong>Opening.</strong> <kbd>Ctrl</kbd>+<kbd>T</kbd> opens a copy of the tab you are in,
+  its Back and Forward included, with the keyboard in its address bar: type where to go, or press
+  <kbd>Esc</kbd> to stay. <kbd>Ctrl</kbd>+<kbd>Enter</kbd> opens the folder or archive under the
+  cursor in a new tab, or a tab for each of several marked folders. A middle click on a folder does
+  the same; in Settings, <em>Middle click</em> can send it to the other pane instead.
+  <em>Open in other pane</em>, in the menu and the palette, does that from the keyboard.</li>
+  <li><strong>Switching.</strong> <kbd>Ctrl</kbd>+<kbd>PgDn</kbd> and <kbd>Ctrl</kbd>+<kbd>PgUp</kbd>
+  step through the tabs; <kbd>Ctrl</kbd>+<kbd>Tab</kbd> cycles forward. A tab you come back to is
+  as you left it: scrolled to the same place, the cursor on the same row, the same rows marked.</li>
+  <li><strong>Moving.</strong> Drag a tab along the strip to reorder it, or onto the other pane to
+  move it there. From the keyboard, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>PgUp</kbd> and
+  <kbd>PgDn</kbd> move it along the strip, and <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd> and
+  <kbd>→</kbd> move it to the left or right pane. It keeps its history and its view, and a question
+  it was asking goes with it. A command line open in the pane closes. A pane's last tab stays
+  where it is.</li>
+  <li><strong>Closing.</strong> <kbd>Ctrl</kbd>+<kbd>W</kbd>, or the cross on the tab.</li>
+</ul>
+<p>When you close the window, the tabs in both panes, which one was in front, the active pane and
+each tab's recent history are saved and restored on the next launch. Tabs behind the front one
+are only listed when you first click them, so a dozen restored tabs don't slow the start down.
+A folder that has gone since opens its parent, with a note saying so. Starting
+<code>DanceCommander C:\work</code> while it is already running adds a tab for that folder to the
+running window.</p>
+
+<h2 id="spring-loading">Dragging to a place you can't see</h2>
+<p>While you drag files, hold the pointer still over another tab and after a moment it comes to
+the front; hold it over a folder a little longer and the pane goes into it. A thin line fills
+under the target while it waits, so you can move off before it opens. Back, Forward and Up work
+the same way, and Up goes on climbing while you stay on it. Holding the drag on the last row in sight
+scrolls the listing down, and on the first row up, faster the nearer you are to its edge. The drop then lands
+wherever you have arrived.</p>
+
+<h2 id="quick-filter">Quick filter: just type</h2>
+<p>Typing letters while the listing has focus narrows it to the names that match, with the best
+match under the cursor, so <kbd>Enter</kbd> opens what you were typing towards. A bar above the
+listing shows the filter and how many rows it is holding back. <kbd>Esc</kbd> clears it, and it
+also clears when you leave the folder.</p>
+<ul>
+  <li>A plain word means “the name contains this”. <code>mon</code> finds <em>CPU monitor</em>,
+  <em>disk monitor</em> and <em>pokemon</em>.</li>
+  <li>Several words must all match, in any order: <code>mon d</code> leaves <em>disk monitor</em>.</li>
+  <li>A word with <code>*</code> or <code>?</code> is a wildcard pattern: <code>*.cs</code>.</li>
+  <li>Matches at the start of the name, or at the start of a word in it, come first.</li>
+</ul>
+<p>While a filter is running, <kbd>Space</kbd> types a space and <kbd>Backspace</kbd> deletes a
+character; otherwise they mark a row and go up a folder.</p>
+
+<figure class="shot" data-file="screenshots/quick-filter.png"><img src="../screenshots/quick-filter.png" alt="Typing “mon d” narrows the listing to the names that contain both words." onerror="this.parentNode.classList.add('missing')"><figcaption>Typing “mon d” narrows the listing to the names that contain both words.</figcaption></figure>
+
+<h2 id="search">Search and flatten</h2>
+<p>Searches look at names, by the same rule as the quick filter, not at what is inside files. There
+is no index to build or keep up to date: a search reads the disk as it goes, and results stream in
+while it walks, with a count of what it has read so far. <kbd>Esc</kbd> stops it, and a stopped
+search says it is partial.</p>
+<h3>Everywhere, from here</h3>
+<p>A word typed in the address bar searches the whole computer, starting where you are, as a
+browser's address bar searches the web. It walks the places in the order what you want is likely
+to be there: the folder you are in, then Desktop, Documents, Downloads and OneDrive, the rest of
+your home folder, the rest of the system drive, the other fixed and removable drives, Program Files,
+and Windows last. Network drives are left out. Matches from nearby are on screen while the far
+places are still being read.</p>
+<ul>
+  <li>A <em>Where</em> column says which place each row came from, and the rows are sorted likeliest
+  first: by place, then things you made before things a build made (<code>.dll</code> files,
+  anything under <code>bin</code> or <code>obj</code>), then how well the name matches, then how
+  recently it changed.</li>
+  <li>Hidden folders, caches and package folders such as <code>node_modules</code> are not searched,
+  and the footer says how many were left out. <kbd>Ctrl</kbd>+<kbd>H</kbd> searches them too.</li>
+  <li><kbd>Backspace</kbd> goes back to the folder you started from.</li>
+  <li>On a server or inside an archive, the address bar searches only the folder you are in and
+  below it, as <kbd>Ctrl</kbd>+<kbd>S</kbd> does.</li>
+</ul>
+
+<figure class="shot" data-file="screenshots/everywhere-search.png"><img src="../screenshots/everywhere-search.png" alt="A word typed in the address bar, with matches from this folder first and the Where column saying where each was found." onerror="this.parentNode.classList.add('missing')"><figcaption>A search from the address bar: this folder's matches first, then your own folders'.</figcaption></figure>
+
+<h3>Here, and below</h3>
+<p><kbd>Ctrl</kbd>+<kbd>S</kbd> searches only the current folder and everything below it.</p>
+<p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> flattens the tree: every file below this folder in
+one listing, with a column saying where each lives. Sort it by size to find what is filling a disk,
+or by date to find what changed today.</p>
+<p>Searches and flattened trees are ordinary places (<code>everywhere:</code>, <code>search:</code>
+and <code>flat:</code> addresses), so you can sort
+them, filter them, mark rows, copy with <kbd>F5</kbd>, bookmark them and go back to them.
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> takes you to the folder a result actually lives
+in.</p>
+
+<h2 id="bookmarks">Bookmarks</h2>
+<p><kbd>Ctrl</kbd>+<kbd>D</kbd> bookmarks where you are. Give it a name like <code>Work/Build
+logs</code> and it goes under a <em>Work</em> heading. Any address can be bookmarked, a server
+folder as easily as <code>C:\src</code>; opening a server bookmark connects when you open it.</p>
+<p>The first time you start Dance Commander, it bookmarks your home folder and the usual folders,
+and puts the folders pinned in Explorer's Quick access under a <em>Quick access</em> heading. Pins
+added later can be brought over with <em>Import bookmarks from Explorer's Quick access</em> in the
+command palette; it adds only what isn't bookmarked yet, and <kbd>Ctrl</kbd>+<kbd>Z</kbd> takes
+them out again.</p>
+<p>The Bookmarks button at the right of the toolbar opens the quick list. To rename, regroup or
+remove many at once, open <code>about:bookmarks</code> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>,
+or <em>Manage bookmarks</em> in that list),
+where they are a listing like any other: <kbd>F2</kbd> renames, <kbd>F6</kbd> moves to a group,
+<kbd>Del</kbd> removes, <kbd>Ctrl</kbd>+<kbd>Z</kbd> puts back. The underlying file,
+<code>bookmarks.json</code>, is yours to edit too.</p>
+
+<h2 id="about-pages">The application's own pages</h2>
+<table>
+  <thead><tr><th>Address</th><th>What it shows</th></tr></thead>
+  <tbody>
+    <tr><td><code>about:computer</code></td><td>This computer: drives with their free space, the known folders (Home, Documents, Downloads, …) and the pages below. <kbd>Alt</kbd>+<kbd>Home</kbd></td></tr>
+    <tr><td><code>about:bookmarks</code></td><td>Your bookmarks; groups are folders. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd></td></tr>
+    <tr><td><code>about:history</code></td><td>Where you have been, newest first. <kbd>Del</kbd> forgets a visit. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd></td></tr>
+    <tr><td><code>about:collections</code></td><td>Your saved collections of files</td></tr>
+    <tr><td><code>about:shelf</code></td><td>The shelf</td></tr>
+    <tr><td><code>about:app</code></td><td>The version, the licences, and where the settings and logs are</td></tr>
+  </tbody>
+</table>
+<p>The keys are also in the command palette, as <em>Go to: This computer</em>, <em>Go to: Bookmarks</em>
+and <em>Go to: History</em>.</p>
+<p>A drive that doesn't answer (a disconnected network drive) shows as <em>not responding</em>
+rather than freezing the page.</p>
+
+<figure class="shot" data-file="screenshots/about-computer.png"><img src="../screenshots/about-computer.png" alt="about:computer — drives, known folders and the application's own pages." onerror="this.parentNode.classList.add('missing')"><figcaption>about:computer — drives, known folders and the application's own pages.</figcaption></figure>
+
+<h2 id="chip">The location chip</h2>
+<p>The folder's icon at the left of the address bar stands for the folder you are in.</p>
+<ul>
+  <li><strong>Click it</strong>, or press <kbd>Ctrl</kbd>+<kbd>.</kbd>, for the folder's own menu:
+  paste, new folder, open a terminal here, git status, search here, bookmark, copy its path. The
+  same menu opens when you right-click empty space in the listing, and it is the last item of
+  every row's menu too.</li>
+  <li><strong>Drag it</strong> to drag the folder itself: to the other pane to copy it there, or to
+  another program. Hold <kbd>Shift</kbd> to move instead.</li>
+  <li><strong>Drop files on it</strong> to put them in this folder, even when the listing is too
+  full to have any empty space to aim at.</li>
+</ul>
+
+<h2 id="view-state">Each folder remembers how you left it</h2>
+<p>Sort order, and whether hidden entries are shown, are remembered per folder. Set a downloads
+folder to newest first once, and it stays that way, while your source folders stay sorted by
+name.</p>
+<p>By default folders and files are sorted together, by name, and names sort naturally:
+<code>file9</code> before <code>file10</code>. Sort by type to gather the folders, or turn on
+<em>Folders before files</em> in Settings (<kbd>Ctrl</kbd>+<kbd>,</kbd>) for every new tab; a folder
+you have sorted another way on purpose keeps its own order. Hidden files and dotfiles are hidden by
+default, and the footer always says how many and that <kbd>Ctrl</kbd>+<kbd>H</kbd> shows them.</p>
+
+<h2 id="live">Live folders</h2>
+<p>Local folders update by themselves when something else changes them: a build writing output,
+a download finishing. The footer says <em>live</em> when that is happening. Rows don't jump while
+your pointer is on them. Servers have no way to announce changes, so their footer offers
+<kbd>Ctrl</kbd>+<kbd>R</kbd> instead.</p>
+
+<h2 id="onedrive">OneDrive folders</h2>
+<p>In a OneDrive folder, a file that is only online has a small cloud after its name, and one you
+have set to be always kept on this device has a pin, where Explorer puts them. To keep the listing
+quiet they show on the cursor's row only; <em>OneDrive status</em> in Settings shows them on every
+row. Previewing an online-only file doesn't download it: the preview shows OneDrive's own thumbnail,
+or says that it would have to download the file.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

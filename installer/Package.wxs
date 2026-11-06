@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dance Commander's MSI (PLAN.md §3, Packaging; decided 2026-10-16: WiX, per user, the Explorer
+  entry ticked). Installed into %LOCALAPPDATA%\Programs\Dance Commander, with no admin prompt, as
+  VS Code's user installer is. Settings in %APPDATA%\DanceCommander are the user's and stay through
+  an uninstall, as they do for a zip that is deleted.
+
+  Everything is in the user's profile, so each component's key path is a value under
+  HKCU\Software\Dance Commander, as Windows Installer requires for per-user files (ICE38).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Dance Commander"
+           Manufacturer="Antti Valli"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="9e391bcf-7495-4312-a7bc-94a2f19e8210"
+           Scope="perUser"
+           Compressed="yes">
+
+    <!-- A newer version replaces the older one; going back means uninstalling first. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer Dance Commander is already installed. Uninstall it first to go back to this one." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="DanceCommander.ico" SourceFile="$(var.Assets)\DanceCommander.ico" />
+    <Property Id="ARPPRODUCTICON" Value="DanceCommander.ico" />
+    <!-- Repair and Remove in Installed apps; the one choice there is to make is made again by
+         installing again. -->
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Dance Commander" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="Main" Title="Dance Commander" Level="1" AllowAbsent="no">
+      <ComponentRef Id="Program" />
+      <ComponentRef Id="StartMenu" />
+    </Feature>
+
+    <!-- Its own feature, so the installer's tick box (UI.wxs) can leave it out. Silently:
+         msiexec /i … REMOVE=ExplorerEntry. -->
+    <Feature Id="ExplorerEntry" Title="Open in Dance Commander, in Explorer's menu" Level="1">
+      <ComponentRef Id="ExplorerEntry" />
+    </Feature>
+
+    <!-- A fixed GUID: files kept by a registry key path can't have one made for them. It stays the
+         same in every version, or an upgrade would leave two owners of the same files. -->
+    <Component Id="Program" Directory="INSTALLFOLDER" Guid="f009b948-3219-4ab0-809a-485e2b6821b5">
+      <RegistryValue Root="HKCU" Key="Software\Dance Commander" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      <File Id="DanceCommanderExe" Source="$(var.PublishDir)DanceCommander.exe" />
+      <!-- about:app lists these beside the executable. -->
+      <File Source="$(var.PublishDir)README.md" />
+      <File Source="$(var.PublishDir)LICENSE.txt" />
+      <File Source="$(var.PublishDir)THIRD-PARTY-NOTICES.txt" />
+      <!-- A finished job's notification icon: Windows wants an image file. -->
+      <File Source="$(var.PublishDir)icon.png" />
+      <!-- Symbols, so a stack trace in the log a colleague sends has its line numbers. -->
+      <File Source="$(var.PublishDir)DanceCommander.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Core.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Extensibility.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Providers.Archive.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Providers.Local.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Providers.Sftp.pdb" />
+      <File Source="$(var.PublishDir)DanceCommander.Providers.WebDav.pdb" />
+      <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+      <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+      <!-- The identity the app registers for its notifications the first time it shows one
+           (JobNotifier); left behind, Windows' notification settings would list a program that
+           is gone. -->
+      <RemoveRegistryKey Root="HKCU" Key="Software\Classes\AppUserModelId\DanceCommander" Action="removeOnUninstall" />
+    </Component>
+
+    <Component Id="StartMenu" Directory="ProgramMenuFolder">
+      <Shortcut Id="StartMenuShortcut" Name="Dance Commander" Description="A two-pane file manager"
+                Target="[INSTALLFOLDER]DanceCommander.exe" WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKCU" Key="Software\Dance Commander" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!--
+      On a folder, on the empty space inside one, and on a drive. "%V" is the folder's path; for a
+      drive it is "C:\", which arrives as C:" (the argument rules read \" as a quote), and the app
+      reads that as the drive's root (CommandLine.Resolve). Windows 11 shows these under "Show
+      more options"; the new menu takes only packaged apps' entries.
+    -->
+    <Component Id="ExplorerEntry" Directory="INSTALLFOLDER">
+      <RegistryValue Root="HKCU" Key="Software\Dance Commander" Name="ExplorerEntry" Type="integer" Value="1" KeyPath="yes" />
+      <RegistryKey Root="HKCU" Key="Software\Classes\Directory\shell\DanceCommander">
+        <RegistryValue Type="string" Value="Open in Dance Commander" />
+        <RegistryValue Name="Icon" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot;" />
+        <RegistryValue Key="command" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot; &quot;%V&quot;" />
+      </RegistryKey>
+      <RegistryKey Root="HKCU" Key="Software\Classes\Directory\Background\shell\DanceCommander">
+        <RegistryValue Type="string" Value="Open in Dance Commander" />
+        <RegistryValue Name="Icon" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot;" />
+        <RegistryValue Key="command" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot; &quot;%V&quot;" />
+      </RegistryKey>
+      <RegistryKey Root="HKCU" Key="Software\Classes\Drive\shell\DanceCommander">
+        <RegistryValue Type="string" Value="Open in Dance Commander" />
+        <RegistryValue Name="Icon" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot;" />
+        <RegistryValue Key="command" Type="string" Value="&quot;[INSTALLFOLDER]DanceCommander.exe&quot; &quot;%V&quot;" />
+      </RegistryKey>
+    </Component>
+
+    <!--
+      An upgrade keeps the choice made last time: someone who unticked the Explorer entry doesn't
+      get it back from the next version. Silently (winget), MajorUpgrade's feature migration does
+      that by itself. With the window, the box starts as it was left, read here before anything is
+      removed; what it says when Install is pressed is what happens (UI.wxs). Not a REMOVE set from
+      here as well: that outranked a box ticked again, and an ADDLOCAL given (review, 2026-10-16).
+    -->
+    <Property Id="PREVIOUSINSTALL">
+      <RegistrySearch Id="PreviousInstall" Root="HKCU" Key="Software\Dance Commander" Name="Installed" Type="raw" />
+    </Property>
+    <Property Id="PREVIOUSENTRY">
+      <RegistrySearch Id="PreviousEntry" Root="HKCU" Key="Software\Dance Commander" Name="ExplorerEntry" Type="raw" />
+    </Property>
+    <SetProperty Id="EXPLORERENTRY" Value="1" After="AppSearch" Sequence="ui"
+                 Condition="NOT PREVIOUSINSTALL OR PREVIOUSENTRY" />
+
+    <!--
+      Runs the app once, hidden, as the installer finishes (Program.Main, its warm-up flag): Defender's
+      first look at a new binary and unpacking the native libraries happen here rather than on
+      the first real launch. Not waited for; it needs no answer.
+    -->
+    <CustomAction Id="WarmUp" FileRef="DanceCommanderExe" ExeCommand="--warm-up" Execute="immediate" Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="WarmUp" After="InstallFinalize" Condition="NOT (REMOVE~=&quot;ALL&quot;)" />
+    </InstallExecuteSequence>
+
+    <UIRef Id="DanceCommanderUI" />
+  </Package>
+</Wix>

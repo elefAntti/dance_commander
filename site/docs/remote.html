@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Servers and archives — Dance Commander</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="../"><img src="../assets/icon.png" alt="">Dance Commander</a>
+  <nav class="site-nav"><a href="../#features">Features</a><a href="./" aria-current="page">Documentation</a><a href="../#get-it">Get it</a><a href="https://github.com/elefAntti/dance_commander">Source</a></nav>
+</div></header>
+
+<div class="docs">
+<nav class="docs-nav" aria-label="Documentation"></nav>
+<main class="docs-main">
+
+<h1>Servers and archives</h1>
+<p>A folder on a server, a folder inside a zip and a folder on your disk are the same kind of
+thing in Dance Commander. They list the same way, copy the same way, bookmark the same way, and
+nest: a zip on an SFTP server opens in place, and so does a tarball inside that zip.</p>
+
+<h2 id="addresses">Addresses</h2>
+<p>Type any of these into the address bar (<kbd>Ctrl</kbd>+<kbd>L</kbd>), bookmark them, or pass
+them on the command line.</p>
+<table>
+  <thead><tr><th>Address</th><th>Is</th></tr></thead>
+  <tbody>
+    <tr><td><code>C:\src\app</code></td><td>A local folder. <code>file:///C:/src/app</code> is the same place, and <code>%USERPROFILE%\Downloads</code> is expanded</td></tr>
+    <tr><td><code>\\fileserver\share\docs</code></td><td>A Windows share, through Windows</td></tr>
+    <tr><td><code>sftp://deploy@build01/var/log</code></td><td>A folder over SFTP; add <code>:2222</code> after the host for another port</td></tr>
+    <tr><td><code>davs://cloud.example.com/remote.php/dav/files/me</code></td><td>WebDAV over HTTPS; <code>dav://</code> for plain HTTP</td></tr>
+    <tr><td><code>C:\dl\release.zip!/bin</code></td><td>A folder inside an archive. <code>!</code> marks each step into an archive, as deep as you like</td></tr>
+    <tr><td><code>flat:C:\src</code></td><td>Every file below <code>C:\src</code>, in one listing</td></tr>
+    <tr><td><code>search:C:/src?report</code></td><td>A search of <code>C:\src</code> for “report”</td></tr>
+    <tr><td><code>everywhere:C:/src?report</code></td><td>A search that starts in <code>C:\src</code> and goes on to the places your files usually are</td></tr>
+    <tr><td><code>about:computer</code></td><td>Drives and known folders. See <a href="navigating.html#about-pages">the application's own pages</a></td></tr>
+    <tr><td><code>from:C:/src?worktrees</code></td><td>A listing made by a command or script you configured. See <a href="scripts.html">Listings and script locations</a></td></tr>
+  </tbody>
+</table>
+<p>The address bar shows a place's scheme dimmed, so a server address reads as a server at a
+glance.</p>
+
+<h2 id="sftp">SFTP</h2>
+<p>Go to <code>sftp://user@host/path</code>. The first time, the pane asks two things inline:</p>
+<ol>
+  <li><strong>Whether to trust the server's host key.</strong> The SHA-256 fingerprint is shown;
+  check it against the server. <em>Trust this host</em> remembers it in
+  <code>%APPDATA%\DanceCommander\known_hosts</code>; Cancel is the default.
+  If a known server's key ever changes, the pane says so plainly before anything is sent, because
+  that is either a rebuilt server or someone in between. <em>Do not connect</em> is the default
+  there; <em>Replace the stored key</em> is for when you know why it changed.</li>
+  <li><strong>The password.</strong> Tick <em>Remember this password</em> to keep it in Windows
+  Credential Manager, under <em>Windows Credentials</em> as <code>DanceCommander:…</code>; otherwise
+  it is kept for this session only. A password the server refuses is forgotten, and you are asked
+  again. Passwords are never written to a file, a log or the history.</li>
+</ol>
+<p>The questions appear in the pane that is connecting, not over whatever you are doing in the
+other one. The loading line says <em>Connecting to user@host…</em> until the first rows arrive.</p>
+<div class="note"><strong>Authentication today</strong> is by password only. SSH keys and the SSH
+agent are not supported yet, for browsing or copying. (The terminal below is Windows' own
+<code>ssh</code>, so your keys work there.)</div>
+<p>Connections are pooled and kept alive, so moving between folders on one server doesn't
+reconnect. If the connection drops, the pane says <em>Lost the connection to …</em>, and
+<kbd>Ctrl</kbd>+<kbd>R</kbd> connects again; a copy cut off says the same in its own words rather
+than the network's.</p>
+<p>Listings add <strong>Perms</strong> and <strong>Owner</strong> columns (owner names are read from
+the server where it allows it). Uploads are written to <code>name.part</code> and renamed into
+place when complete, so a half-finished upload never sits under the real name. A file uploaded over
+an existing one keeps that file's permissions, so a new build of a program stays executable; a new
+file copied from an SFTP server takes its source's permissions, within what the server allows
+a new file; from Windows, a script starting with
+<code>#!</code> or a Linux executable is made executable. Each change of permissions is in the
+activity log as a <code>chmod</code>.</p>
+<p><kbd>Ctrl</kbd>+<kbd>E</kbd> on a server runs the command line <strong>on the server</strong>,
+in the folder you are looking at, over the connection already open. See
+<a href="tools.html#command-line">the command line</a>. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
+opens a shell on the server in that folder: an <code>ssh</code> session in a new Windows Terminal
+tab.</p>
+<p>Servers can't tell a client that a folder changed, so server folders aren't live:
+<kbd>Ctrl</kbd>+<kbd>R</kbd> refreshes. What you change from Dance Commander, including a finished
+copy, shows at once.</p>
+<div class="note">A symbolic link to a folder on an SFTP server doesn't open as a folder yet. Go to
+the folder it points to instead.</div>
+
+<figure class="shot" data-file="screenshots/sftp-hostkey.png"><img src="../screenshots/sftp-hostkey.png" alt="Connecting to a new SFTP server: the host key question, inline in the pane." onerror="this.parentNode.classList.add('missing')"><figcaption>Connecting to a new SFTP server: the host key question, inline in the pane.</figcaption></figure>
+
+<h2 id="webdav">WebDAV</h2>
+<p><code>davs://</code> is WebDAV over HTTPS and <code>dav://</code> over plain HTTP. It works with
+Nextcloud, ownCloud, IIS, SharePoint and others: listing, upload, download, new folder, rename,
+move (done on the server, so renaming a gigabyte is one request), delete, and
+<strong>Compress into a zip</strong>.</p>
+<ul>
+  <li>A server that wants a password asks for it in the pane, and <em>Remember this password</em>
+  keeps it in Windows Credential Manager as for SFTP; a public share never asks. Windows sign-in
+  (NTLM, Negotiate) is used where the server offers it, so there is nothing to type.</li>
+  <li>Uploads go to a temporary name, <code>name.dc-upload-…</code>, and take the real name only
+  when complete. A file uploaded over an existing one sets the old one aside until the new one is
+  in place.</li>
+  <li>On Nextcloud, large uploads go in 10 MB pieces, as Nextcloud's own clients send them, and the
+  server joins them at the end, so a server that refuses one huge request still takes the file. At
+  the end the strip says <em>Waiting for … to finish</em>, since joining a large file takes the
+  server a while.</li>
+  <li>On Nextcloud, <strong>Copy web link</strong> (right-click or the palette) puts the file's page
+  in the web interface on the clipboard, for someone who will open it in a browser.</li>
+  <li>A <code>dav://</code> address that the server redirects to HTTPS is refused rather than
+  followed, and the error names the <code>davs://</code> address that works. Following it would
+  silently lose your password on the way.</li>
+  <li>Errors are in words: “locked by someone else”, “the server has no room”, not a status
+  code.</li>
+</ul>
+
+<h2 id="archives">Archives</h2>
+<p><kbd>Enter</kbd> on a zip, 7z, rar or tar goes inside it, and so does a file compressed with
+gz, bz2 or xz: a compressed tar opens as its folders, a single compressed file as the one file
+inside. What a file is comes from its content, not its name, so a tarball named
+<code>.gz</code> still opens as one. You can browse, filter, preview with <kbd>F3</kbd> and copy
+out with <kbd>F5</kbd>, from a local archive or one on an SFTP server, and into archives inside
+archives. Navigating inside one is instant after it is first opened, and recently used archives
+stay open, so back and forward don't reopen them.</p>
+<p>Archives are read-only: you can't change what is inside one in place, and a paste into one is
+refused with a note. The menu offers <strong>Extract here</strong> (into a folder named after the
+archive, beside it), <strong>Extract to other pane</strong> and <strong>Compress into a
+zip</strong>. Zip is the one format Dance Commander writes; it is what anyone you send it to can
+open. A zip of the same name already there asks <strong>Keep both</strong> or
+<strong>Replace it</strong>, and a replaced zip goes to the Recycle Bin; where there is no Recycle
+Bin, as on a server, only Keep both is offered. Entries that try to escape
+the archive with <code>..</code> in their path are rejected.</p>
+<p>Office documents, OpenDocument files, EPUBs and other files that happen to be zips
+(<code>.docx</code>, <code>.xlsx</code>, <code>.odt</code>, …) open in their application on
+<kbd>Enter</kbd>, as you'd expect. Packages such as <code>.jar</code> and <code>.nupkg</code> open
+as archives.</p>
+
+<figure class="shot" data-file="screenshots/archive-inside.png"><img src="../screenshots/archive-inside.png" alt="Inside a zip: the address shows the step into the archive, and the rows list like any folder." onerror="this.parentNode.classList.add('missing')"><figcaption>Inside a zip: the address shows the step into the archive, and the rows list like any folder.</figcaption></figure>
+<p>Zips whose headers some tools write oddly (Zip64 markers on every entry) still open: a zip the
+main reader refuses is read again with a second one.</p>
+<div class="note">An archive on a WebDAV server doesn't open in place yet, and can't be extracted
+there; copy it to your disk first. Files on a server or inside an archive don't open in their
+program with <kbd>Enter</kbd> yet either: <kbd>F3</kbd> previews them where they are, and
+<kbd>F5</kbd> copies them somewhere local.</div>
+
+<h2 id="network-drives">Network drives</h2>
+<p>Mapped network drives and <code>\\server\share</code> paths work through Windows like any local
+folder. Listing happens in the background, so a share that stops answering doesn't freeze the
+window, and This computer marks such a drive <em>not responding</em>. A restored tab on a
+disconnected drive opens the nearest folder that is still there, with a note. A share has no
+Recycle Bin, so <kbd>Del</kbd> there asks before deleting permanently.</p>
+<p>Other protocols, such as FTP, S3 or a cloud storage account, aren't built in. A cloud folder that syncs to your disk, such as OneDrive's, is an ordinary local folder.</p>
+
+<div class="pager"></div>
+</main>
+</div>
+<script src="../assets/docs.js"></script>
+</body>
+</html>

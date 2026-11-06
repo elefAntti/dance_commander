@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dance Commander — a keyboard-first, two-pane file manager for Windows</title>
+  <meta name="description" content="Two panes, the F-key legend, Insert to mark, F5 to copy — rebuilt with browser navigation, live folders, git awareness, SFTP, WebDAV and archives in one listing. No modal dialogs. Windows only.">
+  <meta property="og:title" content="Dance Commander">
+  <meta property="og:description" content="A keyboard-first, two-pane file manager for Windows, rebuilt with 2026 ergonomics.">
+  <meta property="og:image" content="https://elefAntti.github.io/dance_commander/assets/icon.png">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="./"><img src="assets/icon.png" alt="">Dance Commander</a>
+    <nav class="site-nav">
+      <a href="#features">Features</a>
+      <a href="docs/">Documentation</a>
+      <a href="docs/compare.html">Compare</a>
+      <a href="#get-it">Get it</a>
+      <a href="https://github.com/elefAntti/dance_commander">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <p class="eyebrow">Two-pane file manager · Windows</p>
+  <h1>An old-school, orthodox file manager built with modern aesthetics and ergonomics</h1>
+  <p class="lede">
+    Dance Commander is designed to be fun to use: calm when idle, powerful when you need it, and quick to respond. The UI uses no modal dialogs and very limited chrome.
+  </p>
+  <div class="actions">
+    <a class="button" href="#get-it">Get Dance Commander</a>
+    <a class="button quiet" href="docs/">Read the guide</a>
+  </div>
+</section>
+
+<figure class="shot" data-file="screenshots/window-tour.png"><img src="screenshots/window-tour.png" alt="The window: two panes, each with its toolbar, tabs, listing and footer, and the legend along the bottom." onerror="this.parentNode.classList.add('missing')">
+  <figcaption>A repository on the left, its changes marked the way git marks them; a server's logs on the right, over SFTP. Hold <kbd>Ctrl</kbd> and the legend shows that whole layer of the keymap.</figcaption></figure>
+
+
+<section class="section" id="features">
+  <p class="eyebrow">What it is</p>
+  <h2>Calm until you reach for it</h2>
+  <p class="intro">
+    It's native for Windows, but meant for users who interact with Linux and possibly macOS too. It
+    understands file permissions and dot files, and OneDrive too. Connecting to remote systems is
+    supported over SFTP or WebDAV.
+  </p>
+  <p class="intro">
+    A bespoke file manager, it is made to fit the workflow of a developer: a seasoned computer user
+    who has to interface with the corporate environment. I only build features I use and can test
+    myself, so it's not meant to be everything for everyone. You are welcome to add the features you
+    need, though: Dance Commander is available under the MIT licence and has scripting support for
+    new tools and views.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>The commander, like you remember it</h3>
+      <p>Two panes. <kbd>Tab</kbd> between them, copy or move to the other side with <kbd>F5</kbd> and <kbd>F6</kbd>.
+        Use your commander muscle memory, or build it with the key legend and the command palette.</p>
+        <p>Every key can also be changed in Settings <span style="white-space:nowrap">(<kbd>Ctrl</kbd>+<kbd>,</kbd>)</span>.</p>
+    </div>
+    <div class="card">
+      <h3>The browser, pioneer of modern, minimalist chrome</h3>
+      <p>An address bar that completes as you type. Type a word that couldn't be a path and it searches. Close the window and it comes back as you left it.</p><p>Back, forward, bookmarks... Everything just works like you expect it to.</p>
+    </div>
+    <div class="card">
+      <h3>Everything is a place</h3>
+      <p>Local disks, SFTP, WebDAV and the inside of zip, 7z, tar and rar files share one listing, nested as deep as you like: a zip on an SFTP server opens in place. Search results, a flattened tree and a saved collection are places too.</p>
+    </div>
+    <div class="card">
+      <h3>Recovering gracefully</h3>
+      <p><kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes copies, moves, renames and deletes to the Recycle Bin. The two things it can't undo, a permanent delete and replacing a file, happen only when you choose them. Errors say what happened and what to do, and name the cause: “open in PowerShell in Windows Terminal”, not “the file is in use”.</p>
+    </div>
+    <div class="card">
+      <h3>No modal dialogs. Ever.</h3>
+      <p>A conflict, a password, a host key or an overwrite is asked inline, in the pane that needs it. Ignore it, keep browsing, come back.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="use">
+  <p class="eyebrow">How do I use it</p>
+  <h2>Start with the mouse, stay for the keyboard</h2>
+  <p class="intro">
+    Dance Commander works intuitively with the mouse. But I suggest using the keyboard as much as
+    you can: you'll love it!
+  </p>
+  <div class="grid">
+    <div class="card">
+      <h3>Address bar</h3>
+      <p><kbd>Ctrl</kbd>+<kbd>L</kbd> brings you to the address bar, which auto-completes your destinations. You can also search by typing into it. <kbd>Esc</kbd> brings you back out.</p>
+    </div>
+    <div class="card">
+      <h3>Command palette</h3>
+      <p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> opens the palette: over 100 commands in an easily searchable list, together with their hotkeys, so next time you may not need to open it at all.</p>
+      <p>The legend along the bottom of the window shows the F-key actions, and holding <kbd>Ctrl</kbd>, <kbd>Shift</kbd> or <kbd>Alt</kbd> shows that layer of the keyboard.</p>
+    </div>
+    <div class="card">
+      <h3>Type to filter</h3>
+      <p>When a file list is focused, just type to sort and filter it at the same time. Press <kbd>Space</kbd> and type a second bit to filter further with a second search word.</p>
+      <p>The same logic drives the address bar, the search and the command palette.</p>
+    </div>
+    <div class="card">
+      <h3>Drag and drop</h3>
+      <p>For the mouse-oriented, there is drag and drop with spring-loaded folders, tabs and even the Back, Forward and Up buttons: hold a drag over one and it opens. A rarer treasure is the global shelf: call it in front of any window with <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to drag files into and out of Dance Commander while you work.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+<div class="section">
+  <div class="split">
+    <div>
+      <p class="eyebrow">For developers</p>
+      <h2>Knows where you work</h2>
+      <p>The branch of the repository you're in, and the branch of every repository in a folder of them. Git's own letters in git's own colours on every changed file, rolled up to the folders above it. A <em>Worktrees</em> listing that keeps itself up to date while your parallel checkouts come and go.</p>
+      <p>The preview (<kbd>F3</kbd>) states encoding and line endings as facts, and says <em>mixed</em> with the counts, because that is the case that costs an afternoon. Tabs are drawn, so a Makefile looks the way make reads it.</p>
+      <p>The programs you already have bring their own commands as soon as they are found: Git Bash and Windows Terminal here, the repository in VS Code, Fork or GitKraken, Beyond Compare on the marked files or the two panes. <kbd>Ctrl</kbd>+<kbd>E</kbd> runs a line in this folder, on a server too, and <kbd>Shift</kbd>+<kbd>Enter</kbd> runs the script under the cursor instead of opening it.</p>
+      <p>Your own tools join the menus, the palette and the keymap from one JSON file: a build in a dev container as a background job that tells you when it's done, a checksum whose output stays in the pane.</p>
+    </div>
+    <div>
+      <pre><code><span class="c">// %APPDATA%\DanceCommander\tools.json</span>
+{
+  "id": "open-in-pwsh",
+  "title": "Open in PowerShell",
+  "exec": "pwsh",
+  "args": ["-NoExit"],
+  "workingDirectory": "${dir}",
+  "launch": "console",
+  "keybinding": "Ctrl+Shift+K"
+},
+{
+  "id": "md5",
+  "title": "MD5",
+  "appliesTo": "file|multi",
+  "exec": "certutil",
+  "args": ["-hashfile", "${path}", "MD5"],
+  "launch": "capture",
+  "forEachSelected": true
+}</code></pre>
+      <p style="color:var(--text-3);font-size:.875rem">Hot-reloaded. Arguments are an argv array, so an odd filename is just a filename.</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card full">
+      <h3>Small features I like</h3>
+      <ul class="notfor">
+        <li>Copy and paste text and images as new files</li>
+        <li>A new file with <kbd>Shift</kbd>+<kbd>F4</kbd>, straight into your editor, no save dialog</li>
+        <li>Group the marked files into a new folder with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd>, the name already proposed</li>
+        <li>Integration with multiple different shells</li>
+        <li>Worktree switcher for git</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section">
+  <div class="split">
+    <div>
+      <p class="eyebrow">Speed</p>
+      <h2>Fast, and never makes you wait</h2>
+      <p>Navigation and app launch speed are important, so the important bits are timed and optimized when needed.
+        Rows stream in as they are read, and git marks and icons are added afterwards. Remote listings are remembered, and the server folder under your cursor is fetched before you open it, so Enter finds it ready.
+        Search starts in the places you are most likely to look, skips network drives that would hold it up, and carries on past files it can't read. The UI gives instant feedback when something happens.</p>
+      <p>Speed is also about eliminating extra steps: An automatic <code>chmod +x</code> when you upload a binary, or a misnamed <code>.tar.gz</code> that still opens as one.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+<div class="section">
+  <div class="split">
+    <div>
+      <h3>Dense, not cluttered</h3>
+      <p>No ribbon, no strip of sixteen icons, no borders around everything. Folders and files the app is hiding are always counted, with the key that brings them back.</p>
+      <p>My favourite kind of feature is one that doesn't take up screen real estate: it's just there when you reach for it, the way you would expect it to be.</p>
+    </div>
+    <div>
+      <h3>Not for everyone, on purpose</h3>
+      <ul class="notfor">
+        <li>Windows only. It uses the shell, the credential store and the taskbar freely.</li>
+        <li>No icon view, no breadcrumb bar and no hex editor.</li>
+        <li>No plugin marketplace: extensions are scripts you own.</li>
+        <li>No cloud-storage accounts. Local, SFTP, WebDAV and archives, done well.</li>
+      </ul>
+      <p>Weighing it against other file managers? <a href="docs/compare.html">An honest comparison →</a></p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section" id="get-it">
+  <p class="eyebrow">Get it</p>
+  <h2>Install it and pin it</h2>
+  <div class="split">
+    <div>
+      <p>Download the installer or the zip from the <a href="https://github.com/elefAntti/dance_commander/releases">releases page</a>. You need Windows 10 2004 (build 19041) or later on x64.</p>
+      <p>The <strong>MSI</strong> is the recommended one: it installs for your user only, so no administrator rights, with a Start menu entry and an <em>Open in Dance Commander</em> item in Explorer's menu. The <strong>zip</strong> is for trying it without installing: unpack it anywhere, and it touches no registry. Pin it to the taskbar either way.</p>
+      <p><a href="docs/">Getting started →</a></p>
+    </div>
+    <div>
+      <p>Dance Commander is open source under the MIT licence. To build it yourself you need the <a href="https://dotnet.microsoft.com/download/dotnet/9.0">.NET 9 SDK</a>:</p>
+      <pre><code>git clone https://github.com/elefAntti/dance_commander
+cd dance_commander
+scripts\publish-local.bat</code></pre>
+      <p style="color:var(--text-3);font-size:.875rem">Or try a build without installing it: <code>dotnet run --project src/DanceCommander.App -- --new-window</code></p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="inner">
+    <span>Dance Commander · MIT licence</span>
+    <a href="docs/">Documentation</a>
+    <a href="docs/keyboard.html">Keyboard reference</a>
+    <a href="https://github.com/elefAntti/dance_commander">Source</a>
+  </div>
+</footer>
+
+</body>
+</html>

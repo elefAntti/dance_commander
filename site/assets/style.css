@@ -1,0 +1,306 @@
+/* Dance Commander site. The palette is the application's own (src/DanceCommander.App/Theme/Dark.xaml):
+   near-monochrome greys, one accent for focus, semantic colour only where it means something. */
+
+:root {
+  --window: #16181a;
+  --pane: #1f2225;
+  --pane-inactive: #1b1e21;
+  --sunken: #121416;
+  --hover: #2b2f34;
+  --divider: #33383e;
+  --popup: #2a2e33;
+  --popup-border: #434a52;
+  --text: #f2f3f4;
+  --text-2: #b4bcc4;
+  --text-3: #8a929a;
+  --accent: #7aaaff;
+  --selection: #2f3e5d;
+  --git-modified: #e2c08d;
+  --git-added: #8dd18d;
+  --git-untracked: #7fb5c9;
+  --danger: #ff8b82;
+  --warning: #f0c56b;
+  --warning-surface: #3a3220;
+  --info-surface: #242e3c;
+
+  --ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+
+  --measure: 44rem;
+  --wide: 72rem;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--window); color-scheme: dark; scroll-padding-top: 4.5rem; }
+
+body {
+  margin: 0;
+  font: 16px/1.6 var(--ui);
+  color: var(--text-2);
+  background: var(--window);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+h1, h2, h3, h4 { color: var(--text); font-family: var(--display); font-weight: 600; line-height: 1.25; }
+h1 { font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; margin: 0 0 1rem; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; margin: 3rem 0 1rem; }
+h3 { font-size: 1.125rem; margin: 2rem 0 0.5rem; }
+h4 { font-size: 1rem; margin: 1.5rem 0 0.25rem; }
+p, ul, ol, table, pre { margin: 0 0 1rem; }
+strong { color: var(--text); font-weight: 600; }
+ul, ol { padding-left: 1.25rem; }
+li { margin: 0.25rem 0; }
+hr { border: 0; height: 1px; background: var(--divider); margin: 3rem 0; }
+
+code, kbd, pre { font-family: var(--mono); font-size: 0.875em; }
+code { color: var(--text); background: var(--pane); padding: 0.1em 0.35em; border-radius: 4px; }
+pre {
+  background: var(--sunken);
+  color: var(--text-2);
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+pre .c { color: var(--text-3); }
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.05em 0.45em;
+  font-size: 0.8em;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text);
+  background: var(--popup);
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 var(--sunken);
+  white-space: nowrap;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.75rem 0.5rem 0; }
+th { color: var(--text-3); font-weight: 500; font-size: 0.8125rem; }
+tr + tr td, tbody tr td { border-top: 1px solid var(--divider); }
+td:first-child { white-space: nowrap; }
+
+/* ---------- Site header ---------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(22, 24, 26, 0.92);
+  backdrop-filter: blur(8px);
+}
+.site-header .inner {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.brand { display: flex; align-items: center; gap: 0.6rem; color: var(--text); font-weight: 600; }
+.brand:hover { text-decoration: none; }
+.brand img { width: 24px; height: 24px; }
+.site-nav { display: flex; gap: 1.5rem; margin-left: auto; font-size: 0.9375rem; }
+.site-nav a { color: var(--text-2); }
+.site-nav a:hover, .site-nav a[aria-current] { color: var(--text); text-decoration: none; }
+
+/* ---------- Landing ---------- */
+
+.hero { max-width: var(--wide); margin: 0 auto; padding: 5rem 1.5rem 3rem; }
+.hero h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); max-width: 18ch; }
+.hero .lede { font-size: 1.1875rem; max-width: 40rem; color: var(--text-2); }
+.hero .actions { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+
+.button {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--window);
+  background: var(--accent);
+}
+.button:hover { text-decoration: none; filter: brightness(1.08); }
+.button.quiet { color: var(--text); background: var(--pane); }
+.button.quiet:hover { background: var(--hover); filter: none; }
+
+.section { max-width: var(--wide); margin: 0 auto; padding: 4rem 1.5rem; }
+.section > h2:first-child { margin-top: 0; }
+.section .intro { max-width: var(--measure); font-size: 1.0625rem; }
+.eyebrow { color: var(--text-3); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.5rem; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+}
+.card { background: var(--pane); border-radius: 10px; padding: 1.5rem; }
+.card h3 { margin-top: 0; font-size: 1.0625rem; }
+.card p:last-child { margin-bottom: 0; }
+/* A seventh card would sit alone on the last row; this one takes the whole row instead. */
+.card.full { grid-column: 1 / -1; }
+.card .keys { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; }
+@media (max-width: 52rem) { .split { grid-template-columns: 1fr; } }
+
+.quote {
+  font-family: var(--display);
+  font-size: 1.375rem;
+  line-height: 1.45;
+  color: var(--text);
+  max-width: 46rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.notfor li { color: var(--text-2); }
+.notfor li::marker { color: var(--text-3); }
+
+.band { background: var(--sunken); }
+
+.site-footer { color: var(--text-3); font-size: 0.875rem; }
+.site-footer .inner { max-width: var(--wide); margin: 0 auto; padding: 2.5rem 1.5rem 3rem; display: flex; gap: 2rem; flex-wrap: wrap; }
+.site-footer a { color: var(--text-2); }
+
+/* ---------- The window mockup: drawn in HTML so it stays crisp and carries no one's real files ---------- */
+
+.window {
+  max-width: var(--wide);
+  margin: 0 auto;
+  background: var(--window);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--divider), 0 30px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  font: 13px/1 var(--ui);
+  color: var(--text);
+  user-select: none;
+}
+.window .titlebar { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; color: var(--text-2); }
+.window .titlebar img { width: 16px; height: 16px; }
+.window .titlebar .controls { margin-left: auto; letter-spacing: 22px; color: var(--text-3); font-family: var(--ui); }
+.window .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 8px; }
+.window .pane { background: var(--pane-inactive); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.window .pane.active { background: var(--pane); box-shadow: inset 0 3px 0 var(--accent); }
+.window .toolbar { display: flex; align-items: center; gap: 14px; padding: 10px 12px 6px; color: var(--text-3); }
+.window .address {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--sunken);
+  border-radius: 5px;
+  padding: 7px 10px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.window .address .scheme { color: var(--text-3); }
+.window .chip { width: 14px; height: 11px; border-radius: 2px; background: #e8b84a; flex: none; }
+.window .chip.net { background: var(--git-untracked); }
+.window .tabs { display: flex; gap: 2px; padding: 4px 12px 0; font-size: 12px; }
+.window .tab { padding: 6px 12px; border-radius: 5px 5px 0 0; color: var(--text-3); }
+.window .tab.on { background: var(--hover); color: var(--text); }
+.window .head, .window .row { display: grid; grid-template-columns: 22px 1fr 72px 120px; align-items: center; padding: 0 12px; }
+.window .pane.remote .head, .window .pane.remote .row { grid-template-columns: 22px 1fr 72px 82px 120px; }
+.window .head { height: 28px; color: var(--text-3); font-size: 12px; }
+.window .head span:nth-child(n+3), .window .row span:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+.window .row { height: 24px; white-space: nowrap; }
+.window .row span { overflow: hidden; text-overflow: ellipsis; }
+.window .row .ext { color: var(--text-3); }
+.window .row .dim { color: var(--text-3); }
+.window .row.cursor { background: var(--selection); }
+.window .row.marked .name { color: var(--warning); }
+.window .ico { width: 13px; height: 10px; border-radius: 2px; background: #e8b84a; }
+.window .ico.f { width: 10px; height: 12px; background: #c8ccd0; border-radius: 1px; }
+.window .ico.z { width: 10px; height: 12px; background: #b49ad8; border-radius: 1px; }
+.window .git { display: inline-block; width: 12px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+.window .git.M { color: var(--git-modified); }
+.window .git.A { color: var(--git-added); }
+.window .git.U { color: var(--git-untracked); }
+.window .branch { color: var(--text-3); font-size: 12px; margin-left: 8px; }
+.window .footer { display: flex; justify-content: space-between; padding: 10px 12px; margin-top: auto; color: var(--text-3); font-size: 12px; }
+.window .legend { display: flex; gap: 22px; padding: 10px 16px 11px; color: var(--text-3); font-size: 12px; }
+.window .legend b { color: var(--text-2); font-weight: 400; margin-right: 5px; }
+.window .legend .right { margin-left: auto; }
+.window .rows { padding-bottom: 6px; }
+
+@media (max-width: 52rem) {
+  .window .panes { grid-template-columns: 1fr; }
+  .window .pane:not(.active) { display: none; }
+}
+
+.caption { max-width: var(--wide); margin: 1rem auto 0; padding: 0 1.5rem; color: var(--text-3); font-size: 0.875rem; text-align: center; }
+
+/* ---------- Docs ---------- */
+
+.docs { max-width: var(--wide); margin: 0 auto; padding: 2.5rem 1.5rem 5rem; display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: 3rem; }
+.docs-nav { position: sticky; top: 4.5rem; align-self: start; font-size: 0.9375rem; }
+.docs-nav h4 { margin: 0 0 0.5rem; color: var(--text-3); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+.docs-nav ul { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.docs-nav li { margin: 0; }
+.docs-nav a { display: block; padding: 0.3rem 0.75rem; border-radius: 5px; color: var(--text-2); }
+.docs-nav a:hover { background: var(--pane); color: var(--text); text-decoration: none; }
+.docs-nav a[aria-current] { background: var(--pane); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
+.docs-main { max-width: var(--measure); }
+.docs-main > h1 + p { font-size: 1.125rem; }
+.docs-main h2 { padding-top: 0.5rem; }
+.docs-main h2:first-of-type { margin-top: 2rem; }
+.docs-main table { margin-bottom: 1.5rem; }
+.pager { display: flex; justify-content: space-between; gap: 1rem; margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--divider); }
+.pager a { display: block; }
+.pager small { display: block; color: var(--text-3); }
+
+.note { background: var(--info-surface); border-radius: 8px; padding: 0.9rem 1.1rem; margin: 0 0 1rem; color: var(--text-2); }
+.note.warn { background: var(--warning-surface); }
+.note strong:first-child { color: var(--text); }
+
+@media (max-width: 52rem) {
+  .docs { grid-template-columns: 1fr; gap: 1rem; }
+  .docs-nav { position: static; }
+  .docs-nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+  .site-nav { gap: 1rem; }
+}
+
+/* ---------- Screenshots ---------- */
+/* A figure whose image is not there yet shows a placeholder naming the file it is waiting for
+   (onerror adds .missing), so a screenshot goes live by dropping it into site/screenshots/. */
+
+.shot { margin: 1.5rem 0 2rem; }
+.shot img { display: block; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 0 0 1px var(--divider), 0 12px 40px rgba(0, 0, 0, 0.45); }
+.shot figcaption { margin-top: 0.6rem; color: var(--text-3); font-size: 0.875rem; }
+.shot.missing img { display: none; }
+.shot.missing::before {
+  content: "Screenshot to come: " attr(data-file);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  padding: 1rem;
+  border: 1px dashed var(--popup-border);
+  border-radius: 8px;
+  color: var(--text-3);
+  font: 0.8125rem var(--mono);
+  text-align: center;
+}
+.section .shot { max-width: 56rem; }
+/* The tour under the hero sits outside a section, so it takes the hero's width and gutters. */
+.hero + .shot { max-width: var(--wide); margin: 0 auto 3rem; padding: 0 1.5rem; }
+
+.eyebrow + h2 { margin-top: 0; }
+
+/* The comparison table is wider than the text column on a narrow screen. */
+.table-wrap { overflow-x: auto; }
+.compare td { font-size: 0.875rem; }

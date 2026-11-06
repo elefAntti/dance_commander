@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DanceCommander.Core\DanceCommander.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The PROPFIND parser is implementation detail and is also where every interoperability
+         problem this provider can have will live, so the test assembly sees inside. -->
+    <InternalsVisibleTo Include="DanceCommander.Tests" />
+  </ItemGroup>
+
+</Project>
