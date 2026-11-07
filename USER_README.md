@@ -8,6 +8,9 @@ does to your files can be undone with Ctrl+Z.
 This file is for using it. `about:app` (or *About Dance Commander* on This computer) shows the
 version, the licences, and where the settings and logs are.
 
+0.9 is a preview. It is usable every day, but some obvious things (ejecting drives, emptying the
+Recycle Bin) are still missing, and there will be bugs.
+
 Something marked *(untried)* exists, but nobody has used it for real yet. It may well work; if you
 use it, say how it went ([When something is wrong](#when-something-is-wrong) says how).
 
