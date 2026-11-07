@@ -12,10 +12,12 @@ GitLab pipelines), not by plugins. It never shows a modal dialog, and it tells y
 your files in the shell's own words, with undo.
 
 It is a bespoke tool, and "not for everyone" is deliberate: calm and fast, staying out of the way
-until you reach for it. Windows only, by choice.
+until you reach for it. Windows only, by choice: Linux has a wealth of good file managers and I think a file manager is something that should integrate with the platform. 
 
 **Using it:** [USER_README.md](USER_README.md), which ships beside the executable as `README.md`.
 This file is for building and changing it.
+
+**PREVIEW** Dance Commander v0.9 is a preview version. It should be usable as your daily tool (that's how I use it), but may still lack some rather obvious functionality (ejecting drives, emtying the recycle bin) and have bugs. You should be able to get a good feel of the spirit of the project. Work continues on 1.0 and your feedback is valuable.
 
 ---
 
