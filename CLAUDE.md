@@ -71,6 +71,11 @@ projects, its tickets or its paths.
 Applies to text the user sees in the app: titles, descriptions, status lines, banners, decisions
 and errors. Comments, docs and commit messages follow *Editing* above.
 
+The voice is that of a tool for a power user, on their side. It doesn't talk down, doesn't
+perform friendliness (not Corporate Memphis: no exclamation marks, emoji, "we" or cheer) and
+doesn't wear edginess or hacker culture as a costume. The user works in a corporate environment,
+often with someone watching their screen: nothing in the app should embarrass them there.
+
 - Concise, attentive, composed and precise.
 - The default manner is restrained and unobtrusive, becoming more perceptible when
   acknowledgement, explanation, or careful presentation adds value.
@@ -92,3 +97,5 @@ and errors. Comments, docs and commit messages follow *Editing* above.
 | 3 files moved to the Recycle Bin | 3 files moved to the Recycle Bin · Ctrl+Z to undo |
 | Copy to D:\Backup stopped: D: is full. 412 of 900 files copied; the originals are untouched. | Copy stopped: disk is full. 412 of 900 files copied. |
 | Shows files marked hidden. | Shows files marked hidden. On network drives this includes names starting with a dot. |
+| All done! 🎉 Your files are safely in their new home. | 3 files moved to D:\Archive · Ctrl+Z to undo |
+| Nuked 3 files. | 3 files moved to the Recycle Bin · Ctrl+Z to undo |
