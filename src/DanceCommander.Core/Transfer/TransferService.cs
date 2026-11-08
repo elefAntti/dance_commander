@@ -1744,9 +1744,8 @@ public sealed class TransferService(
             return;
 
         var provider = providers.Resolve(final);
-        var names = FolderCollisionScanner.NamesIn(final);
         // The looking can be stopped; once a file starts to move, nothing is.
-        var now = await FolderCollisionScanner.EntriesAsync(provider, final, names, ct).ConfigureAwait(false);
+        var now = await FolderCollisionScanner.EntriesAsync(provider, final, ct).ConfigureAwait(false);
         var arrived = now
             .Where(entry => !asked.Seen.TryGetValue(entry.Key, out var then) || Changed(then, entry.Value))
             .Select(entry => entry.Key)
@@ -1923,7 +1922,7 @@ public sealed class TransferService(
             if (await provider.StatAsync(aside, CancellationToken.None).ConfigureAwait(false) is not { IsDirectory: true })
                 throw new IOException($"{aside.Name} is not a folder any more");
             var left = await FolderCollisionScanner
-                .EntriesAsync(provider, aside, FolderCollisionScanner.NamesIn(aside), CancellationToken.None)
+                .EntriesAsync(provider, aside, CancellationToken.None)
                 .ConfigureAwait(false);
             var late = asked is null
                 ? left.Count

@@ -64,6 +64,9 @@ public sealed class LocalFileSystemProvider : IFileSystemProvider, IFileIdentity
     public Task<bool> IsSameFileAsync(FsUri a, FsUri b, CancellationToken ct) =>
         Task.FromResult(FileIdentity.Of(a.ToLocalPath()) is { } first && FileIdentity.Of(b.ToLocalPath()) == first);
 
+    public Task<bool> IsSurelySameFileAsync(FsUri a, FsUri b, CancellationToken ct) =>
+        Task.FromResult(FileIdentity.UniqueOf(a.ToLocalPath()) is { } first && FileIdentity.UniqueOf(b.ToLocalPath()) == first);
+
     public long? ChangeStamp(FsUri file) => FileIdentity.ChangeStampOf(file.ToLocalPath());
 
     public DateTimeOffset? ChangedAt(FsUri file) => AsTime(FileIdentity.ChangeTimeOf(file.ToLocalPath()));

@@ -38,6 +38,32 @@ internal readonly record struct FileIdentity(uint VolumeSerial, ulong Index)
     }
 
     /// <summary>
+    /// The file's identity only where it is its own: the 128-bit file ID where the volume has one
+    /// (ReFS's 64-bit index is not promised unique), else a 64-bit index other than 0; null where
+    /// there is neither, as on a share that gives every file index 0.
+    /// </summary>
+    /// <remarks>
+    /// For a caller to whom "the same" means "nothing lost" (a Replace's count of what it
+    /// deletes), where <see cref="Of"/>'s keeping of index 0 would fail the wrong way. Zero is the
+    /// only failure that can be seen: a server whose IDs are not zero but repeat (Samba folding a
+    /// 64-bit inode into 32 bits, a FUSE mount with a fixed one) is believed (review, 2026-11-08).
+    /// </remarks>
+    public static (ulong Volume, ulong Low, ulong High)? UniqueOf(string path)
+    {
+        using var handle = CreateFileW(
+            Extended(path), FileReadAttributes, FileShareAll, IntPtr.Zero, OpenExisting, FileFlagBackupSemantics, IntPtr.Zero);
+        if (handle.IsInvalid)
+            return null;
+
+        if (GetFileIdInformation(handle, FileIdInfoClass, out var id, (uint)Marshal.SizeOf<FileIdInformation>()))
+            return id.Low == 0 && id.High == 0 ? null : (id.VolumeSerialNumber, id.Low, id.High);
+
+        return GetFileInformationByHandle(handle, out var info) && (info.FileIndexHigh | info.FileIndexLow) != 0
+            ? (info.VolumeSerialNumber, ((ulong)info.FileIndexHigh << 32) | info.FileIndexLow, 0UL)
+            : null;
+    }
+
+    /// <summary>
     /// What moves on every change to the file and that no program puts back: its last entry in the
     /// volume's change journal (the USN), or where there is no journal, NTFS's change time.
     /// </summary>
@@ -194,4 +220,19 @@ internal readonly record struct FileIdentity(uint VolumeSerial, ulong Index)
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetFileInformationByHandleEx(SafeFileHandle file, int infoClass, out FileBasicInfo information, uint size);
+
+    private const int FileIdInfoClass = 18;
+
+    /// <summary>FILE_ID_INFO: the volume's 64-bit serial and the file's 128-bit ID.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FileIdInformation
+    {
+        public ulong VolumeSerialNumber;
+        public ulong Low;
+        public ulong High;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "GetFileInformationByHandleEx", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetFileIdInformation(SafeFileHandle file, int infoClass, out FileIdInformation information, uint size);
 }

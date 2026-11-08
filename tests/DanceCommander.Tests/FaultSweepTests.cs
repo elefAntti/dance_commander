@@ -826,6 +826,8 @@ public sealed class FaultSweepTests : IDisposable
         public IDirectoryWatcher? Watch(FsUri directory) => null;
 
         public Task<bool> IsSameFileAsync(FsUri a, FsUri b, CancellationToken ct) => inner.IsSameFileAsync(a, b, ct);
+
+        public Task<bool> IsSurelySameFileAsync(FsUri a, FsUri b, CancellationToken ct) => inner.IsSurelySameFileAsync(a, b, ct);
     }
 
     /// <summary>

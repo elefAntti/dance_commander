@@ -369,6 +369,37 @@ public sealed class FileSafetyTests : IDisposable
         _activity.Entries[0].Detail.ShouldNotBeNull().ShouldContain("arrived or changed after Replace");
     }
 
+    [CaseSensitiveFact]
+    public async Task AFileChangedAfterTheAnswerBesideItsNameInAnotherCaseIsKept()
+    {
+        // In a case-sensitive folder Readme.md and README.md are two files. Keyed regardless of
+        // case, what Replace was answered about held one entry for both, the one listed last, so a
+        // change to the one listed first went unseen and, with no bin, was deleted with the old
+        // folder (reviews, 2026-11-07). Only that one changes here, and its size doesn't.
+        var destination = Path.Combine(_root, "right", "project");
+        Directory.CreateDirectory(destination);
+        CaseSensitiveFolder.Make(destination);
+        Write("right/project/Readme.md", "old one");
+        Write("right/project/README.md", "old two");
+        Write("left/project/README.md", "new");
+        Write("left/project/other.txt", "new");
+        var hidden = Path.GetFileName(Directory.EnumerateFiles(destination).First());
+        _provider.AfterRead = uri =>
+        {
+            if (uri.Name != "other.txt")
+                return;
+            _provider.AfterRead = null;
+            Write($"right/project/{hidden}", "CHANGED");
+        };
+
+        var job = await Run([At("left/project")], "right", TransferMode.Copy, Replace());
+
+        job.State.ShouldBe(JobState.Completed, job.Error);
+        var everything = Directory.GetFiles(Path.Combine(_root, "right"), "*", SearchOption.AllDirectories).Select(File.ReadAllText).ToList();
+        everything.ShouldContain("CHANGED");
+        everything.ShouldContain("new");
+    }
+
     [Fact]
     public async Task AFileSavedJustBeforeTheSwapKeepsTheOldFolderBesideTheNewOne()
     {
@@ -1502,7 +1533,23 @@ internal sealed class FaultyProvider(LocalFileSystemProvider inner) : IFileSyste
 
     public IDirectoryWatcher? Watch(FsUri directory) => null;
 
-    public Task<bool> IsSameFileAsync(FsUri a, FsUri b, CancellationToken ct) => inner.IsSameFileAsync(a, b, ct);
+    public Task<bool> IsSameFileAsync(FsUri a, FsUri b, CancellationToken ct) =>
+        IndexZero ? Task.FromResult(Path.Exists(a.ToLocalPath()) && Path.Exists(b.ToLocalPath())) : inner.IsSameFileAsync(a, b, ct);
+
+    /// <summary>How many times <see cref="IsSurelySameFileAsync"/> was asked.</summary>
+    public int SurelySameAsked;
+
+    /// <summary>
+    /// Every identity read as index 0, as on a share that gives every file that: the loose answer
+    /// is then "the same" for any two that exist, and the sure one can't say.
+    /// </summary>
+    public bool IndexZero { get; set; }
+
+    public async Task<bool> IsSurelySameFileAsync(FsUri a, FsUri b, CancellationToken ct)
+    {
+        Interlocked.Increment(ref SurelySameAsked);
+        return !IndexZero && await inner.IsSurelySameFileAsync(a, b, ct);
+    }
 
     /// <summary>Gives four bytes, then ends or throws.</summary>
     private sealed class Stopping(Stream inner, bool fail) : Stream

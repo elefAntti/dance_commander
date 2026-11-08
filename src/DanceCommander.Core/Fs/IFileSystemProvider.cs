@@ -85,6 +85,14 @@ public interface IFileIdentity
 {
     /// <summary>True only when both exist and are the same file; false when unsure.</summary>
     Task<bool> IsSameFileAsync(FsUri a, FsUri b, CancellationToken ct);
+
+    /// <summary>
+    /// True only when both exist and the volume names them by one identity that it gives no other
+    /// file. Where an identity can't tell files apart (a share that gives every file index 0),
+    /// <see cref="IsSameFileAsync"/> says "the same", which refuses a write; that answer would
+    /// keep a file out of a count of what is about to be deleted, so this one says false.
+    /// </summary>
+    Task<bool> IsSurelySameFileAsync(FsUri a, FsUri b, CancellationToken ct) => Task.FromResult(false);
 }
 
 /// <summary>

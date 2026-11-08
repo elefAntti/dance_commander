@@ -1505,6 +1505,154 @@ public sealed class FolderCollisionTests : IDisposable
 
         collisions.ShouldHaveSingleItem().Losses.ShouldBe(0);
     }
+
+    [Fact]
+    public async Task NamesDotNetFoldsButNtfsDoesNotAreTwoFilesToLose()
+    {
+        // Georgian Mtavruli and Mkhedruli: one name to .NET's OrdinalIgnoreCase, two files on NTFS.
+        // Compared by .NET, ა.txt was counted as kept by Ა.txt, and Replace deleted it unsaid
+        // (review of the move to .NET 10, 2026-11-07; AUDIT.md §2 kind 78).
+        Write("left/project/Ა.txt", "new");
+        Write("right/project/ა.txt", "old");
+        File.Exists(Path.Combine(_root, "right", "project", "Ა.txt")).ShouldBeFalse("NTFS keeps the two names apart");
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            _providers, [FsUri.Local(Path.Combine(_root, "left", "project"))], FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["ა.txt"]);
+    }
+
+    [Fact]
+    public async Task AFolderInAnotherCaseIsTheSameFolderOnWindows()
+    {
+        // Asked about once for the folder, not for each file in it (review, 2026-11-07): what
+        // lands in it under its own name or another case is kept, the rest is not.
+        Write("right/project/Sub/a.txt", "old");
+        Write("right/project/Sub/B.txt", "old");
+        Write("right/project/Sub/only-here.txt", "old");
+        Write("left/project/sub/a.txt", "new");
+        Write("left/project/sub/b.txt", "new");
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            _providers, [FsUri.Local(Path.Combine(_root, "left", "project"))], FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["Sub/only-here.txt"]);
+    }
+
+    [Fact]
+    public async Task NamesInAnotherAsciiCaseAreAskedAboutOncePerFolder()
+    {
+        // Asked name by name, 5,000 photos named .JPG over .jpg took 1.6 s, and 20,000 files in
+        // "sub" over "Sub" 4 s, before the question showed (reviews, 2026-11-07).
+        for (var i = 0; i < 50; i++)
+        {
+            Write($"right/project/photos/IMG_{i:D4}.JPG", "old");
+            Write($"left/project/photos/IMG_{i:D4}.jpg", "new");
+            Write($"right/project/Album {i}/a.txt", "old");
+            Write($"left/project/ALBUM {i}/a.txt", "new");
+        }
+        Write("right/project/only-here.txt", "old");
+        var faulty = new FaultyProvider(_provider);
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            new ProviderRegistry([faulty]), [FsUri.Local(Path.Combine(_root, "left", "project"))],
+            FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["only-here.txt"]);
+        faulty.SurelySameAsked.ShouldBeLessThanOrEqualTo(2); // project and photos, each once
+    }
+
+    [Fact]
+    public async Task WhereIdentityCantTellFilesApartNothingIsCountedAsKeptByIt()
+    {
+        // On a share that gives every file index 0, "the same file" is said of any two that exist,
+        // which kept the file Replace deletes out of its count (review, 2026-11-07).
+        Write("right/project/Readme.md", "old");
+        Write("left/project/README.md", "new");
+        var faulty = new FaultyProvider(_provider) { IndexZero = true };
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            new ProviderRegistry([faulty]), [FsUri.Local(Path.Combine(_root, "left", "project"))],
+            FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["Readme.md"]);
+    }
+
+    [CaseSensitiveFact]
+    public async Task WhereIdentityCantTellFilesApartAFolderInAnotherCaseIsAnotherFolder()
+    {
+        // The case the review found: an empty "sub" beside "Sub", which index 0 called one folder,
+        // so Sub/a.txt was counted as kept by the source's sub/a.txt.
+        var destination = Path.Combine(_root, "right", "project");
+        Directory.CreateDirectory(destination);
+        CaseSensitiveFolder.Make(destination);
+        Write("right/project/Sub/a.txt", "old");
+        Directory.CreateDirectory(Path.Combine(destination, "sub"));
+        Write("left/project/sub/a.txt", "new");
+        var faulty = new FaultyProvider(_provider) { IndexZero = true };
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            new ProviderRegistry([faulty]), [FsUri.Local(Path.Combine(_root, "left", "project"))],
+            FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["Sub/a.txt"]);
+    }
+
+    [CaseSensitiveFact]
+    public async Task AFolderInAnotherCaseInACaseSensitiveFolderIsAnotherFolder()
+    {
+        var destination = Path.Combine(_root, "right", "project");
+        Directory.CreateDirectory(destination);
+        CaseSensitiveFolder.Make(destination);
+        Write("right/project/Sub/a.txt", "old");
+        Write("left/project/sub/a.txt", "new");
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            _providers, [FsUri.Local(Path.Combine(_root, "left", "project"))], FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["Sub/a.txt"]);
+    }
+
+    [CaseSensitiveFact]
+    public async Task InACaseSensitiveFolderTheSameNameInAnotherCaseIsAnotherFile()
+    {
+        // As WSL makes its folders under /mnt/c: there Readme.md and README.md are two files,
+        // and one of them was not even seen, keyed as one.
+        var destination = Path.Combine(_root, "right", "project");
+        Directory.CreateDirectory(destination);
+        CaseSensitiveFolder.Make(destination);
+        Write("right/project/Readme.md", "old");
+        Write("right/project/README.md", "older");
+        Write("right/project/notes.txt", "kept");
+        Write("left/project/README.md", "new");
+        Write("left/project/NOTES.txt", "new");
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            _providers, [FsUri.Local(Path.Combine(_root, "left", "project"))], FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        var collision = collisions.ShouldHaveSingleItem();
+        collision.Seen.Keys.ShouldBe(["notes.txt", "Readme.md", "README.md"], ignoreOrder: true);
+        collision.Lost.ShouldBe(["notes.txt", "Readme.md"], ignoreOrder: true);
+    }
+
+    [CaseSensitiveFact]
+    public async Task InACaseSensitiveFolderInsideAnOrdinaryOneOnlyThatFolderKeepsCase()
+    {
+        // The rule is the folder's, not the drive's: the same scan counts README.md as kept above
+        // the case-sensitive folder and as lost inside it.
+        Write("right/project/Readme.md", "old");
+        var inner = Path.Combine(_root, "right", "project", "wsl");
+        Directory.CreateDirectory(inner);
+        CaseSensitiveFolder.Make(inner);
+        Write("right/project/wsl/Readme.md", "old");
+        Write("left/project/README.md", "new");
+        Write("left/project/wsl/README.md", "new");
+
+        var collisions = await FolderCollisionScanner.ScanAsync(
+            _providers, [FsUri.Local(Path.Combine(_root, "left", "project"))], FsUri.Local(Path.Combine(_root, "right")), CancellationToken.None);
+
+        collisions.ShouldHaveSingleItem().Lost.ShouldBe(["wsl/Readme.md"]);
+    }
 }
 
 /// <summary>What VeraCrypt's "preserve timestamps" does to a file it has mounted.</summary>
