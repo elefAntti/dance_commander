@@ -209,59 +209,53 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ====================================================================================================
-Microsoft.Extensions.Configuration 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.Binder 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.CommandLine 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.EnvironmentVariables 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.FileExtensions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.Json 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Configuration.UserSecrets 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.DependencyInjection 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.DependencyInjection.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Diagnostics 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Diagnostics.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.FileProviders.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.FileProviders.Physical 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.FileSystemGlobbing 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Hosting 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Hosting.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.Abstractions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.Configuration 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.Console 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.Debug 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.EventLog 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Logging.EventSource 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Options 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Options.ConfigurationExtensions 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-Microsoft.Extensions.Primitives 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
-System.Diagnostics.EventLog 9.0.11 (MIT), © Microsoft Corporation. All rights reserved.
+Microsoft.Extensions.Configuration 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.Binder 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.CommandLine 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.EnvironmentVariables 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.FileExtensions 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.Json 10.0.14 (MIT)
+Microsoft.Extensions.Configuration.UserSecrets 10.0.14 (MIT)
+Microsoft.Extensions.DependencyInjection 10.0.14 (MIT)
+Microsoft.Extensions.DependencyInjection.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.Diagnostics 10.0.14 (MIT)
+Microsoft.Extensions.Diagnostics.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.FileProviders.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.FileProviders.Physical 10.0.14 (MIT)
+Microsoft.Extensions.FileSystemGlobbing 10.0.14 (MIT)
+Microsoft.Extensions.Hosting 10.0.14 (MIT)
+Microsoft.Extensions.Hosting.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.Logging 10.0.14 (MIT)
+Microsoft.Extensions.Logging.Abstractions 10.0.14 (MIT)
+Microsoft.Extensions.Logging.Configuration 10.0.14 (MIT)
+Microsoft.Extensions.Logging.Console 10.0.14 (MIT)
+Microsoft.Extensions.Logging.Debug 10.0.14 (MIT)
+Microsoft.Extensions.Logging.EventLog 10.0.14 (MIT)
+Microsoft.Extensions.Logging.EventSource 10.0.14 (MIT)
+Microsoft.Extensions.Options 10.0.14 (MIT)
+Microsoft.Extensions.Options.ConfigurationExtensions 10.0.14 (MIT)
+Microsoft.Extensions.Primitives 10.0.14 (MIT)
 ====================================================================================================
 
-The MIT License (MIT)
+MIT License
 
-Copyright (c) .NET Foundation and Contributors
+© Microsoft Corporation. All rights reserved.
 
-All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 .NET Runtime uses third-party libraries or other resources that may be
 distributed under licenses different than the .NET Runtime software.
@@ -299,37 +293,36 @@ License notice for Unicode data
 
 https://www.unicode.org/license.html
 
-Copyright © 1991-2022 Unicode, Inc. All rights reserved.
+Copyright © 1991-2024 Unicode, Inc. All rights reserved.
 Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Unicode data files and any associated documentation
-(the "Data Files") or Unicode software and any associated documentation
-(the "Software") to deal in the Data Files or Software
-without restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, and/or sell copies of
-the Data Files or Software, and to permit persons to whom the Data Files
-or Software are furnished to do so, provided that either
-(a) this copyright and permission notice appear with all copies
-of the Data Files or Software, or
-(b) this copyright and permission notice appear in associated
-Documentation.
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of data files and any associated documentation (the "Data Files") or
+software and any associated documentation (the "Software") to deal in the
+Data Files or Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, and/or sell
+copies of the Data Files or Software, and to permit persons to whom the
+Data Files or Software are furnished to do so, provided that either (a)
+this copyright and permission notice appear with all copies of the Data
+Files or Software, or (b) this copyright and permission notice appear in
+associated Documentation.
 
-THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT OF THIRD PARTY RIGHTS.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
-NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
-DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
-DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THE DATA FILES OR SOFTWARE.
+THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+THIRD PARTY RIGHTS.
 
-Except as contained in this notice, the name of a copyright holder
-shall not be used in advertising or otherwise to promote the sale,
-use or other dealings in these Data Files or Software without prior
-written authorization of the copyright holder.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall
+not be used in advertising or otherwise to promote the sale, use or other
+dealings in these Data Files or Software without prior written
+authorization of the copyright holder.
 
 License notice for zlib-ng
 -----------------------
@@ -355,6 +348,18 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 
 3. This notice may not be removed or altered from any source distribution.
+
+License notice for opentelemetry-dotnet
+---------------------------------------
+
+https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/LICENSE.TXT#L1
+
+Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
+
+Copyright The OpenTelemetry Authors
+
 
 License notice for LinuxTracepoints
 -----------------------------------
@@ -1659,6 +1664,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+License for National Institute of Standards and Technology ACVP Data
+--------------------------------------------------------------------
+Available at https://github.com/usnistgov/ACVP-Server/blob/85f8742965b2691862079172982683757d8d91db/README.md#License
+
+NIST-developed software is provided by NIST as a public service. You may use, copy, and distribute copies of the software in any medium, provided that you keep intact this entire notice. You may improve, modify, and create derivative works of the software or any portion of the software, and you may copy and distribute such modifications or works. Modified works should carry a notice stating that you changed the software and should note the date and nature of any such change. Please explicitly acknowledge the National Institute of Standards and Technology as the source of the software.
+
+NIST-developed software is expressly provided "AS IS." NIST MAKES NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT, OR ARISING BY OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
+
+You are solely responsible for determining the appropriateness of using and distributing the software and you assume all risks associated with its use, including but not limited to the risks and costs of program errors, compliance with applicable laws, damage to or loss of data, programs or equipment, and the unavailability or interruption of operation. This software is not intended to be used in any situation where a failure could cause risk of injury or damage to property. The software developed by NIST employees is not subject to copyright protection within the United States.
 
 ====================================================================================================
 Microsoft.NETCore.App.Runtime.win-x64 10.0.14 (MIT)
@@ -3135,9 +3150,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ====================================================================================================
-Serilog 4.2.0 (Apache-2.0), Copyright © Serilog Contributors
-Serilog.Extensions.Hosting 9.0.0 (Apache-2.0), by Microsoft,Serilog Contributors
-Serilog.Extensions.Logging 9.0.0 (Apache-2.0), by Microsoft,Serilog Contributors
+Serilog 4.3.0 (Apache-2.0), Copyright © Serilog Contributors
+Serilog.Extensions.Hosting 10.0.0 (Apache-2.0), by Microsoft,Serilog Contributors
+Serilog.Extensions.Logging 10.0.0 (Apache-2.0), by Microsoft,Serilog Contributors
 Serilog.Sinks.File 7.0.0 (Apache-2.0), by Serilog Contributors
 ====================================================================================================
 
