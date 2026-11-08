@@ -130,3 +130,27 @@ M:DanceCommander.Providers.Sftp.SftpFileSystemProvider.DeleteAsync(DanceCommande
 M:DanceCommander.Providers.WebDav.WebDavSecureFileSystemProvider.DeleteAsync(DanceCommander.Core.Fs.FsUri,System.Boolean,System.Threading.CancellationToken);Deletes outright: the interface's ban does not reach a call through the class (§1.6)
 M:DanceCommander.Providers.Archive.ArchiveProvider.DeleteAsync(DanceCommander.Core.Fs.FsUri,System.Boolean,System.Threading.CancellationToken);Deletes outright: the interface's ban does not reach a call through the class (§1.6)
 M:DanceCommander.Core.Listing.ScriptProvider.DeleteAsync(DanceCommander.Core.Fs.FsUri,System.Boolean,System.Threading.CancellationToken);Deletes outright: the interface's ban does not reach a call through the class (§1.6)
+
+# Added with the move to .NET 10 (2026-11-07), from diffing its reference XML against .NET 9's: the
+# file APIs above are unchanged, but 10 adds async zip extraction with an overwrite flag. Its
+# synchronous forms were never banned either, so both go here; without the flag they never overwrite.
+M:System.IO.Compression.ZipFile.ExtractToDirectory(System.IO.Stream,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectory(System.IO.Stream,System.String,System.Text.Encoding,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectory(System.String,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectory(System.String,System.String,System.Text.Encoding,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectoryAsync(System.IO.Stream,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectoryAsync(System.IO.Stream,System.String,System.Text.Encoding,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectoryAsync(System.String,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFile.ExtractToDirectoryAsync(System.String,System.String,System.Text.Encoding,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFileExtensions.ExtractToDirectory(System.IO.Compression.ZipArchive,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFileExtensions.ExtractToDirectoryAsync(System.IO.Compression.ZipArchive,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFileExtensions.ExtractToFile(System.IO.Compression.ZipArchiveEntry,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.IO.Compression.ZipFileExtensions.ExtractToFileAsync(System.IO.Compression.ZipArchiveEntry,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+F:System.IO.Compression.ZipArchiveMode.Update;Rewrites an existing archive in place (§1.6)
+# Tar's the same (since .NET 7; the review of the move to 10 found them): only the flag overwrites.
+M:System.Formats.Tar.TarEntry.ExtractToFile(System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.Formats.Tar.TarEntry.ExtractToFileAsync(System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.Formats.Tar.TarFile.ExtractToDirectory(System.IO.Stream,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.Formats.Tar.TarFile.ExtractToDirectory(System.String,System.String,System.Boolean);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.Formats.Tar.TarFile.ExtractToDirectoryAsync(System.IO.Stream,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)
+M:System.Formats.Tar.TarFile.ExtractToDirectoryAsync(System.String,System.String,System.Boolean,System.Threading.CancellationToken);Can write over existing files: leave out the overwrite flag (§1.6)

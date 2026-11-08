@@ -17,7 +17,7 @@ whether a paragraph is a description or a wish.
 
 | Concern | Choice | Why |
 | --- | --- | --- |
-| Runtime | .NET 9, `net9.0-windows`, x64 | Installed SDK is 9.0.306; WindowsDesktop 9.0.10 runtime present. |
+| Runtime | .NET 10, `net10.0-windows`, x64 | Installed SDK is 10.0.403; WindowsDesktop 10.0.14 reference pack present. |
 | UI | WPF, MVVM via `CommunityToolkit.Mvvm` | Source-generated `[ObservableProperty]`/`[RelayCommand]`, no reflection cost. |
 | Composition | `Microsoft.Extensions.Hosting` + DI | Providers registered as keyed services by URI scheme. |
 | Logging | Serilog → rolling file in `%LOCALAPPDATA%` | Diagnosing remote/IO failures needs a real log. |

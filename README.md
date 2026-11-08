@@ -27,8 +27,8 @@ This file is for building and changing it.
 
 ## Building and running
 
-**Requirements:** Windows 10 2004 (build 19041) or later, x64; the **.NET 9 SDK** (developed with
-9.0.306).
+**Requirements:** Windows 10 2004 (build 19041) or later, x64; the **.NET 10 SDK** (developed with
+10.0.403).
 
 ```bash
 dotnet build DanceCommander.sln          # everything, Debug
@@ -74,7 +74,7 @@ server or a container.
 
 ```
 DanceCommander.sln
-Directory.Build.props            shared settings: net9, x64, nullable, latest C#
+Directory.Build.props            shared settings: net10, x64, nullable, latest C#
 src/
   DanceCommander.Core/           the model; no UI, no Windows UI types
   DanceCommander.Extensibility/  tools.json: definitions, placeholders, conditions, running, jobs
@@ -137,11 +137,11 @@ before redistributing. For a machine-readable SBOM, run `dotnet CycloneDX DanceC
 | Package | Version | Licence | Used for | Referenced by |
 |---|---|---|---|---|
 | CommunityToolkit.Mvvm | 8.4.2 | MIT | view-model source generators | App |
-| Microsoft.Extensions.Hosting (and its `Configuration.*`, `DependencyInjection.*`, `Logging.*`, `Options.*`, `FileProviders.*`, `Diagnostics.*`, `Primitives` dependencies) | 9.0.11 | MIT | DI container, hosting, logging abstractions | App; Core and Extensibility use `Logging.Abstractions` |
+| Microsoft.Extensions.Hosting (and its `Configuration.*`, `DependencyInjection.*`, `Logging.*`, `Options.*`, `FileProviders.*`, `Diagnostics.*`, `Primitives` dependencies) | 10.0.14 | MIT | DI container, hosting, logging abstractions | App; Core and Extensibility use `Logging.Abstractions` |
 | System.Diagnostics.EventLog | 9.0.11 | MIT | transitive, from Hosting | App |
-| Serilog | 4.2.0 | Apache-2.0 | logging | App (transitive) |
-| Serilog.Extensions.Hosting | 9.0.0 | Apache-2.0 | Serilog in the host | App |
-| Serilog.Extensions.Logging | 9.0.0 | Apache-2.0 | transitive | App |
+| Serilog | 4.3.0 | Apache-2.0 | logging | App (transitive) |
+| Serilog.Extensions.Hosting | 10.0.0 | Apache-2.0 | Serilog in the host | App |
+| Serilog.Extensions.Logging | 10.0.0 | Apache-2.0 | transitive | App |
 | Serilog.Sinks.File | 7.0.0 | Apache-2.0 | the rolling log file | App |
 | SSH.NET | 2026.0.0 | MIT | SFTP and remote commands | Providers.Sftp |
 | BouncyCastle.Cryptography | 2.7.0 | MIT | transitive, from SSH.NET | Providers.Sftp |
@@ -159,7 +159,7 @@ before redistributing. For a machine-readable SBOM, run `dotnet CycloneDX DanceC
 | coverlet.collector | 6.0.2 | MIT |
 | Microsoft.NET.ILLink.Tasks | 9.0.10 | MIT (auto-referenced by the SDK for publish) |
 
-**Platform, not redistributed by us:** the .NET 9 runtime (MIT; bundled into the self-contained
+**Platform, not redistributed by us:** the .NET 10 runtime (MIT; bundled into the self-contained
 publish), WPF, and Windows APIs used through P/Invoke and WinRT (`shell32`, `kernel32`
 `CopyFileEx`, DWM, `Windows.Data.Pdf`, the Windows Credential Manager).
 

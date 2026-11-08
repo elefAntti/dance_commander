@@ -7,7 +7,7 @@ namespace DanceCommander.App.Views;
 
 /// <summary>
 /// Shows a path in a <see cref="TextBlock"/> too narrow for it, dropping leading segments rather
-/// than trailing characters: <c>…/obj/Debug/net9.0-windows</c>.
+/// than trailing characters: <c>…/obj/Debug/net10.0-windows</c>.
 /// </summary>
 /// <remarks>
 /// WPF only trims at the end, which is the wrong end for a path. Every row in a flattened
