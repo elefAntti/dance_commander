@@ -78,7 +78,7 @@ public static class SettingsCatalog
     {
         Path = ["appearance", "accent"],
         Title = "Accent",
-        Description = "The one colour the application has: the cursor, the active pane, a selection. Windows follows your Windows accent; a hex colour such as #C2410C can be written in the file. Always adjusted to stay legible.",
+        Description = "Colours the cursor, the active pane and selections, adjusted to stay legible. Windows uses your Windows accent; a hex colour such as #C2410C can be set in settings.json.",
         Section = SettingSection.Appearance,
         Choices = [new(AccentColour.FromWindows, "Windows"), .. AccentColour.Named.Select(n => new SettingChoice(n.Name, n.Label))],
         Default = AccentColour.FromWindows,
@@ -112,7 +112,7 @@ public static class SettingsCatalog
     {
         Path = ["view", "directoriesFirst"],
         Title = "Folders before files",
-        Description = "How a new tab sorts. A folder sorted another way on purpose stays that way.",
+        Description = "How a new tab sorts. A folder you have sorted another way keeps its order.",
         Section = SettingSection.General,
         Choices = [new("false", "Off"), new("true", "On")],
         Default = "false",
@@ -124,7 +124,7 @@ public static class SettingsCatalog
     {
         Path = ["view", "cloudStatus"],
         Title = "OneDrive status",
-        Description = "The cloud on a file that is only online, and the pin on one always kept here: on the cursor row, or on every row as Explorer has them.",
+        Description = "Where the online-only cloud and always-kept pin show: on the cursor row, or on every row as in Explorer.",
         Section = SettingSection.Appearance,
         Choices = [new("cursor", "Cursor row"), new("all", "Every row")],
         Default = "cursor",
@@ -135,7 +135,7 @@ public static class SettingsCatalog
     {
         Path = ["view", "friendlyDates"],
         Title = "Today and Yesterday",
-        Description = "The Modified column says Today and Yesterday instead of those dates. The time stays, lined up with the other rows'.",
+        Description = "The Modified column says Today and Yesterday instead of those dates.",
         Section = SettingSection.Appearance,
         Choices = [new("false", "Off"), new("true", "On")],
         Default = "false",
@@ -176,7 +176,7 @@ public static class SettingsCatalog
     {
         Path = ["remote", "prefetch"],
         Title = "Fetch server folders ahead",
-        Description = "On a server, the folder under the cursor is listed before you open it: at once on a click, after a moment from the keyboard. Off if a server minds the extra requests.",
+        Description = "On a server, the folder under the cursor is listed before you open it, so it opens at once. Turn off if a server minds the extra requests.",
         Section = SettingSection.General,
         Choices = [new("false", "Off"), new("true", "On")],
         Default = "true",
@@ -188,7 +188,7 @@ public static class SettingsCatalog
     {
         Path = ["remote", "keepListings"],
         Title = "Remember server folders between sessions",
-        Description = "The server folders you were in are kept on this computer, so a server tab shows its rows at once after a restart while it is listed again. Off forgets them.",
+        Description = "Server folders you visited are kept on this computer, so after a restart a server tab shows its files at once and then refreshes.",
         Section = SettingSection.General,
         Choices = [new("false", "Off"), new("true", "On")],
         Default = "true",
@@ -200,7 +200,7 @@ public static class SettingsCatalog
     {
         Path = ["remote", "unencryptedSignIn"],
         Title = "Sign in to unencrypted WebDAV",
-        Description = "A dav:// server gets no password and no Windows sign-in, since anyone on the network between could read or reuse them; davs:// is unaffected. On sends them anyway, for a network you trust.",
+        Description = "Sends your password or Windows sign-in to dav:// servers, where anyone on the network could read it. For networks you trust; davs:// is unaffected.",
         Section = SettingSection.General,
         Choices = [new("false", "Off"), new("true", "On")],
         Default = "false",

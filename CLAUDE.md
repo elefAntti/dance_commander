@@ -65,3 +65,30 @@ projects, its tickets or its paths.
   warnings (`CA…`) slipped past a filter on compiler ones.
 - Line endings are mixed (CRLF and LF), so preserve each file's own. Don't put Windows paths or
   C# escapes in a Python heredoc: `'C:\repo'` turns into a carriage return. Use the Edit tool.
+
+## Microcopy
+
+Applies to text the user sees in the app: titles, descriptions, status lines, banners, decisions
+and errors. Comments, docs and commit messages follow *Editing* above.
+
+- Concise, attentive, composed and precise.
+- The default manner is restrained and unobtrusive, becoming more perceptible when
+  acknowledgement, explanation, or careful presentation adds value.
+- Say what it is or what it does for the user. Leave out how it works, but keep a fact the user
+  would act on (how long logs are kept).
+- Attentive: after an action, say what happened and the way back, since that is what the user
+  may need next.
+- Composed: when something stops, state the cause and where things stand, then the choices. No
+  alarm words, and no reassurance about what obviously wasn't at risk (a copy never touches the
+  originals).
+- Don't repeat what is already on screen, such as the path the user is copying to. Name the
+  actual cause: a full disk and a full quota on a server are different messages.
+- One plain sentence is the norm. When a setting has an effect the user wouldn't guess, name it.
+
+| Do not | Do |
+|--------|----|
+| A file a day, the last seven kept; the timing lines say which budget was broken | Daily log files, the last seven kept |
+| The Modified column says Today and Yesterday instead of those dates. The time stays, lined up with the other rows'. | The Modified column says Today and Yesterday instead of those dates. |
+| 3 files moved to the Recycle Bin | 3 files moved to the Recycle Bin · Ctrl+Z to undo |
+| Copy to D:\Backup stopped: D: is full. 412 of 900 files copied; the originals are untouched. | Copy stopped: disk is full. 412 of 900 files copied. |
+| Shows files marked hidden. | Shows files marked hidden. On network drives this includes names starting with a dot. |

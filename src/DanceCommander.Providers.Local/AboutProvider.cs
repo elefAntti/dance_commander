@@ -273,7 +273,7 @@ public sealed class AboutProvider(
             "Settings", "settings.json, tools.json, the keys, bookmarks and collections");
         yield return Place(
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DanceCommander", "logs"),
-            "Logs", "A file a day, the last seven kept; the timing lines say which budget was broken");
+            "Logs", "Daily log files, the last seven kept");
 
         static FsEntry Place(string path, string name, string description) =>
             new(FsUri.Local(path), name, IsDirectory: true, 0, null)
