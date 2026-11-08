@@ -67,6 +67,13 @@ public sealed class ViewSettings
     /// because in a folder that is mostly online, a cloud on two rows in three is noise.
     /// </summary>
     public string CloudStatus { get; set; } = "cursor";
+
+    /// <summary>
+    /// Whether the Modified column says "Today" and "Yesterday" for those two days, in place of
+    /// their dates. Still a timestamp, never "2 hours ago": the time stays, in line with every
+    /// other row's.
+    /// </summary>
+    public bool FriendlyDates { get; set; }
 }
 
 public sealed class MouseSettings

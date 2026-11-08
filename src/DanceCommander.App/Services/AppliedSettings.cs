@@ -45,6 +45,11 @@ public sealed class AppliedSettings
         // this is (the trigger in the Name column's template), so Collapsed means "cursor only".
         Application.Current.Resources["CloudStatusVisibility"] =
             SettingsCatalog.CloudStatusOnEveryRow(file) ? Visibility.Visible : Visibility.Collapsed;
+
+        // Whether "Today" and "Yesterday" cover their dates (the Date column's template). A resource
+        // rather than something the rows read when made, so switching it changes the rows on screen.
+        Application.Current.Resources["FriendlyDateVisibility"] =
+            file.View.FriendlyDates ? Visibility.Visible : Visibility.Collapsed;
         KeyProblems = _commands.ApplyKeys(file.Keys);
         Applied?.Invoke(this, EventArgs.Empty);
     }

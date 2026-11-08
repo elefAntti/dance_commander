@@ -1401,6 +1401,60 @@ public partial class PaneView : UserControl
                 </DataTemplate>
                 """);
 
+        // Date and time apart, so "Today" can stand in for the date and the time still sit where every
+        // other row's does. The date's slot is as wide as the widest thing it can hold on any row: the
+        // date itself, which stays in it hidden under "Today", and a hidden "Yesterday" in case a font
+        // makes that the wider. The time's leading space is the one the single string had, so with the
+        // setting off the column reads exactly as it did. Both right-aligned in the slot, against the
+        // time: left-aligned, every "Today" left a hole before its time and the column zigzagged
+        // between rows with a gap and rows without (the user, 2026-11-08).
+        if (column.Kind == ColumnKind.Date && column.Id == ColumnIds.Modified)
+            return (DataTemplate)XamlReader.Parse($$"""
+                <DataTemplate {{Ns}}>
+                  <Grid Margin="8,0" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Yesterday" Visibility="Hidden" />
+                    <!-- Shown when the settings ask (FriendlyDateVisibility) and the day is one of the two. -->
+                    <TextBlock x:Name="Friendly" Grid.Column="0" Text="{Binding ModifiedFriendlyDay}" HorizontalAlignment="Right"
+                               TextTrimming="None" ToolTip="{Binding ModifiedDay}">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Style.BasedOn>
+                            <StaticResource ResourceKey="{x:Type TextBlock}" />
+                          </Style.BasedOn>
+                          <Setter Property="Visibility" Value="{DynamicResource FriendlyDateVisibility}" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding ModifiedFriendlyDay}" Value="{x:Null}">
+                              <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Grid.Column="0" Text="{Binding ModifiedDay}" HorizontalAlignment="Right" TextTrimming="None"
+                               Typography.NumeralAlignment="Tabular">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Style.BasedOn>
+                            <StaticResource ResourceKey="{x:Type TextBlock}" />
+                          </Style.BasedOn>
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding Visibility, ElementName=Friendly}" Value="Visible">
+                              <Setter Property="Visibility" Value="Hidden" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis"
+                               Typography.NumeralAlignment="Tabular"><Run Text=" " /><Run Text="{Binding ModifiedTime, Mode=OneWay}" /></TextBlock>
+                  </Grid>
+                </DataTemplate>
+                """);
+
         if (column.Kind == ColumnKind.Path)
             return (DataTemplate)XamlReader.Parse($$"""
                 <DataTemplate {{Ns}}>

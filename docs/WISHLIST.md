@@ -11,7 +11,6 @@ weighed against [DESIGN.md](DESIGN.md) first, and what was declined on purpose i
 - New file and Duplicate as plain commands; a graphical way to add a bookmark.
 - "Ungroup" a folder: its contents moved up and the folder removed, name conflicts asked about.
   Mostly for archives that hold a single folder; a "smart extract" may be the better answer.
-- An optional "Today" / "Yesterday" for dates, keeping the columns aligned.
 - A distinct icon for empty folders, if it costs nothing.
 - `${otherPaneSelection}` for tools: the other pane's marked items, one argument each. A
   misspelt placeholder in `tools.json` should be named rather than expand to nothing.

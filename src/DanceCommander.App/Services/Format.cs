@@ -42,6 +42,27 @@ public static class Format
     public static string Date(DateTimeOffset? value) =>
         value is null ? string.Empty : value.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
 
+    /// <summary>The date and the time apart, so a column can line up the times of every row.</summary>
+    public static (string Day, string Time) DateParts(DateTimeOffset? value) =>
+        value is null
+            ? (string.Empty, string.Empty)
+            : (value.Value.LocalDateTime.ToString("yyyy-MM-dd"), value.Value.LocalDateTime.ToString("HH:mm"));
+
+    /// <summary>
+    /// "Today" or "Yesterday" for a time on either of those days, and null for any other. Days
+    /// are the local calendar's, the same as the dates beside them.
+    /// </summary>
+    public static string? FriendlyDay(DateTimeOffset? value, DateTime today)
+    {
+        if (value is null)
+            return null;
+
+        var day = value.Value.LocalDateTime.Date;
+        return day == today.Date ? "Today"
+            : day == today.Date.AddDays(-1) ? "Yesterday"
+            : null;
+    }
+
     /// <summary>
     /// Blank for an ordinary entry, and the full positional <c>rhsl</c> form for anything else.
     /// A fixed <c>----</c> on every row is a column of punctuation the height of the window

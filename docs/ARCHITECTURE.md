@@ -1568,7 +1568,7 @@ All under `%APPDATA%/DanceCommander/`:
 
 | File | Contents |
 | --- | --- |
-| `settings.json` | choices: scheme, density, text size, folders first, the command line's shell, keys chosen over the commands' own, tool packs switched off |
+| `settings.json` | choices: scheme, density, text size, folders first, Today and Yesterday for dates, the command line's shell, keys chosen over the commands' own, tool packs switched off |
 | `bookmarks.json` | bookmark tree |
 | `history.json` | global MRU |
 | `tools.json` | custom tools (§6.6) |

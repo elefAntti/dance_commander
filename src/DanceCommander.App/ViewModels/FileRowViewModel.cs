@@ -191,6 +191,22 @@ public sealed partial class FileRowViewModel : ObservableObject, IRowDecorationS
     /// <summary>The size's unit — kB, MB — or empty for plain bytes and for folders.</summary>
     public string SizeUnit => !HasSize ? string.Empty : Format.SizeParts(_entry.Size).Unit;
 
+    /// <summary>The modified date, for a column that lines up dates and times separately.</summary>
+    public string ModifiedDay => Format.DateParts(_entry.Modified).Day;
+
+    /// <summary>The modified time of day.</summary>
+    public string ModifiedTime => Format.DateParts(_entry.Modified).Time;
+
+    /// <summary>
+    /// "Today" or "Yesterday" when the modified date is one of those, and null otherwise; drawn
+    /// over <see cref="ModifiedDay"/> only when the settings ask for it.
+    /// </summary>
+    /// <remarks>
+    /// Worked out when the row is drawn. A listing left open over midnight keeps saying "Today"
+    /// for yesterday's files until it is listed again.
+    /// </remarks>
+    public string? ModifiedFriendlyDay => Format.FriendlyDay(_entry.Modified, DateTime.Today);
+
     /// <summary>Cell text by column id. Unknown ids fall through to provider-supplied values.</summary>
     public string this[string columnId] => columnId switch
     {

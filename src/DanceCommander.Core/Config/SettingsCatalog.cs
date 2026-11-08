@@ -131,6 +131,18 @@ public static class SettingsCatalog
         Read = file => Text(file.View.CloudStatus),
     };
 
+    public static SettingDefinition FriendlyDates { get; } = new()
+    {
+        Path = ["view", "friendlyDates"],
+        Title = "Today and Yesterday",
+        Description = "The Modified column says Today and Yesterday instead of those dates. The time stays, lined up with the other rows'.",
+        Section = SettingSection.Appearance,
+        Choices = [new("false", "Off"), new("true", "On")],
+        Default = "false",
+        Read = file => file.View.FriendlyDates ? "true" : "false",
+        ToJson = value => JsonValue.Create(value == "true"),
+    };
+
     public static SettingDefinition Shell { get; } = new()
     {
         Path = ["commandLine", "shell"],
@@ -197,7 +209,7 @@ public static class SettingsCatalog
     };
 
     public static IReadOnlyList<SettingDefinition> All { get; } =
-        [DirectoriesFirst, Shell, MiddleClick, Prefetch, KeepListings, UnencryptedSignIn, Scheme, Accent, Density, TextSize, CloudStatus];
+        [DirectoriesFirst, Shell, MiddleClick, Prefetch, KeepListings, UnencryptedSignIn, Scheme, Accent, Density, TextSize, CloudStatus, FriendlyDates];
 
     /// <summary>The command the middle button runs on a row; anything but "otherPane" is a new tab.</summary>
     public static string MiddleClickCommand(SettingsFile file) =>
