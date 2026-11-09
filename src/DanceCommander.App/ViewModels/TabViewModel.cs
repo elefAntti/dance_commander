@@ -988,12 +988,18 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
     /// Up, which from a drive root goes on to the computer page, with the cursor on that drive —
     /// rather than stopping, with no way to see what other drives there are.
     /// </summary>
+    /// <remarks>
+    /// From where the tab is going, while a listing is on its way: Backspace pressed several times
+    /// in quick succession is several levels up. From where it is, every press after the first
+    /// asked for the same parent again, restarting the listing it was waiting for.
+    /// </remarks>
     public Task GoUpAsync()
     {
-        if (Uri?.Up is not { } parent)
+        var from = _listing is not null && _goingTo is { } going ? going : Location;
+        if (from?.Up is not { } parent)
             return Task.CompletedTask;
         LeaveAddress();
-        return NavigateAsync(parent, selectName: Uri.Name);
+        return NavigateAsync(parent, selectName: from.Name);
     }
 
     /// <summary>

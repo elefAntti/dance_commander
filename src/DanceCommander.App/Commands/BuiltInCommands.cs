@@ -61,9 +61,7 @@ public static class BuiltInCommands
             Group = "Navigate",
             Binding = KeyStroke.Parse("Backspace"),
             CanExecute = ctx => ctx.Directory.Up is not null,
-            ExecuteAsync = (ctx, _) => ctx.Directory.Up is { } parent
-                ? ctx.NavigateAsync(parent, ctx.Directory.Name)
-                : Task.CompletedTask,
+            ExecuteAsync = (ctx, _) => ctx.GoUpAsync(),
         });
 
         // "Here" means beside the archive, which is what the word says and what Explorer does. It

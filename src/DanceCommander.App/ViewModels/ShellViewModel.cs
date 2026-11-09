@@ -1672,6 +1672,8 @@ internal sealed class PaneCommandContext : ICommandContext
     public Task NavigateAsync(FsUri uri, string? selectName = null) =>
         OnUi(() => TabIsOpen ? Tab.NavigateAsync(uri, selectName) : Task.CompletedTask);
 
+    public Task GoUpAsync() => OnUi(() => TabIsOpen ? Tab.GoUpAsync() : Task.CompletedTask);
+
     public Task OpenInNewTabsAsync(IReadOnlyList<FsUri> locations) => OnUi(() => _pane.OpenInNewTabsAsync(locations));
 
     // Commands await with ConfigureAwait(false), so by the time they refresh they may be on a pool

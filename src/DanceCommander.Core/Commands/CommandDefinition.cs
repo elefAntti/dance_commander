@@ -198,6 +198,12 @@ public interface ICommandContext
     Task NavigateAsync(FsUri uri, string? selectName = null);
 
     /// <summary>
+    /// To the parent folder, with the cursor on the one left. A pane goes from where it is on its
+    /// way to, so that Up pressed again before the listing arrives is another level.
+    /// </summary>
+    Task GoUpAsync() => Directory.Up is { } parent ? NavigateAsync(parent, Directory.Name) : Task.CompletedTask;
+
+    /// <summary>
     /// Opens each location in a new tab of this pane; the first comes to the front and the rest wait
     /// behind it, the way a browser opens several links.
     /// </summary>
