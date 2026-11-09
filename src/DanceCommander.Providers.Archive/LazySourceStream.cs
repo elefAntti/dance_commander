@@ -111,8 +111,13 @@ internal sealed class LazySourceStream(
 
     protected override void Dispose(bool disposing)
     {
+        // Once only: a tar or 7z closes each file as soon as it is written, and the clean-up after
+        // the whole archive closes every one again.
         if (disposing)
+        {
             _inner?.Dispose();
+            _inner = null;
+        }
 
         base.Dispose(disposing);
     }

@@ -23,7 +23,7 @@ whether a paragraph is a description or a wish.
 | Logging | Serilog → rolling file in `%LOCALAPPDATA%` | Diagnosing remote/IO failures needs a real log. |
 | SFTP | `SSH.NET` | Mature, supports key auth, `SftpClient.ListDirectory`, seekable read streams. |
 | WebDAV | `WebDav.Client` | Thin PROPFIND/PUT/MKCOL wrapper over `HttpClient`; we control auth handler. |
-| Archives | `SharpCompress` | Zip/7z/tar/gz/bz2/rar (read), pure managed, streaming + random access for zip. |
+| Archives | `SharpCompress` | Zip/7z/tar/gz/bz2/rar (read), zip/7z/tar.gz (write), pure managed, streaming + random access for zip. |
 | Shell icons | Hand-rolled `SHGetFileInfo` P/Invoke | ~25 lines, no dependency. `IFileOperation` for the Recycle Bin is hand-rolled too (`ShellRecycle`, 2026-10-17): only its delete is used, so a few interface declarations did, without Vanara. It recycles with `FOFX_RECYCLEONDELETE` rather than `FOF_ALLOWUNDO`, which also put each delete on the shell's undo stack, shared with Explorer. |
 | Name matching | `DotNet.Glob` | Fast compiled globs for highlight rules and tool conditions. |
 | Git | Read `.git` directly (no LibGit2Sharp initially) | Branch name is a 40-byte read of `HEAD`; avoids a native dependency and libgit2's repo-open cost. Revisit only if we want status/ahead-behind. |
@@ -1557,6 +1557,10 @@ trusted.
 - Read-only in v1 (`Read | RandomAccessRead`). Writing into an archive means repacking; for
   zip we can add `Write` in M7 (SharpCompress supports rewriting), other formats stay
   read-only. Extracting *out* of an archive is just the transfer service, which works day one.
+- Making a new archive is Compress (`ArchiveBuilder`): .zip, .7z or .tar.gz, picked by the
+  extension typed. Zip is handed every entry and reads them as it saves; tar and 7z take one file
+  at a time. A tar header states the size before the contents, so a file that grows while packed
+  fails the compress rather than going in cut short. Empty folders are left out in every format.
 - Nested archives work via `FsUri.Inner` with no extra code: the inner archive's backing
   stream is the outer archive's entry stream (temp-materialised if non-seekable).
 

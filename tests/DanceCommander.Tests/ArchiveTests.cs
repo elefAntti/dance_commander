@@ -690,7 +690,7 @@ public sealed class ArchiveBuilderTests : ArchiveFixture
     private async Task<OpenArchive> Pack(params FsUri[] sources)
     {
         var target = FsUri.Local(At("packed.zip"));
-        await _builder.CreateZipAsync(sources, target, progress: null, CancellationToken.None);
+        await _builder.CreateAsync(sources, target, PackFormat.Zip, progress: null, CancellationToken.None);
         return await OpenArchive.OpenAsync(File.OpenRead(target.ToLocalPath()), "packed.zip", CancellationToken.None);
     }
 
@@ -772,19 +772,127 @@ public sealed class ArchiveBuilderTests : ArchiveFixture
     {
         var target = FsUri.Local(At("named-anything.dat"));
 
-        await _builder.CreateZipAsync([Write("one.txt", "x")], target, progress: null, CancellationToken.None);
+        await _builder.CreateAsync([Write("one.txt", "x")], target, PackFormat.Zip, progress: null, CancellationToken.None);
 
         (await ArchiveSniffer.DetectAsync(target.ToLocalPath())).Kind.ShouldBe(ArchiveKind.Zip);
     }
+
+    [Theory]
+    [InlineData(PackFormat.SevenZip, "packed.7z", ArchiveKind.SevenZip)]
+    [InlineData(PackFormat.TarGz, "packed.tar.gz", ArchiveKind.GZip)]
+    public async Task SevenZipAndTarballsReadBackWithTheirShapeNamesAndTimes(PackFormat format, string name, ArchiveKind kind)
+    {
+        var when = new DateTime(2024, 5, 6, 7, 8, 10, DateTimeKind.Utc);
+        var longName = new string('n', 140) + ".txt";
+        var top = Write("tree/top.txt", "top");
+        Write("tree/inner/päivä.txt", "deep");
+        Write($"tree/{longName}", "long");
+        File.SetLastWriteTimeUtc(top.ToLocalPath(), when);
+        var target = FsUri.Local(At(name));
+
+        await _builder.CreateAsync([FsUri.Local(At("tree"))], target, format, progress: null, CancellationToken.None);
+
+        var detected = await ArchiveSniffer.DetectAsync(target.ToLocalPath());
+        detected.Kind.ShouldBe(kind);
+        detected.IsTree.ShouldBeTrue();
+
+        using var archive = await OpenArchive.OpenAsync(File.OpenRead(target.ToLocalPath()), name, CancellationToken.None);
+        archive.List(string.Empty).Single().Name.ShouldBe("tree");
+        archive.List("tree").Select(n => n.Name).OrderBy(n => n, StringComparer.Ordinal).ShouldBe(["inner", longName, "top.txt"]);
+        archive.List("tree/inner").Single().Name.ShouldBe("päivä.txt");
+        archive.List("tree").Single(n => n.Name == "top.txt").Modified!.Value.UtcDateTime.ShouldBe(when);
+        using var reader = new StreamReader(archive.OpenRead("tree/inner/päivä.txt"));
+        (await reader.ReadToEndAsync()).ShouldBe("deep");
+    }
+
+    [Fact]
+    public async Task AFileThatGrowsWhileTarredIsNotPackedCutShort()
+    {
+        // A tar header gives the size first and the writer copies exactly that much, so the rest
+        // of a file that grew was left out with nothing to say so.
+        var growing = Write("growing.log", "start");
+        var stale = new GrowsWhenOpened(growing);
+        var registry = new ProviderRegistry([stale]);
+        var builder = new ArchiveBuilder(() => registry);
+        var target = FsUri.Local(At("grown.tar.gz"));
+
+        var error = await Should.ThrowAsync<IOException>(() =>
+            builder.CreateAsync([growing], target, PackFormat.TarGz, progress: null, CancellationToken.None));
+
+        error.Message.ShouldContain("growing.log grew");
+        File.Exists(target.ToLocalPath()).ShouldBeFalse();
+    }
+
+    /// <summary>Local files, except that one grows the moment it is opened for packing.</summary>
+    private sealed class GrowsWhenOpened(FsUri growing) : IFileSystemProvider
+    {
+        private readonly LocalFileSystemProvider _local = new();
+
+        public string Scheme => _local.Scheme;
+
+        public ProviderCapabilities Capabilities => _local.Capabilities;
+
+        public DanceCommander.Core.Columns.ColumnSet DefaultColumns => _local.DefaultColumns;
+
+        public DanceCommander.Core.Watching.IDirectoryWatcher? Watch(FsUri directory) => null;
+
+        public Task<FsEntry?> StatAsync(FsUri uri, CancellationToken ct) => _local.StatAsync(uri, ct);
+
+        public IAsyncEnumerable<FsEntry> ListAsync(FsUri uri, CancellationToken ct) => _local.ListAsync(uri, ct);
+
+        public Task<Stream> OpenReadAsync(FsUri uri, CancellationToken ct)
+        {
+            if (uri == growing)
+                File.AppendAllText(uri.ToLocalPath(), " and more");
+            return _local.OpenReadAsync(uri, ct);
+        }
+
+        public Task<Stream> OpenWriteAsync(FsUri uri, long? length, CancellationToken ct) => _local.OpenWriteAsync(uri, length, ct);
+
+        public Task CreateDirectoryAsync(FsUri uri, CancellationToken ct) => _local.CreateDirectoryAsync(uri, ct);
+
+        public Task MoveAsync(FsUri from, FsUri to, CancellationToken ct) => _local.MoveAsync(from, to, ct);
+
+        public Task DeleteAsync(FsUri uri, bool recursive, CancellationToken ct) => throw new NotSupportedException();
+    }
+
+    [Theory]
+    [InlineData(PackFormat.Zip, "same.zip")]
+    [InlineData(PackFormat.SevenZip, "same.7z")]
+    [InlineData(PackFormat.TarGz, "same.tar.gz")]
+    public async Task TwoFilesOfOneNameAreNotPackedOneOverTheOther(PackFormat format, string name)
+    {
+        // Picked in a flat view: the tar and 7z writers kept both, and the archive showed one
+        // (review, 2026-11-08).
+        var a = Write("a/readme.txt", "four");
+        var b = Write("b/README.txt", "six!!!");
+        var target = FsUri.Local(At(name));
+
+        var error = await Should.ThrowAsync<IOException>(() =>
+            _builder.CreateAsync([a, b], target, format, progress: null, CancellationToken.None));
+
+        error.Message.ShouldContain("readme.txt");
+        File.Exists(target.ToLocalPath()).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("logs.tar.gz", PackFormat.TarGz)]
+    [InlineData("logs.TGZ", PackFormat.TarGz)]
+    [InlineData("logs.7z", PackFormat.SevenZip)]
+    [InlineData("v1.2.zip", PackFormat.Zip)]
+    [InlineData("v1.2", null)]
+    [InlineData(".zip", null)]
+    public void TheExtensionPicksTheFormat(string name, PackFormat? format) =>
+        PackFormats.FromName(name).ShouldBe(format);
 
     [Fact]
     public async Task ProgressNamesEachFileAndEndsWhole()
     {
         var target = FsUri.Local(At("counted.zip"));
-        var reports = new List<ZipProgress>();
+        var reports = new List<ArchiveProgress>();
 
-        await _builder.CreateZipAsync(
-            [Write("a.txt", new string('a', 300_000)), Write("b.txt", "b")], target,
+        await _builder.CreateAsync(
+            [Write("a.txt", new string('a', 300_000)), Write("b.txt", "b")], target, PackFormat.Zip,
             new Recording(reports), CancellationToken.None);
 
         reports.Select(r => r.Detail).ShouldContain("a.txt");
@@ -799,8 +907,8 @@ public sealed class ArchiveBuilderTests : ArchiveFixture
         var a = Write("folder/a.txt", "aaa");
         var b = Write("folder/deep/b.txt", "b");
 
-        var packed = await _builder.CreateZipAsync(
-            [FsUri.Local(At("folder"))], FsUri.Local(At("said.zip")), progress: null, CancellationToken.None);
+        var packed = await _builder.CreateAsync(
+            [FsUri.Local(At("folder"))], FsUri.Local(At("said.zip")), PackFormat.Zip, progress: null, CancellationToken.None);
 
         packed.Select(p => (p.Source, p.Size)).ShouldBe([(a, 3L), (b, 1L)], ignoreOrder: true);
         (await PackedFile.FirstChangedAsync(_providers, packed, CancellationToken.None)).ShouldBeNull();
@@ -814,8 +922,8 @@ public sealed class ArchiveBuilderTests : ArchiveFixture
         // What a compress's undo asks before it deletes a zip that no bin will keep: the zip may
         // now hold the only copy (review, 2026-10-22).
         var a = Write("folder/a.txt", "aaa");
-        var packed = await _builder.CreateZipAsync(
-            [FsUri.Local(At("folder"))], FsUri.Local(At("only.zip")), progress: null, CancellationToken.None);
+        var packed = await _builder.CreateAsync(
+            [FsUri.Local(At("folder"))], FsUri.Local(At("only.zip")), PackFormat.Zip, progress: null, CancellationToken.None);
 
         if (change == "deleted")
             File.Delete(a.ToLocalPath());
@@ -838,15 +946,15 @@ public sealed class ArchiveBuilderTests : ArchiveFixture
                 cts.Cancel();
         });
 
-        await Should.ThrowAsync<OperationCanceledException>(() => _builder.CreateZipAsync(
-            [Write("big.txt", new string('x', 2_000_000))], target, progress, cts.Token));
+        await Should.ThrowAsync<OperationCanceledException>(() => _builder.CreateAsync(
+            [Write("big.txt", new string('x', 2_000_000))], target, PackFormat.Zip, progress, cts.Token));
 
         File.Exists(target.ToLocalPath()).ShouldBeFalse();
     }
 
-    private sealed class Recording(List<ZipProgress> into, Action<ZipProgress>? also = null) : IProgress<ZipProgress>
+    private sealed class Recording(List<ArchiveProgress> into, Action<ArchiveProgress>? also = null) : IProgress<ArchiveProgress>
     {
-        public void Report(ZipProgress value)
+        public void Report(ArchiveProgress value)
         {
             into.Add(value);
             also?.Invoke(value);

@@ -102,8 +102,8 @@ public static class BuiltInCommands
             Id = "dc.compress",
             Needs = ProviderCapabilities.Write,
             WritesHere = true,
-            Title = "Compress into a zip",
-            LegendTitle = "Zip",
+            Title = "Compress into an archive",
+            LegendTitle = "Compress",
             Group = "File",
             Scope = OnEntries,
             CanExecute = ctx => ctx.Selection.Count > 0 && !ctx.Directory.IsArchiveEntry,
@@ -666,29 +666,38 @@ public static class BuiltInCommands
         var directory = ctx.Directory.Anchor;
 
         var operations = ctx.Services.GetRequiredService<IFileOperationService>();
-        var proposed = selection.Count == 1
+        var proposed = (selection.Count == 1
             ? StemOf(selection[0].Name)
-            : operations.ProposeGroupName(selection, directory);
+            : operations.ProposeGroupName(selection, directory)) + PackFormats.ExtensionOf(PackFormat.Zip);
 
+        // The extension picks the format, as it would at a shell; the stem is selected so that
+        // typing a name keeps .zip, and changing the format is typing over the rest.
         var typed = await ctx.Decisions.AskTextAsync(
             new TextRequest(
-                $"Compress {Describe(selection.Count)} into a zip",
+                $"Compress {Describe(selection.Count)}",
                 proposed,
                 "Compress",
-                Detail: "Created in this folder.",
+                Detail: "Created in this folder. The extension sets the format: .zip, .7z or .tar.gz.",
                 Validate: name => string.IsNullOrWhiteSpace(name)
                     ? "The archive needs a name."
                     : name.IndexOfAny(InvalidNameChars) >= 0
                         ? "That name contains a character a file name cannot."
-                        : null),
+                        : PackFormats.FromName(name.Trim()) is null && LooksPackable(name.Trim())
+                            ? "Compress writes .zip, .7z and .tar.gz."
+                            : null,
+                SelectStemOnly: true),
             ct);
 
         if (string.IsNullOrWhiteSpace(typed))
             return;
 
+        // A name with no archive extension (a version number's dots, or none) gets .zip, as before.
         var name = typed.Trim();
-        if (!name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            name += ".zip";
+        if (PackFormats.FromName(name) is not { } format)
+        {
+            format = PackFormat.Zip;
+            name += PackFormats.ExtensionOf(format);
+        }
 
         var target = directory.Child(name);
         var builder = ctx.Services.GetRequiredService<IArchiveBuilder>();
@@ -766,9 +775,9 @@ public static class BuiltInCommands
                 async (running, token) =>
                 {
                     packed = await builder
-                        .CreateZipAsync(
-                            selection.Select(e => e.Uri).ToList(), built,
-                            new ZipJobProgress(running), token)
+                        .CreateAsync(
+                            selection.Select(e => e.Uri).ToList(), built, format,
+                            new ArchiveJobProgress(running), token)
                         .ConfigureAwait(false);
 
                     // The swap is not stopped part way: Cancel pressed as the zip finishes would
@@ -886,7 +895,7 @@ public static class BuiltInCommands
                 ? $"{(built.Parent is { IsRoot: false } folder ? folder.Name : "The folder")} could not be looked at afterwards to see what is left there."
                 : null;
             var said = string.Join(" ", new[] { detail, oldWhere, unseen }.Where(t => !string.IsNullOrEmpty(t)));
-            var shell = $"zip -r {(newAt ?? built).Name} .";
+            var shell = PackFormats.ShellFor(format, (newAt ?? built).Name);
             var failures = ctx.Services.GetRequiredService<IActivityLog>();
             if (newAt is not null)
             {
@@ -922,7 +931,7 @@ public static class BuiltInCommands
 
         var description = $"Compressed {selection.Count:N0} item{(selection.Count == 1 ? "" : "s")} into {name}";
         var log = ctx.Services.GetRequiredService<IActivityLog>();
-        log.Record(description, $"zip -r {name} .", ActivityOutcome.Succeeded,
+        log.Record(description, PackFormats.ShellFor(format, name), ActivityOutcome.Succeeded,
             replacing ? "The old one went to the Recycle Bin." : null);
 
         // Undoable as every mutation is (§1.2/6): the zip goes if it is still as made, and a zip it
@@ -931,7 +940,7 @@ public static class BuiltInCommands
         var undoTarget = target;
         working.Push(new DelegateUndo(
             description,
-            $"zip -r {name} .",
+            PackFormats.ShellFor(format, name),
             token => UndoCompressAsync(provider, providers, recycleBin, log, undoTarget, made, packed, replacing ? (recycledAt, recycledBy) : null, description, token)));
         // Let go as soon as it is recorded, as a transfer does, not after the refresh.
         working.Dispose();
@@ -940,17 +949,17 @@ public static class BuiltInCommands
         ctx.Services.GetService<IArrivalFeed>()?.Report([target]);
         ctx.Decisions.Report(replacedChanged
             ? new Notice($"Created {name}.", NoticeSeverity.Info,
-                "The zip it was to replace changed while this was compressing, so it was kept.")
+                "The archive it was to replace changed while this was compressing, so it was kept.")
             : new Notice($"Created {name}."));
     }
 
     /// <summary>
-    /// The zip's progress onto its job, straight from the thread packing it: the job raises its own
+    /// The archive's progress onto its job, straight from the thread packing it: the job raises its own
     /// changes, as a Del's does, so there is no need to go through the window's thread first.
     /// </summary>
-    private sealed class ZipJobProgress(OperationJob job) : IProgress<ZipProgress>
+    private sealed class ArchiveJobProgress(OperationJob job) : IProgress<ArchiveProgress>
     {
-        public void Report(ZipProgress value) => job.Report(value.Fraction, value.Detail);
+        public void Report(ArchiveProgress value) => job.Report(value.Fraction, value.Detail);
     }
 
     /// <summary>
@@ -1005,7 +1014,7 @@ public static class BuiltInCommands
             // holds is still where it was packed from, as it was.
             if (await PackedFile.FirstChangedAsync(providers, packed, ct).ConfigureAwait(false) is { } changed)
                 throw new CannotUndoException(
-                    $"{target.Name} stays: {changed.Source.Name}, packed into it, is no longer as it was, so the zip may be the only copy.");
+                    $"{target.Name} stays: {changed.Source.Name}, packed into it, is no longer as it was, so the archive may be the only copy.");
 
 #pragma warning disable RS0030 // §1.6: exactly the zip this command wrote, unchanged since (size and time checked above), where no bin can take it, and every file in it still where it was packed from (checked just above).
             await provider.DeleteAsync(target, recursive: false, ct).ConfigureAwait(false);
@@ -1021,6 +1030,14 @@ public static class BuiltInCommands
         var dot = wanted.Name.LastIndexOf('.');
         var stem = dot > 0 ? wanted.Name[..dot] : wanted.Name;
         var extension = dot > 0 ? wanted.Name[dot..] : string.Empty;
+
+        // A tarball's extension is both parts: "logs (2).tar.gz", which still opens as one.
+        if (stem.Length > ".tar".Length && stem.EndsWith(".tar", StringComparison.OrdinalIgnoreCase))
+        {
+            extension = stem[^".tar".Length..] + extension;
+            stem = stem[..^".tar".Length];
+        }
+
         var parent = wanted.Parent ?? wanted;
 
         for (var n = 2; n < 1000; n++)
