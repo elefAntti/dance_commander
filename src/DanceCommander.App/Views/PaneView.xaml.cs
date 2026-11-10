@@ -2176,6 +2176,7 @@ public partial class PaneView : UserControl
         _stepped = null;
         _dismissed = false;
         _completedTo = null;
+        _completedAddress = null;
         ShowSuggestions(typed);
         CompleteInline(typed, e);
     }
@@ -2292,6 +2293,12 @@ public partial class PaneView : UserControl
     private string? _completedTo;
 
     /// <summary>
+    /// The address that completion stands for, spelt as the address is: what Tab and Enter take,
+    /// while the box shows the typed letters as they were typed.
+    /// </summary>
+    private string? _completedAddress;
+
+    /// <summary>
     /// Takes a completion still on offer: the caret goes to the end, and the list catches up with
     /// the longer address, ready for the next separator. False when there is none, so Tab keeps
     /// its usual meaning.
@@ -2305,9 +2312,22 @@ public partial class PaneView : UserControl
             || AddressBox.SelectionStart + AddressBox.SelectionLength != text.Length)
             return false;
 
+        // Now in the address's own case: what is typed next carries on from the real address.
+        text = _completedAddress ?? text;
         _completedTo = null;
+        _completedAddress = null;
         _typed = text;
-        AddressBox.Select(text.Length, 0);
+        _completing = true;
+        try
+        {
+            AddressBox.Text = text;
+            AddressBox.Select(text.Length, 0);
+        }
+        finally
+        {
+            _completing = false;
+        }
+
         ShowSuggestions(text);
         return true;
     }
@@ -2327,14 +2347,21 @@ public partial class PaneView : UserControl
             || IsGoneFromItsFolder(typed, completion))
             return;
 
-        // The whole text rather than just the rest, so the case is the address's own: "/Var" on a
-        // server that has "/var" would otherwise complete to a place that does not exist.
+        // The letters typed stay as typed, and only the rest is filled in: written whole in the
+        // address's case, the typed part was recased under the caret, and typing on over the
+        // tail kept it so: R, E, then the rest of README gave "ReADME" (2026-11-10). Taking the
+        // completion goes to the address as it is spelt, so "/Var" on a server that has "/var"
+        // still lands on /var (AcceptCompletion, Enter).
+        var shown = completion.StartsWith(typed, StringComparison.OrdinalIgnoreCase)
+            ? typed + completion[typed.Length..]
+            : completion;
         _completing = true;
         try
         {
-            AddressBox.Text = completion;
-            AddressBox.Select(typed.Length, completion.Length - typed.Length);
-            _completedTo = completion;
+            AddressBox.Text = shown;
+            AddressBox.Select(typed.Length, shown.Length - typed.Length);
+            _completedTo = shown;
+            _completedAddress = completion;
         }
         finally
         {
@@ -2419,6 +2446,7 @@ public partial class PaneView : UserControl
             AddressBox.Text = text;
             AddressBox.Select(text.Length, 0);
             _completedTo = null;
+            _completedAddress = null;
         }
         finally
         {
@@ -2468,6 +2496,12 @@ public partial class PaneView : UserControl
             case Key.Enter when _stepped is { } stepped:
                 e.Handled = true;
                 Accept(stepped.Uri);
+                break;
+
+            // A completion still as it was filled in: the address it stands for, in its own case.
+            case Key.Enter when _completedAddress is { } completed && AddressBox.Text == _completedTo:
+                e.Handled = true;
+                Navigate(completed);
                 break;
 
             case Key.Enter:
