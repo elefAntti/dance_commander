@@ -33,6 +33,7 @@
   The token arrives in DC_SECRET_GITLAB_TOKEN, never on the command line: declare "gitlab-token" in
   the listing's "secrets" and Dance Commander asks for it once. A personal access token with the
   read_api scope is enough. Nothing here prints it -- stderr is shown in the app and its log verbatim.
+  It is sent only to a host listed in DC_GITLAB_HOSTS (gitlab-common.ps1).
 
 .EXAMPLE
   In tools.json:
@@ -79,6 +80,8 @@ param(
 Set-StrictMode -Version 3
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Net.Http
+# For Assert-TokenHost, New-GitLabHttp and Send-GitLabRequest: where the token may go.
+. (Join-Path $PSScriptRoot 'gitlab-common.ps1')
 
 # How far back the lists go. A pipeline list is a "what happened lately", not an archive.
 $PipelineCount = 30
@@ -130,6 +133,7 @@ if ($Verb -eq 'describe') {
     exit 0
 }
 
+Assert-TokenHost $api
 $token = $env:DC_SECRET_GITLAB_TOKEN
 if (-not $token) {
     Fail "No GitLab token: declare `"secrets`": [`"gitlab-token`"] for this listing."
@@ -137,16 +141,15 @@ if (-not $token) {
 
 # ---- talking to the API --------------------------------------------------------------------------
 
-$http = [System.Net.Http.HttpClient]::new()
-$http.Timeout = [TimeSpan]::FromMinutes(30)
-$http.DefaultRequestHeaders.Add('PRIVATE-TOKEN', $token)
-$http.DefaultRequestHeaders.UserAgent.ParseAdd('DanceCommander-gitlab-pipelines/1')
+# Artifacts can be redirected to object storage; the token stays with GitLab (gitlab-common.ps1).
+$http = New-GitLabHttp $api $token 'DanceCommander-gitlab-pipelines/1' ([TimeSpan]::FromMinutes(30))
 
 # The response, headers read, or a failure in words -- GitLab's status codes mean specific things here.
 function Send([string] $path) {
     $uri = "$api/projects/$projectId$path"
     try {
-        $response = $http.GetAsync($uri, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
+        $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Get, $uri)
+        $response = Send-GitLabRequest $http $request ([System.Net.Http.HttpCompletionOption]::ResponseHeadersRead)
     }
     catch {
         Fail "Could not reach $api ($($_.Exception.GetBaseException().Message))."
@@ -155,6 +158,11 @@ function Send([string] $path) {
     if ($response.IsSuccessStatusCode) { return $response }
 
     $status = [int] $response.StatusCode
+    # An artifact redirected to object storage that then fails (an expired link) is not about the token.
+    $final = $response.RequestMessage.RequestUri
+    if ($final.Host -ne $TokenTarget.Host) {
+        Fail "The download from $($final.Host) failed: $status $($response.ReasonPhrase)."
+    }
     switch ($status) {
         401 { Fail "GitLab did not accept the token (401). It may have expired; remove it from Credential Manager (script:gitlab-token) to be asked again." }
         403 { Fail "The token may not read $($project.Path) (403). It needs the read_api scope." }

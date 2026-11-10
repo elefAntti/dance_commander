@@ -27,6 +27,16 @@ weighed against [DESIGN.md](DESIGN.md) first, and what was declined on purpose i
 - **Search inside files** (grep), working with the flat view for a recursive search.
 - **Search on an SFTP server with `find`** instead of one readdir per folder, falling back to the
   walk where exec isn't allowed.
+- **Everything (voidtools) as the local disks' search index**, when it is running, behind the same
+  seam as Nextcloud's server search, with the walk as before when it isn't. It answers a search of
+  the whole machine in 40–90 ms, so it would allow:
+  - files from anywhere in the address bar's suggestions as you type;
+  - narrowing a whole-computer search live, widening again on Backspace;
+  - folder sizes in the Size column, summed from the index;
+  - "largest", "changed today" and "same name" views of a folder's tree.
+
+  Its answer needs our rules applied: it indexes hidden folders and package caches, and folders the
+  user cannot open.
 - **Redo** (Ctrl+Y), which needs operations that can go forward as well as back.
 - **Look inside:** open any file as a folder if there is an archive in it (.docx, self-extracting
   .exe).

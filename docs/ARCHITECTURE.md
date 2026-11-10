@@ -919,8 +919,10 @@ not part of this.
 `scripts/gitlab-pipelines.ps1` is that script: the branch's open merge requests (each with a
 `review-comments.md` and its own pipelines), the branch's pipelines and an "(all branches)" folder
 → a pipeline's jobs → a job's `artifacts.zip` and `job.log`, the project found from the
-remote URL, the API at `https://<host>/api/v4` unless `DC_GITLAB_API` says otherwise. It lives in
-the repository's `scripts/`, not in the application, which still knows nothing about GitLab.
+remote URL, the API at `https://<host>/api/v4` unless `DC_GITLAB_API` says otherwise. The token
+goes only to a host listed in `DC_GITLAB_HOSTS`, over https, and not along a redirect to anywhere else: the host
+comes from the remote, so a clone from GitHub or from someone else would otherwise be sent it. It
+lives in the repository's `scripts/`, not in the application, which still knows nothing about GitLab.
 
 `scripts/git-history.ps1` is the second (`?git-gone`, "Deleted files"): what git remembers below the
 folder that is no longer there, one flat level. A row's crumb is `<blob id>.<repository path,

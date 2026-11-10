@@ -1,15 +1,20 @@
 <#
 .SYNOPSIS
-  What the GitLab review scripts share: which project, the token, and talking to the API.
+  What the GitLab scripts share: which project, the token, and talking to the API.
 
 .DESCRIPTION
-  Dot-sourced by gitlab-review-download.ps1 and gitlab-review-upload.ps1; not run on its own.
+  Dot-sourced by the gitlab-*.ps1 scripts; not run on its own.
 
   The token: DC_SECRET_GITLAB_TOKEN or GITLAB_TOKEN when set, else the one Dance Commander stored
   for the Pipelines listing (Credential Manager, "DanceCommander:script:gitlab-token"). Tools in
   tools.json get no "secrets" of their own, and the token must never be on a command line, so the
   scripts read the stored one themselves. Nothing here prints it. Uploading prefers a token of its
   own (gitlab-review-upload.ps1 says why).
+
+  Where the token goes: only to the hosts in DC_GITLAB_HOSTS (comma-separated), and only over https. The
+  host comes from the repository's remote, and a clone of someone else's repository, or one from
+  GitHub, would otherwise be handed the token by pressing a menu item. A redirect elsewhere (an
+  artifact in object storage) is followed without it.
 #>
 
 Set-StrictMode -Version 3
@@ -123,17 +128,78 @@ function Get-GitLabToken {
         "or set GITLAB_TOKEN.")
 }
 
+# ---- where the token may go ----------------------------------------------------------------------
+
+# Stops the script unless $api is https and its host is one of DC_GITLAB_HOSTS.
+function Assert-TokenHost([string] $api) {
+    $uri = $null
+    if (-not [Uri]::TryCreate($api, [UriKind]::Absolute, [ref] $uri) -or $uri.Scheme -ne 'https') {
+        Fail "'$api' is not an https address, so the GitLab token is not sent there."
+    }
+    $allowed = @("$env:DC_GITLAB_HOSTS" -split '[,;\s]+' | Where-Object { $_ })
+    if ($allowed.Count -eq 0) {
+        Fail ("The GitLab token is sent only to hosts listed in DC_GITLAB_HOSTS, which is not set. " +
+            "Set it to your GitLab's host name, then restart Dance Commander.")
+    }
+    if (-not ($allowed | Where-Object { $_ -ieq $uri.Host })) {
+        Fail "$($uri.Host) is not in DC_GITLAB_HOSTS, so the GitLab token is not sent there."
+    }
+}
+
+<#
+  An HttpClient for Send-GitLabRequest, which adds the token itself, and only to $api's scheme, host
+  and port. Redirects are followed there rather than by .NET, which would carry PRIVATE-TOKEN along
+  to wherever a redirect pointed (it strips only Authorization): an artifact redirected to object
+  storage is fetched without it. Plain PowerShell rather than a DelegatingHandler, because compiling
+  one with Add-Type cost half a second on every listing level.
+#>
+function New-GitLabHttp([string] $api, [string] $token, [string] $userAgent, [TimeSpan] $timeout) {
+    $handler = [System.Net.Http.HttpClientHandler]::new()
+    $handler.AllowAutoRedirect = $false
+    $http = [System.Net.Http.HttpClient]::new($handler)
+    $http.Timeout = $timeout
+    $http.DefaultRequestHeaders.UserAgent.ParseAdd($userAgent)
+    $script:TokenTarget = [Uri] $api
+    $script:Token = $token
+    return $http
+}
+
+function Send-GitLabRequest(
+    [System.Net.Http.HttpClient] $http,
+    [System.Net.Http.HttpRequestMessage] $request,
+    [System.Net.Http.HttpCompletionOption] $completion = [System.Net.Http.HttpCompletionOption]::ResponseContentRead) {
+
+    for ($hops = 0; ; $hops++) {
+        $uri = $request.RequestUri
+        if ($uri.Scheme -eq $TokenTarget.Scheme -and $uri.Port -eq $TokenTarget.Port -and
+            [string]::Equals($uri.Host, $TokenTarget.Host, [StringComparison]::OrdinalIgnoreCase)) {
+            $null = $request.Headers.TryAddWithoutValidation('PRIVATE-TOKEN', $Token)
+        }
+        $response = $http.SendAsync($request, $completion).GetAwaiter().GetResult()
+
+        # Only reads are followed: a redirected POST would have to send its body again.
+        $status = [int] $response.StatusCode
+        if ($status -notin 301, 302, 303, 307, 308 -or $request.Method.Method -notin 'GET', 'HEAD' -or
+            $null -eq $response.Headers.Location -or $hops -ge 10) {
+            return $response
+        }
+        $next = [Uri]::new($uri, $response.Headers.Location)
+        if ($next.Scheme -notin 'https', 'http') { return $response }
+        $response.Dispose()
+        # A new request carries nothing over, so the token is only ever where the check above put it.
+        $request = [System.Net.Http.HttpRequestMessage]::new($request.Method, $next)
+    }
+}
+
 # ---- talking to the API --------------------------------------------------------------------------
 
 # Sets $script:GitLab: the API root, the project, and an HttpClient carrying the token.
 # $token: the one to use; Get-GitLabToken's when not given.
 function Connect-GitLab([string] $gitlabHost, [string] $projectPath, [string] $userAgent, [string] $token = '') {
-    if (-not $token) { $token = Get-GitLabToken }
     $api = if ($env:DC_GITLAB_API) { $env:DC_GITLAB_API.TrimEnd('/') } else { "https://$gitlabHost/api/v4" }
-    $http = [System.Net.Http.HttpClient]::new()
-    $http.Timeout = [TimeSpan]::FromMinutes(5)
-    $http.DefaultRequestHeaders.Add('PRIVATE-TOKEN', $token)
-    $http.DefaultRequestHeaders.UserAgent.ParseAdd($userAgent)
+    Assert-TokenHost $api
+    if (-not $token) { $token = Get-GitLabToken }
+    $http = New-GitLabHttp $api $token $userAgent ([TimeSpan]::FromMinutes(5))
     $script:GitLab = @{
         Api       = $api
         Path      = $projectPath
@@ -168,7 +234,7 @@ function Invoke-GitLab([string] $method, [string] $path, $body = $null, [switch]
         $request.Content = [System.Net.Http.StringContent]::new($json, [System.Text.Encoding]::UTF8, 'application/json')
     }
     try {
-        $response = $GitLab.Http.SendAsync($request).GetAwaiter().GetResult()
+        $response = Send-GitLabRequest $GitLab.Http $request
     }
     catch {
         Fail "Could not reach $($GitLab.Api) ($($_.Exception.GetBaseException().Message))."
