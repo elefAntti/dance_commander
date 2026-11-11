@@ -347,6 +347,8 @@ public partial class App : Application
         services.AddSingleton<IArchiveBuilder, ArchiveBuilder>();
         services.AddSingleton<IProviderRegistry, ProviderRegistry>();
         services.AddSingleton<ICommandListingCatalog, CommandListingCatalog>();
+        // Asked before a search walks a local folder; answers only when Everything is running.
+        services.AddSingleton<ILocalSearchIndex, Providers.Local.Everything.EverythingIndex>();
         services.AddSingleton<IListingSourceFactory, ListingSourceFactory>();
 
         services.AddSingleton<ICommandRegistry, CommandRegistry>();

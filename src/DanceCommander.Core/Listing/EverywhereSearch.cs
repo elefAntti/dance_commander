@@ -129,17 +129,22 @@ public sealed class EverywhereListingSource : IListingSource
     private readonly NameMatcher _matcher;
     private readonly PrunePolicy _prune;
     private readonly IReadOnlyList<SearchArea>? _areas;
+    private readonly ILocalSearchIndex? _index;
     private readonly DateTimeOffset _now = DateTimeOffset.Now;
+    private int _indexed;
 
     /// <param name="areas">Where to walk; this machine's places when not given.</param>
+    /// <param name="index">Asked for each place before walking it: Everything, when it is running.</param>
     public EverywhereListingSource(
-        IProviderRegistry providers, FsUri uri, ListingFilter filter, IReadOnlyList<SearchArea>? areas = null)
+        IProviderRegistry providers, FsUri uri, ListingFilter filter, IReadOnlyList<SearchArea>? areas = null,
+        ILocalSearchIndex? index = null)
     {
         _providers = providers;
         _start = uri.Inner ?? throw new InvalidOperationException("A search must say where it starts.");
         _prune = new PrunePolicy(filter, skipClutter: true);
         _matcher = NameQuery.Compile(uri.Parameter);
         _areas = areas;
+        _index = index;
         Uri = uri;
     }
 
@@ -155,6 +160,8 @@ public sealed class EverywhereListingSource : IListingSource
 
     public bool RereadWhenFilterChanges => true;
 
+    public string? AnsweredBy { get; private set; }
+
     public IDirectoryWatcher? Watch() => null;
 
     public async IAsyncEnumerable<FsEntry> ListAsync([EnumeratorCancellation] CancellationToken ct)
@@ -164,17 +171,30 @@ public sealed class EverywhereListingSource : IListingSource
         var areas = _areas ?? SearchAreas.OfThisMachine(_start);
         var roots = areas.Select(area => area.Root).ToHashSet();
 
+        var terms = NameQuery.Terms(Uri.Parameter);
+
         foreach (var area in areas)
         {
             var fenced = roots.Where(root => root != area.Root).ToHashSet();
-            await foreach (var entry in TreeWalk.WalkAsync(
-                _providers, area.Root, _prune, MaxDepth,
-                (entry, prefix) => Select(area, entry, prefix),
-                ct, fenced, keepGoing: true).ConfigureAwait(false))
-            {
+            FsEntry? Choose(FsEntry entry, string prefix) => Select(area, entry, prefix);
+
+            // Each place asked of the index on its own: a drive it doesn't index is walked while
+            // the one it does is answered, and the rows are the walk's either way (IndexedSearch).
+            var rows = _index is not null
+                && await IndexedSearch.TryAsync(_index, _providers, area.Root, terms, _prune, MaxDepth, Choose, ct, fenced)
+                    .ConfigureAwait(false) is { } indexed
+                ? Answered(indexed, areas.Count)
+                : TreeWalk.WalkAsync(_providers, area.Root, _prune, MaxDepth, Choose, ct, fenced, keepGoing: true);
+
+            await foreach (var entry in rows.ConfigureAwait(false))
                 yield return entry;
-            }
         }
+    }
+
+    private IAsyncEnumerable<FsEntry> Answered(IAsyncEnumerable<FsEntry> rows, int places)
+    {
+        AnsweredBy = $"{_index!.Name} for {++_indexed} of {places} places";
+        return rows;
     }
 
     private FsEntry? Select(SearchArea area, FsEntry entry, string prefix)

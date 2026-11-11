@@ -48,11 +48,23 @@ public interface IListingSource
     /// collected would show nothing new and look like the key had stopped working.
     /// </remarks>
     bool RereadWhenFilterChanges => false;
+
+    /// <summary>
+    /// What answered instead of the listing's own way of reading, when something did: "Everything"
+    /// for a search it answered rather than a walk. Known once the rows are coming; for the log.
+    /// </summary>
+    string? AnsweredBy => null;
 }
 
 public interface IListingSourceFactory
 {
     IListingSource Create(FsUri uri, ListingFilter filter);
+
+    /// <param name="walk">
+    /// A search without the index: asked for when the index found nothing, which may be the index
+    /// not having it yet rather than the disk not having it.
+    /// </param>
+    IListingSource Create(FsUri uri, ListingFilter filter, bool walk) => Create(uri, filter);
 }
 
 /// <summary>A plain directory listing from a provider.</summary>
@@ -71,19 +83,25 @@ public sealed class DirectoryListingSource(IFileSystemProvider provider, FsUri u
     public IDirectoryWatcher? Watch() => provider.Watch(Uri);
 }
 
+/// <param name="index">The disks' search index, when there is one to ask (Everything).</param>
 public sealed class ListingSourceFactory(
     IProviderRegistry providers,
-    ICommandListingCatalog? listings = null) : IListingSourceFactory
+    ICommandListingCatalog? listings = null,
+    ILocalSearchIndex? index = null) : IListingSourceFactory
 {
     /// <summary>
     /// A directory on a provider is only the first kind of listing (§1.2/3). A view computes its
     /// rows from another location instead, and the pane cannot tell the difference.
     /// </summary>
-    public IListingSource Create(FsUri uri, ListingFilter filter) => uri.Scheme switch
+    public IListingSource Create(FsUri uri, ListingFilter filter) => Create(uri, filter, walk: false);
+
+    public IListingSource Create(FsUri uri, ListingFilter filter, bool walk) => Create(uri, filter, walk ? null : index);
+
+    private IListingSource Create(FsUri uri, ListingFilter filter, ILocalSearchIndex? index) => uri.Scheme switch
     {
         "flat" => new FlatListingSource(providers, uri, filter),
-        "search" => new SearchListingSource(providers, uri, filter),
-        FsUri.EverywhereScheme => new EverywhereListingSource(providers, uri, filter),
+        "search" => new SearchListingSource(providers, uri, filter, index),
+        FsUri.EverywhereScheme => new EverywhereListingSource(providers, uri, filter, index: index),
         "from" => FromCommand(uri),
         _ => new DirectoryListingSource(providers.Resolve(uri), uri),
     };

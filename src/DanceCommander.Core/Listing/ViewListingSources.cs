@@ -27,8 +27,23 @@ namespace DanceCommander.Core.Listing;
 /// folders no person keeps anything in, and links to folders, which lead to places walked in
 /// their own right or round in a loop. Ctrl+H lifts the first as it lifts hidden folders.
 /// </param>
-public sealed class PrunePolicy(ListingFilter filter, bool skipClutter = false)
+/// <param name="followLinks">
+/// False for a search (<see cref="SearchListingSource"/>), which declines links to folders but not
+/// clutter: an index such as Everything lists what is behind a link only where it really is, so a
+/// walk that went through links would find what the index can't, and the answer would depend on
+/// which of them gave it (2026-11-10).
+/// </param>
+public sealed class PrunePolicy(ListingFilter filter, bool skipClutter = false, bool followLinks = true)
 {
+    /// <summary>Why a walk would not go into a folder.</summary>
+    public enum Decline
+    {
+        None,
+        Link,
+        Hidden,
+        Clutter,
+    }
+
     /// <summary>
     /// Folders that are machinery, not anybody's files, and often the biggest thing on a disk:
     /// package stores, caches, temp folders, Windows' component store. Not hidden, so the hidden
@@ -47,6 +62,8 @@ public sealed class PrunePolicy(ListingFilter filter, bool skipClutter = false)
     private int _skipped;
     private int _clutter;
     private int _unreadable;
+    private int _hiddenFinds;
+    private int _clutterFinds;
 
     /// <summary>How many subtrees were declined, for the pane to report.</summary>
     public int Skipped => Volatile.Read(ref _skipped);
@@ -54,29 +71,63 @@ public sealed class PrunePolicy(ListingFilter filter, bool skipClutter = false)
     /// <summary>Asked from several walkers at once (<see cref="TreeWalk"/>), hence the interlocked count.</summary>
     public bool ShouldDescend(FsEntry directory)
     {
+        switch (Declines(directory))
+        {
+            case Decline.Hidden:
+                Interlocked.Increment(ref _skipped);
+                return false;
+            case Decline.Clutter:
+                Interlocked.Increment(ref _clutter);
+                return false;
+            case Decline.Link:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// The same rule as <see cref="ShouldDescend"/>, counting nothing: for a search answered from an
+    /// index (<see cref="IndexedSearch"/>), which meets each folder only above something it found
+    /// and so cannot count the folders a walk declined.
+    /// </summary>
+    public Decline Declines(FsEntry directory)
+    {
         if (skipClutter && (directory.Attributes & FsEntryAttributes.Symlink) != 0)
-            return false;
+            return Decline.Link;
+
+        // A link proper, which names somewhere else (LinkTarget is "" when it can't say where), not
+        // every reparse point: a deduplicated or placeholder folder is a folder, and an index has
+        // what is in it (review, 2026-11-10).
+        if (!followLinks && directory.LinkTarget is not null)
+            return Decline.Link;
 
         if (filter.ShowHidden)
-            return true;
+            return Decline.None;
 
         if (directory.IsHidden)
-        {
-            Interlocked.Increment(ref _skipped);
-            return false;
-        }
+            return Decline.Hidden;
 
         if (skipClutter && Clutter.Contains(directory.Name))
-        {
-            Interlocked.Increment(ref _clutter);
-            return false;
-        }
+            return Decline.Clutter;
 
-        return true;
+        return Decline.None;
     }
 
     /// <summary>A folder the walk could not read and went on without.</summary>
     public void CouldNotRead() => Interlocked.Increment(ref _unreadable);
+
+    /// <summary>
+    /// Something an index found inside a folder a walk would have declined, and so not shown. The
+    /// index's answer says what it found, where a walk's says what it didn't look at.
+    /// </summary>
+    public void FoundInside(Decline why)
+    {
+        if (why == Decline.Hidden)
+            Interlocked.Increment(ref _hiddenFinds);
+        else if (why == Decline.Clutter)
+            Interlocked.Increment(ref _clutterFinds);
+    }
 
     /// <summary>What to tell the user. The pane supplies the key, so this does not.</summary>
     public string? Omission
@@ -92,8 +143,18 @@ public sealed class PrunePolicy(ListingFilter filter, bool skipClutter = false)
                 (0, _) => $"{Folders(clutter)} of caches and packages not searched",
                 _ => $"{hidden:N0} hidden and {Folders(clutter)} of caches and packages not searched",
             };
+            int hiddenFinds = Volatile.Read(ref _hiddenFinds), clutterFinds = Volatile.Read(ref _clutterFinds);
+            var found = (hiddenFinds, clutterFinds) switch
+            {
+                (0, 0) => null,
+                (1, 0) => "1 found in a hidden folder not shown",
+                (_, 0) => $"{hiddenFinds:N0} found in hidden folders not shown",
+                (0, _) => $"{clutterFinds:N0} found in caches and packages not shown",
+                _ => $"{hiddenFinds:N0} found in hidden folders and {clutterFinds:N0} in caches and packages not shown",
+            };
             var unread = unreadable == 0 ? null : $"{Folders(unreadable)} could not be read";
-            return declined is null ? unread : unread is null ? declined : $"{declined}, {unread}";
+            var parts = new[] { declined, found, unread }.Where(part => part is not null).ToArray();
+            return parts.Length == 0 ? null : string.Join(", ", parts);
         }
     }
 
@@ -176,15 +237,18 @@ public sealed class SearchListingSource : IListingSource
     private readonly ListingFilter _filter;
     private readonly NameMatcher _matcher;
     private readonly PrunePolicy _prune;
+    private readonly ILocalSearchIndex? _index;
     private readonly DateTimeOffset _now = DateTimeOffset.Now;
     private int _inHiddenFolders;
 
-    public SearchListingSource(IProviderRegistry providers, FsUri uri, ListingFilter filter)
+    /// <param name="index">Asked before walking a local folder: Everything, when it is running.</param>
+    public SearchListingSource(IProviderRegistry providers, FsUri uri, ListingFilter filter, ILocalSearchIndex? index = null)
     {
         _providers = providers;
         _root = uri.Inner ?? throw new InvalidOperationException("A search must say where it is searching.");
         _filter = filter;
-        _prune = new PrunePolicy(filter);
+        _prune = new PrunePolicy(filter, followLinks: false);
+        _index = index;
         Uri = uri;
 
         // The same rule the quick filter uses, so that what you learn typing in a pane is what
@@ -209,6 +273,8 @@ public sealed class SearchListingSource : IListingSource
 
     public bool RereadWhenFilterChanges => true;
 
+    public string? AnsweredBy { get; private set; }
+
     public IDirectoryWatcher? Watch() => null;
 
     // A matching folder is itself a result — people search for directories too — and is still
@@ -226,11 +292,23 @@ public sealed class SearchListingSource : IListingSource
             yield break;
         }
 
-        await foreach (var row in TreeWalk.WalkAsync(
-                               _providers, _root, _prune, MaxDepth,
-                               (entry, prefix) => _matcher.Matches(entry) ? Row(entry, prefix) : null,
-                               ct,
-                               keepGoing: true)
+        Func<FsEntry, string, FsEntry?> select = (entry, prefix) => _matcher.Matches(entry) ? Row(entry, prefix) : null;
+
+        // An index of the disk proposes in milliseconds what the walk finds in seconds; the rows
+        // are the walk's either way (IndexedSearch).
+        if (_index is not null
+            && await IndexedSearch.TryAsync(
+                    _index, _providers, _root, NameQuery.Terms(Uri.Parameter), _prune, MaxDepth, select, ct)
+                .ConfigureAwait(false) is { } indexed)
+        {
+            AnsweredBy = _index.Name;
+            await foreach (var row in indexed.ConfigureAwait(false))
+                yield return row;
+
+            yield break;
+        }
+
+        await foreach (var row in TreeWalk.WalkAsync(_providers, _root, _prune, MaxDepth, select, ct, keepGoing: true)
                            .ConfigureAwait(false))
         {
             yield return row;

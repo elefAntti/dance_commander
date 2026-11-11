@@ -109,6 +109,16 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
     /// <summary>What the listing left out on the filter's behalf, e.g. folders it declined to walk.</summary>
     private string? _omission;
 
+    /// <summary>
+    /// The search was answered by an index (Everything) and found nothing. Said in the footer with
+    /// Ctrl+R, which then walks: an empty answer is when someone concludes a file is gone, and an
+    /// index can lag the disk by a moment or miss what it can't read (AUDIT.md §1, 2026-11-10).
+    /// </summary>
+    private bool _indexFoundNothing;
+
+    /// <summary>The next listing leaves the index out: Ctrl+R after it found nothing.</summary>
+    private bool _walkNext;
+
     /// <summary>True when Ctrl+H has to list again rather than re-filter (a pruned walk).</summary>
     private bool _rereadOnFilterChange;
     private IDirectoryWatcher? _watcher;
@@ -981,8 +991,15 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         return NavigateCoreAsync(uri, null, recordHistory: false);
     }
 
-    public Task RefreshAsync() =>
-        Uri is null ? Task.CompletedTask : NavigateCoreAsync(Uri, null, recordHistory: false);
+    public Task RefreshAsync()
+    {
+        if (Uri is null)
+            return Task.CompletedTask;
+
+        // What the footer offers when Everything found nothing: the disk itself, this once.
+        _walkNext = _indexFoundNothing;
+        return NavigateCoreAsync(Uri, null, recordHistory: false);
+    }
 
     /// <summary>
     /// Up, which from a drive root goes on to the computer page, with the cursor on that drive —
@@ -1083,7 +1100,9 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
             }
             _chosenHere = remembered?.Chosen ?? false;
 
-            var source = _listings.Create(uri, Filter);
+            var source = _listings.Create(uri, Filter, walk: _walkNext);
+            _walkNext = false;
+            _indexFoundNothing = false;
 
             // A server folder visited lately: its rows at once, as they were, while it is listed
             // again. Not for the place already on screen (Ctrl+R, the refresh after a command),
@@ -1282,6 +1301,8 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
                 ReorderedUnderCursor?.Invoke(this, EventArgs.Empty);
             IsBusy = false;
             ShowLoading = false;
+            _indexFoundNothing = !stopped && rows.Count == 0 && source.AnsweredBy is not null;
+            UpdateStatus();
 
             WatchHead(uri);
             await DescribeArchiveAsync(uri, rest);
@@ -1334,8 +1355,11 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
                 ("decorated", (clock.Elapsed - rowsAt).TotalMilliseconds, Budgets.Decorated));
             if (verdict is not null || LogEveryListing)
                 _log.LogInformation(
-                    "Slow listing{AtLaunch}: {Uri}, {Count:N0} rows on screen after {Rows:N0} ms{Recalled}, decorated after {Done:N0} ms, {Verdict}",
-                    atLaunch ? " at launch" : "", uri.Display, rows.Count, paintedAt.TotalMilliseconds,
+                    "Slow listing{AtLaunch}: {Uri}{AnsweredBy}, {Count:N0} rows on screen after {Rows:N0} ms{Recalled}, decorated after {Done:N0} ms, {Verdict}",
+                    atLaunch ? " at launch" : "", uri.Display,
+                    // A search Everything answered is not the walk's time, and A/B needs to know which.
+                    source.AnsweredBy is { } answeredBy ? $" (answered by {answeredBy})" : "",
+                    rows.Count, paintedAt.TotalMilliseconds,
                     // The wait the user actually had, when remembered rows stood in for it.
                     recalled is null ? "" : $" (remembered ones after {recalledAt.TotalMilliseconds:N0} ms)",
                     clock.Elapsed.TotalMilliseconds, verdict ?? "within budget");
@@ -2238,6 +2262,8 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         // appears in one place is a count somebody will miss.
         var filtered = FilteredOut > 0 ? $" — {FilteredOut:N0} filtered out" : string.Empty;
         var partial = IsPartial ? " — stopped, partial (Ctrl+R to finish)" : string.Empty;
+        if (_indexFoundNothing)
+            partial += " — Everything found nothing (Ctrl+R to search the disk itself)";
 
         // Remembered rows say how old they are, and whether anything is still checking them.
         if (IsUnconfirmed)
