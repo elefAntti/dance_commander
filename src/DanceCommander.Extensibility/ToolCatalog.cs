@@ -270,7 +270,7 @@ public sealed class ToolCatalog
 
                 // ${branch} outside a repository, or with HEAD detached, has no value; the tool
                 // is absent rather than run with an empty argument (§6.6).
-                if (!ToolPlaceholders.CanResolve(templates, context.Repository))
+                if (!ToolPlaceholders.CanResolve(templates, context.Repository, context.Directory))
                     return false;
 
                 if (tool.When is null || subject != CommandSubject.Selection)

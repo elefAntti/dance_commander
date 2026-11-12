@@ -29,7 +29,7 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
     {
         // Every template at once, before anything runs or asks: a tool whose working directory
         // wants ${repoRoot} must not prompt for its arguments first and then fail.
-        if (ToolPlaceholders.Unresolved(tool.Templates(), context.Repository) is { } missing)
+        if (ToolPlaceholders.Unresolved(tool.Templates(), context.Repository, context.Directory) is { } missing)
         {
             ToolPlaceholders.ReportUnresolved(missing, context.Repository, context.Decisions);
             return;

@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
 using DanceCommander.Core.Decisions;
 using DanceCommander.Core.Security;
 using Microsoft.Extensions.Logging;
@@ -109,11 +111,17 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
     /// already inside SSH.NET's own ConnectionInfo; it is never written to a file, a log or the
     /// history. Closed as idle, it goes with the session.
     /// </param>
-    private sealed class Session(SftpClient client, string password)
+    /// <param name="Address">
+    /// The address that answered, so that a shell goes where the file session did rather than to
+    /// whichever address the name resolves to first.
+    /// </param>
+    private sealed class Session(SftpClient client, string password, string address)
     {
         public SftpClient Client { get; } = client;
 
         public string Password { get; } = password;
+
+        public string Address { get; } = address;
 
         /// <summary>Opened lazily: most sessions only ever move files.</summary>
         public SshClient? Shell { get; set; }
@@ -158,8 +166,8 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
 
             try
             {
-                var (client, password) = await ConnectAsync(target, known, ct).ConfigureAwait(false);
-                _sessions[target] = new Session(client, password);
+                var (client, password, address) = await ConnectAsync(target, known, ct).ConfigureAwait(false);
+                _sessions[target] = new Session(client, password, address);
                 return client;
             }
             catch (Exception ex) when (known is not null && ex is not SftpAbortedException)
@@ -199,7 +207,7 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
             session.Shell?.Dispose();
 
             var info = new ConnectionInfo(
-                target.Host, target.Port, target.User,
+                session.Address, target.Port, target.User,
                 new PasswordAuthenticationMethod(target.User, session.Password))
             {
                 Timeout = TimeSpan.FromSeconds(20),
@@ -356,13 +364,16 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
     /// The password a dropped session to this target was opened with, tried before asking. Not
     /// remembered by this: it is only ever saved when the user ticks the box.
     /// </param>
-    private async Task<(SftpClient Client, string Password)> ConnectAsync(
+    private async Task<(SftpClient Client, string Password, string Address)> ConnectAsync(
         SftpTarget target, string? known, CancellationToken ct)
     {
         var stored = _credentials.Read(target.CredentialKey);
         var password = stored ?? known;
         var remember = false;
         var retry = false;
+
+        var addresses = await AddressesAsync(target.Host, ct).ConfigureAwait(false);
+        var next = 0;
 
         // Password auth only in v1; keys and the agent are the next step and slot in here as
         // earlier attempts in the same chain.
@@ -380,7 +391,8 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
                 remember = answer.Remember;
             }
 
-            var client = Build(target, password);
+            var address = addresses[next];
+            var client = Build(target, address, password);
 
             HostKeyEventArgs? offered = null;
             var verdict = HostKeyVerdict.Unknown;
@@ -424,8 +436,21 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
                 if (remember)
                     _credentials.Write(target.CredentialKey, password);
 
-                _log.LogInformation("Connected to {Target}", target);
-                return (client, password);
+                if (address == target.Host)
+                    _log.LogInformation("Connected to {Target}", target);
+                else
+                    _log.LogInformation("Connected to {Target} at {Address}", target, address);
+                return (client, password, address);
+            }
+            catch (Exception ex) when (offered is null && next + 1 < addresses.Count && NeverAnswered(ex))
+            {
+                // Nothing was said to this address, not even a key exchange, so the next one is
+                // tried as if this one had not existed. Its key is checked against the same name.
+                client.Dispose();
+                _log.LogInformation(
+                    "{Address} did not answer for {Target} ({Error}); trying {Next}",
+                    address, target, ex.Message, addresses[next + 1]);
+                next++;
             }
             catch (SshAuthenticationException)
             {
@@ -500,10 +525,46 @@ public sealed class SftpConnectionPool : ISftpConnections, IDisposable
         return _prompts.ConfirmChangedHostAsync(target, presentation, ct);
     }
 
-    private static SftpClient Build(SftpTarget target, string password)
+    /// <summary>
+    /// The addresses to try for a host, in the order the system gives them.
+    /// </summary>
+    /// <remarks>
+    /// SSH.NET connects to the first address only. "localhost" is ::1 first, and Docker Desktop's
+    /// IPv6 forward accepts a connection there and closes it at once, so a container published on
+    /// localhost failed with "forcibly closed" while 127.0.0.1 would have answered (BUGS.md 38).
+    /// A name that doesn't resolve throws the SocketException SSH.NET's own lookup would have, and
+    /// isn't looked up a second time: on some networks a miss takes ten seconds.
+    /// </remarks>
+    internal static async Task<IReadOnlyList<string>> AddressesAsync(string host, CancellationToken ct)
+    {
+        if (IPAddress.TryParse(host, out _))
+            return [host];
+
+        var found = await Dns.GetHostAddressesAsync(host, ct).ConfigureAwait(false);
+        var addresses = found.Select(a => a.ToString()).Distinct().ToList();
+        return addresses.Count > 0 ? addresses : [host];
+    }
+
+    /// <summary>
+    /// Whether the connection failed before the server said a word: nobody listening there, no
+    /// route to it, or something that took the connection and dropped it. Another address of the
+    /// same host may answer.
+    /// </summary>
+    /// <remarks>
+    /// Not a timeout: twenty seconds more for each address would be worse than the error.
+    /// </remarks>
+    internal static bool NeverAnswered(Exception ex) =>
+        ex is SocketException
+        {
+            SocketErrorCode: SocketError.ConnectionRefused or SocketError.ConnectionReset
+                or SocketError.ConnectionAborted or SocketError.HostUnreachable
+                or SocketError.NetworkUnreachable or SocketError.AddressNotAvailable,
+        };
+
+    private static SftpClient Build(SftpTarget target, string address, string password)
     {
         var info = new ConnectionInfo(
-            target.Host, target.Port, target.User, new PasswordAuthenticationMethod(target.User, password))
+            address, target.Port, target.User, new PasswordAuthenticationMethod(target.User, password))
         {
             Timeout = TimeSpan.FromSeconds(20),
         };

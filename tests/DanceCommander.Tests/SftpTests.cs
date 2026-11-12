@@ -1,7 +1,10 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using DanceCommander.Core.Fs;
 using DanceCommander.Providers.Sftp;
+using Renci.SshNet;
 using Shouldly;
 
 namespace DanceCommander.Tests;
@@ -485,5 +488,76 @@ public sealed class PasswdTests
             "shadow:x:1001:1001::/:/bin/false\n");
 
         names.ShouldBe(new Dictionary<int, string> { [0] = "root", [1001] = "claude" }, ignoreOrder: true);
+    }
+}
+
+public sealed class SftpAddressTests
+{
+    [Fact]
+    public async Task LocalhostOffersIpv4AsWellAsTheFirstAddress()
+    {
+        var addresses = await SftpConnectionPool.AddressesAsync("localhost", CancellationToken.None);
+
+        addresses.ShouldContain("127.0.0.1");
+    }
+
+    [Theory]
+    [InlineData("192.168.56.102")]
+    [InlineData("2001:db8::1")]
+    public async Task AnAddressIsTriedAsItIs(string host) =>
+        (await SftpConnectionPool.AddressesAsync(host, CancellationToken.None)).ShouldBe([host]);
+
+    // Docker Desktop's IPv6 forward takes the connection and drops it (BUGS.md 38). These are
+    // what SSH.NET itself throws for that, so a version that wraps them fails here first.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AServerThatTakesTheConnectionAndDropsItNeverAnswered(bool reset)
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var dropping = Task.Run(async () =>
+        {
+            using var socket = await listener.AcceptSocketAsync();
+            if (reset)
+                socket.LingerState = new LingerOption(true, 0);
+            socket.Close();
+        });
+
+        var failure = await ConnectAsync(port);
+        await dropping;
+
+        SftpConnectionPool.NeverAnswered(failure).ShouldBeTrue(failure.ToString());
+    }
+
+    [Fact]
+    public async Task NobodyListeningNeverAnswered()
+    {
+        int port;
+        using (var listener = new TcpListener(IPAddress.Loopback, 0))
+        {
+            listener.Start();
+            port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+
+        var failure = await ConnectAsync(port);
+
+        SftpConnectionPool.NeverAnswered(failure).ShouldBeTrue(failure.ToString());
+    }
+
+    [Fact]
+    public void ATimeoutIsNotTriedAgainElsewhere() =>
+        SftpConnectionPool.NeverAnswered(new SocketException((int)SocketError.TimedOut)).ShouldBeFalse();
+
+    private static async Task<Exception> ConnectAsync(int port)
+    {
+        using var client = new SftpClient(new ConnectionInfo(
+            "127.0.0.1", port, "nobody", new PasswordAuthenticationMethod("nobody", "unused"))
+        {
+            Timeout = TimeSpan.FromSeconds(5),
+        });
+
+        return await Should.ThrowAsync<Exception>(() => client.ConnectAsync(CancellationToken.None));
     }
 }

@@ -114,7 +114,9 @@ public static class ToolPacks
                 Group = "Terminal",
                 AppliesTo = "directory|background",
                 Exec = "wsl.exe",
-                Args = ["--cd", "${dir}"],
+                // In \\wsl.localhost\Debian\home\x, Debian at /home/x: plain --cd with that path
+                // opened the default distribution, if anything. Elsewhere, as plain wsl --cd did.
+                Args = ["-d", "${distro}", "--cd", "${dir|wsl}"],
                 Launch = "console",
             },
         ]);

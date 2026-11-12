@@ -132,9 +132,11 @@ or <code>${env:…}</code> is about <strong>the folder</strong>: it appears in t
     <tr><td><code>${otherPaneDir}</code></td><td>The folder the other pane shows</td></tr>
     <tr><td><code>${uri}</code></td><td>The row's full address, for places that have no Windows path</td></tr>
     <tr><td><code>${repoRoot}</code>, <code>${branch}</code>, <code>${remoteUrl}</code></td><td>The repository you are in, from anywhere inside it. <code>${branch}</code> has no value when HEAD is detached</td></tr>
+    <tr><td><code>${distro}</code></td><td>The WSL distribution the folder is in, otherwise the default one</td></tr>
     <tr><td><code>${env:NAME}</code></td><td>An environment variable</td></tr>
     <tr><td><code>${prompt:Label}</code></td><td>Asks you, inline, before running</td></tr>
     <tr><td><code>${repoRoot|lowerDrive}</code></td><td>A filter: the drive letter in lower case (<code>c:\work\orbit</code>), the spelling dev containers use</td></tr>
+    <tr><td><code>${dir|wsl}</code></td><td>A filter: a folder inside a WSL distribution as Linux spells it (<code>/home/x</code>)</td></tr>
   </tbody>
 </table>
 <p><strong>Arguments are passed as a list, never pasted into a command string</strong>, so a file

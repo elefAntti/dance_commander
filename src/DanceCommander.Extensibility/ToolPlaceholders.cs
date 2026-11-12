@@ -25,17 +25,17 @@ public static partial class ToolPlaceholders
     /// repository — and a command using one is then not offered at all rather than run with an
     /// empty argument, which would fail somewhere confusing inside the child process.
     /// </summary>
-    public static readonly IReadOnlyList<string> LocationTokens = ["repoRoot", "branch", "remoteUrl"];
+    public static readonly IReadOnlyList<string> LocationTokens = ["repoRoot", "branch", "remoteUrl", "distro"];
 
     /// <summary>
     /// True when every location token the templates use has a value here. What a command's
     /// applicability check asks, so an unanswerable tool simply does not appear.
     /// </summary>
-    public static bool CanResolve(IEnumerable<string?> templates, RepositoryInfo? repository) =>
-        Unresolved(templates, repository) is null;
+    public static bool CanResolve(IEnumerable<string?> templates, RepositoryInfo? repository, FsUri? directory = null) =>
+        Unresolved(templates, repository, directory) is null;
 
     /// <summary>The first location token in the templates that has no value here, or null.</summary>
-    public static string? Unresolved(IEnumerable<string?> templates, RepositoryInfo? repository)
+    public static string? Unresolved(IEnumerable<string?> templates, RepositoryInfo? repository, FsUri? directory = null)
     {
         foreach (var template in templates)
         {
@@ -45,7 +45,7 @@ public static partial class ToolPlaceholders
             foreach (Match match in PlaceholderPattern().Matches(template))
             {
                 var token = Base(match.Groups[1].Value);
-                if (IsLocationToken(token) && Location(token, repository) is null)
+                if (IsLocationToken(token) && Location(token, repository, directory) is null)
                     return token;
             }
         }
@@ -81,6 +81,10 @@ public static partial class ToolPlaceholders
     /// opened from — so <c>devcontainer exec --id-label</c> can find the container for whichever
     /// worktree you are standing in. Named for what it does, not for who wants it: the application
     /// knows about drive letters, not about VS Code.
+    /// <c>${dir|wsl}</c> is the path as Linux in WSL spells it: <c>\\wsl.localhost\Debian\home\x</c>
+    /// is <c>/home/x</c>, for <c>wsl --cd</c>, which takes a Windows path but not one of these.
+    /// Any other path is left as it is for now. For an argument list: on a line Git Bash runs, a
+    /// value starting with / is rewritten under Git's own folder before a Windows program sees it.
     /// </summary>
     public static readonly IReadOnlyDictionary<string, Func<string, string>> Filters =
         new Dictionary<string, Func<string, string>>(StringComparer.OrdinalIgnoreCase)
@@ -89,6 +93,7 @@ public static partial class ToolPlaceholders
                 value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0])
                     ? char.ToLowerInvariant(value[0]) + value[1..]
                     : value,
+            ["wsl"] = value => WslPaths.TrySplit(value, out _, out var linux) ? linux : value,
         };
 
     /// <summary>The placeholder's name without its filters: <c>repoRoot|lowerDrive</c> → <c>repoRoot</c>.</summary>
@@ -143,12 +148,27 @@ public static partial class ToolPlaceholders
     private static bool IsLocationToken(string token) =>
         LocationTokens.Contains(token, StringComparer.OrdinalIgnoreCase);
 
-    private static string? Location(string token, RepositoryInfo? repository) =>
+    private static string? Location(string token, RepositoryInfo? repository, FsUri? directory) =>
         token.ToLowerInvariant() switch
         {
             "reporoot" => repository is null ? null : Render(repository.Root),
             "branch" => repository?.Branch,
             "remoteurl" => repository?.RemoteUrl,
+            "distro" => Distribution(directory),
+            _ => null,
+        };
+
+    /// <summary>
+    /// The WSL distribution a folder is in, or the one <c>wsl.exe</c> opens by default anywhere
+    /// else: so <c>wsl -d ${distro} --cd ${dir|wsl}</c> opens a distribution's own folder in that
+    /// distribution, and any other folder where plain <c>wsl --cd</c> did. No value on a server or
+    /// in an archive, where this computer's Linux has nothing to do with the folder.
+    /// </summary>
+    private static string? Distribution(FsUri? directory) =>
+        directory?.Anchor switch
+        {
+            { IsLocal: true } local when WslPaths.TrySplit(local.ToLocalPath(), out var distribution, out _) => distribution,
+            null or { IsLocal: true } => WslPaths.DefaultDistribution(),
             _ => null,
         };
 
@@ -162,7 +182,7 @@ public static partial class ToolPlaceholders
         IDecisionHost decisions,
         CancellationToken ct)
     {
-        if (Unresolved(template, target.Repository) is { } missing)
+        if (Unresolved(template, target.Repository, target.Directory) is { } missing)
         {
             ReportUnresolved(missing, target.Repository, decisions);
             return null;
@@ -213,7 +233,7 @@ public static partial class ToolPlaceholders
         // Checked up front, not token by token: a command that cannot be completed must not ask a
         // ${prompt:…} question first and then fail anyway. Menus never get here -- they check
         // CanResolve -- but a typed command line has no applicability check to lean on.
-        if (Unresolved([text], target.Repository) is { } missing)
+        if (Unresolved([text], target.Repository, target.Directory) is { } missing)
         {
             ReportUnresolved(missing, target.Repository, decisions);
             return null;
@@ -278,7 +298,7 @@ public static partial class ToolPlaceholders
             }
 
             if (IsLocationToken(token))
-                return [Location(token, target.Repository)!];
+                return [Location(token, target.Repository, target.Directory)!];
 
             return token.ToLowerInvariant() switch
             {
@@ -370,7 +390,9 @@ public static partial class ToolPlaceholders
             $"${{{token}}} has no value here.", NoticeSeverity.Warning, Explain(token, repository)));
 
     private static string Explain(string token, RepositoryInfo? repository) =>
-        repository is null
+        token.Equals("distro", StringComparison.OrdinalIgnoreCase)
+            ? "There is no WSL distribution for this folder: it is on another computer, or WSL has no default distribution."
+        : repository is null
             ? $"{token} describes the git repository a folder is in, and this folder is not in one."
             : token.Equals("branch", StringComparison.OrdinalIgnoreCase)
                 ? "HEAD is detached, so there is no branch checked out. Check one out and try again."

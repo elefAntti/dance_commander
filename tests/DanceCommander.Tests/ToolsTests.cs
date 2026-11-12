@@ -260,6 +260,62 @@ public class ToolPlaceholderTests
         ToolPlaceholders.CanResolve(templates, null).ShouldBe(outsideARepository);
         ToolPlaceholders.CanResolve(templates, Repo).ShouldBeTrue();
     }
+
+    // ---- WSL ------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(@"\\wsl.localhost\Debian\home\x", "Debian", "/home/x")]
+    [InlineData(@"\\WSL$\Ubuntu-22.04\etc\", "Ubuntu-22.04", "/etc")]
+    [InlineData(@"\\wsl.localhost\Debian", "Debian", "/")]
+    [InlineData(@"\\wsl.localhost\Debian\", "Debian", "/")]
+    [InlineData(@"\\?\UNC\wsl.localhost\Debian\home\a b", "Debian", "/home/a b")]
+    [InlineData("//wsl.localhost/Debian/srv", "Debian", "/srv")]
+    public void APathInsideADistributionSplitsIntoItsNameAndItsLinuxPath(string path, string distribution, string linux)
+    {
+        WslPaths.TrySplit(path, out var foundDistribution, out var foundLinux).ShouldBeTrue();
+
+        foundDistribution.ShouldBe(distribution);
+        foundLinux.ShouldBe(linux);
+    }
+
+    [Theory]
+    [InlineData(@"C:\work")]
+    [InlineData(@"\\server\share\x")]
+    [InlineData(@"\\wsl.localhost\")]
+    [InlineData(@"\\wsl.localhost")]
+    [InlineData("/home/x")]
+    public void AnyOtherPathIsNotInADistribution(string path) =>
+        WslPaths.TrySplit(path, out _, out _).ShouldBeFalse();
+
+    [Fact]
+    public async Task OpenInWslGoesToTheDistributionAndFolderItIsIn()
+    {
+        var target = new ToolTarget(FsUri.Local(@"\\wsl.localhost\Debian\home\x"), [], null, null);
+
+        var result = await Expand(target, "-d", "${distro}", "--cd", "${dir|wsl}");
+
+        result.ShouldBe(["-d", "Debian", "--cd", "/home/x"]);
+    }
+
+    [Fact]
+    public async Task ElsewhereItIsTheDefaultDistributionAndTheFolderAsWindowsSpellsIt()
+    {
+        var target = new ToolTarget(FsUri.Local(@"C:\work"), [], null, null);
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandAsync(
+            ["-d", "${distro}", "--cd", "${dir|wsl}"], target, decisions, CancellationToken.None);
+
+        // This machine's own answer: a test can't install a distribution.
+        if (WslPaths.DefaultDistribution() is { } fallback)
+            result.ShouldBe(["-d", fallback, "--cd", @"C:\work"]);
+        else
+            decisions.Notices.ShouldHaveSingleItem().Detail!.ShouldContain("no default distribution");
+    }
+
+    [Fact]
+    public void OnAServerThereIsNoDistribution() =>
+        ToolPlaceholders.CanResolve(["${distro}"], null, FsUri.Parse("sftp://me@host/home/me")).ShouldBeFalse();
 }
 
 public class ToolDefinitionTests

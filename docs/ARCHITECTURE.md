@@ -555,8 +555,15 @@ the defaults) opens the repository from a file four folders down.
   guess. A linked worktree's config is the main repository's, found through `commondir`. Written
   exactly as it appears, so an SSH remote stays an SSH remote.
 
+- **`distro` is the WSL distribution** a folder under `\\wsl.localhost\<name>\` (or `\\wsl$\`) is
+  in, and anywhere else the one `wsl.exe` opens by default, read from the registry (`Lxss`), never
+  by starting WSL. It has no value only when no distribution is installed. "Open in WSL" is
+  `wsl -d ${distro} --cd ${dir|wsl}`: without `-d` it was the default distribution wherever you
+  stood, and `--cd` is given the Linux path rather than the share's, which it is not known to take.
+
 **Filters** reshape a value for a program with its own ideas about spelling: `${name|filter}`.
-There is one, `lowerDrive` (`c:\work\orbit`), and it exists because of dev containers: VS
+`wsl` gives a path inside a distribution as Linux spells it (`\\wsl.localhost\Debian\home\x` →
+`/home/x`) and leaves any other path as it is. The other, `lowerDrive` (`c:\work\orbit`), exists because of dev containers: VS
 Code labels a container with the folder it was opened from, drive letter lowercased, and
 `devcontainer exec --id-label devcontainer.local_folder=${repoRoot|lowerDrive}` is then the one
 spelling that finds the container for whichever worktree you are standing in. (`--workspace-folder`

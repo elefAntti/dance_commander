@@ -203,6 +203,8 @@ Each entry in `args` stays one argument, spaces and all.
 | `${selection}` | Every marked file, one argument each |
 | `${dir}`, `${otherPaneDir}` | This pane's folder, and the other's |
 | `${repoRoot}`, `${branch}`, `${remoteUrl}` | The git repository; a tool that needs one is hidden outside it. `${remoteUrl}` |
+| `${distro}` | The WSL distribution the folder is in, otherwise the default one |
+| `${dir\|wsl}` | A folder inside a WSL distribution as Linux spells it: `/home/x` |
 | `${env:NAME}` | An environment variable |
 | `${prompt:Label}` | Asks in the pane before running |
 

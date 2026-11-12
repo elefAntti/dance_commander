@@ -44,7 +44,8 @@ weighed against [DESIGN.md](DESIGN.md) first, and what was declined on purpose i
 - **Free space and quota**, said before a copy that won't fit, and in the footer only when low.
 - **Overlapping a file's commit with the next file's upload** on servers that join chunked
   uploads slowly.
-- **WSL locations**, and mounting ISO files / ejecting removable media.
+- **WSL locations**, with git and VS Code run inside the distribution rather than over the
+  network share; and mounting ISO files / ejecting removable media.
 - **Git worktrees and branches** in bookmarks and address-bar completion; bookmarks that scale
   past a few dozen.
 - **A zip of only the git-tracked files.**
