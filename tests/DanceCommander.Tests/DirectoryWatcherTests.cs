@@ -184,4 +184,28 @@ public sealed class DirectoryWatcherTests : IDisposable
 
         (await moved.Task.WaitAsync(Timeout)).ShouldBeNull();
     }
+
+    [Fact]
+    public async Task AWatchThatEndsSaysSoWithoutAskingForAListing()
+    {
+        // Deleting the folder ends the watch inside it with an error that is not an overflow, as
+        // WSL's share ends every watch at once. A listing asked for in answer watched again, failed
+        // again, and listed twenty times a second (2026-11-12). The folder itself still says it went.
+        var shown = Directory.CreateDirectory(Path("doomed")).FullName;
+        using var watcher = _provider.Watch(FsUri.Local(shown))!;
+        var failed = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var moved = new TaskCompletionSource<FsUri?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resyncs = 0;
+        watcher.Failed += (_, error) => failed.TrySetResult(error);
+        watcher.Moved += (_, to) => moved.TrySetResult(to);
+        watcher.ResyncRequired += (_, _) => Interlocked.Increment(ref resyncs);
+        watcher.Start();
+        Thread.Sleep(150);
+
+        Directory.Delete(shown);
+
+        (await failed.Task.WaitAsync(Timeout)).ShouldNotBeOfType<InternalBufferOverflowException>();
+        (await moved.Task.WaitAsync(Timeout)).ShouldBeNull();
+        resyncs.ShouldBe(0);
+    }
 }

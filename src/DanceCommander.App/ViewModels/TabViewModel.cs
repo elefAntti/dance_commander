@@ -627,6 +627,29 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
 
     public event EventHandler<string>? SelectionRequested;
 
+    /// <summary>
+    /// True while a listing the watcher asked for, not the user, puts its cursor back. The view
+    /// then leaves the keyboard where it is: the relist arrives whenever the folder changes, and
+    /// took the keyboard out of an open palette or a line being typed.
+    /// </summary>
+    public bool RelistingForWatch { get; private set; }
+
+    // Set by the watcher's resync for the listing it starts; read once by that listing.
+    private bool _relistForWatch;
+
+    private void RequestSelection(string name, bool forWatch)
+    {
+        RelistingForWatch = forWatch;
+        try
+        {
+            SelectionRequested?.Invoke(this, name);
+        }
+        finally
+        {
+            RelistingForWatch = false;
+        }
+    }
+
     /// <summary>Asks the view to change the selection: the grid owns it, so the grid carries it out.</summary>
     public event EventHandler<SelectionOp>? SelectionOpRequested;
 
@@ -1055,6 +1078,9 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         if (selectName is null && Uri is { IsView: false } previous && previous.Parent == uri)
             selectName = previous.Name;
 
+        var forWatch = _relistForWatch;
+        _relistForWatch = false;
+
         _navigations++;
         _listing?.Cancel();
         var cts = new CancellationTokenSource();
@@ -1156,7 +1182,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
                 UpdateHistoryState();
 
                 if ((selectName ?? remembered?.FocusedName ?? Rows.FirstOrDefault()?.Name) is { } at)
-                    SelectionRequested?.Invoke(this, at);
+                    RequestSelection(at, forWatch);
             }
 
             if (memorable && uri != Uri)
@@ -1323,7 +1349,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
             var focus = selectName ?? remembered?.FocusedName ?? Rows.FirstOrDefault()?.Name;
             var placed = (recalled is not null || streamed) && _selectedUris.Count > 0;
             if (focus is not null && !placed)
-                SelectionRequested?.Invoke(this, focus);
+                RequestSelection(focus, forWatch);
 
             if (!stopped)
                 StartWatching(source);
@@ -1661,6 +1687,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         _watcher.Changed += OnWatcherChanged;
         _watcher.ResyncRequired += OnResyncRequired;
         _watcher.Moved += OnFolderMoved;
+        _watcher.Failed += OnWatchFailed;
         _watcher.Start();
     }
 
@@ -1672,6 +1699,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         _watcher.Changed -= OnWatcherChanged;
         _watcher.ResyncRequired -= OnResyncRequired;
         _watcher.Moved -= OnFolderMoved;
+        _watcher.Failed -= OnWatchFailed;
         _watcher.Dispose();
         _watcher = null;
         IsLive = false;
@@ -1717,8 +1745,28 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         var asked = _navigations;
         _dispatcher.InvokeAsync(() =>
         {
-            if (_navigations == asked)
-                _ = RefreshAsync();
+            if (_navigations != asked)
+                return;
+            _relistForWatch = true;
+            _ = RefreshAsync();
+        });
+    }
+
+    /// <summary>
+    /// The watch ended: the folder is shown as not live, and the footer offers Ctrl+R in its
+    /// place. Not listed again, which would only watch again and fail again. The watcher is kept
+    /// until the next listing: a folder deleted while shown ends the watch inside it too, and its
+    /// watch from the parent still has to say so (OnFolderMoved).
+    /// </summary>
+    private void OnWatchFailed(object? sender, Exception error)
+    {
+        var watcher = sender as IDirectoryWatcher;
+        _dispatcher.InvokeAsync(() =>
+        {
+            if (!ReferenceEquals(_watcher, watcher))
+                return;
+            _log.LogInformation("Not watching {Location}: {Error}", Location, error.Message);
+            IsLive = false;
         });
     }
 

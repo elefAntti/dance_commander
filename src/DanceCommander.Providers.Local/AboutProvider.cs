@@ -572,6 +572,8 @@ public sealed class AboutProvider(
 
         public event EventHandler<FsUri?>? Moved { add { } remove { } }
 
+        public event EventHandler<Exception>? Failed { add { } remove { } }
+
         public void Start() => subscribe(OnChanged);
 
         public void Dispose() => unsubscribe(OnChanged);

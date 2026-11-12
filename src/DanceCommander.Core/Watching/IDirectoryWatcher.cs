@@ -32,5 +32,13 @@ public interface IDirectoryWatcher : IDisposable
     /// </summary>
     event EventHandler<FsUri?>? Moved;
 
+    /// <summary>
+    /// The watch has ended and nothing more will come from it: the place doesn't report changes
+    /// at all, or stopped. Not a reason to list again: WSL's share refuses every watch at once,
+    /// and answering that with a listing, which watched again, listed it twenty times a second
+    /// (2026-11-12).
+    /// </summary>
+    event EventHandler<Exception>? Failed;
+
     void Start();
 }

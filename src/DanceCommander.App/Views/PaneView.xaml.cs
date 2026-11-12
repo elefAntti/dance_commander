@@ -836,7 +836,10 @@ public partial class PaneView : UserControl
         // refresh of the other pane after F5 into it took the keyboard there, while F5 and Del
         // still acted on this one. Elsewhere the row is selected and shown, and waits. So it does
         // while an address is being typed: Ctrl+T's tab opens there, and its rows arrive after.
-        if ((ViewModel?.IsActive != true && !FileGrid.IsKeyboardFocusWithin) || AddressBox.IsKeyboardFocusWithin)
+        // And for a relist the watcher asked for, wherever the keyboard is if not on the rows: in
+        // a WSL folder one came twenty times a second and closed the palette as it opened.
+        if ((ViewModel?.IsActive != true && !FileGrid.IsKeyboardFocusWithin) || AddressBox.IsKeyboardFocusWithin ||
+            (Tab is { RelistingForWatch: true } && !FileGrid.IsKeyboardFocusWithin))
         {
             if (Tab is not { HasMarks: true })
                 SelectOnly(row);

@@ -44,6 +44,8 @@ public sealed class LocalDirectoryWatcher : IDirectoryWatcher
 
     public event EventHandler<FsUri?>? Moved;
 
+    public event EventHandler<Exception>? Failed;
+
     private readonly record struct RawChange(DirectoryChangeKind Kind, string Name, string? OldName);
 
     public void Start()
@@ -68,10 +70,16 @@ public sealed class LocalDirectoryWatcher : IDirectoryWatcher
             Publish(DirectoryChangeKind.Removed, e.OldName);
             Publish(DirectoryChangeKind.Added, e.Name);
         };
-        _fsw.Error += (_, _) =>
+        _fsw.Error += (_, e) =>
         {
             Drain();
-            ResyncRequired?.Invoke(this, EventArgs.Empty);
+
+            // Only an overflow means events were dropped from a watch that goes on. Anything else
+            // ends it: WSL's share answers every watch with "Incorrect function" at once.
+            if (e.GetException() is InternalBufferOverflowException)
+                ResyncRequired?.Invoke(this, EventArgs.Empty);
+            else
+                Failed?.Invoke(this, e.GetException());
         };
 
         _fsw.EnableRaisingEvents = true;
