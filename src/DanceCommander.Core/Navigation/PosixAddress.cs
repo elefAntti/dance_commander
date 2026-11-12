@@ -43,6 +43,27 @@ public static class PosixAddress
     }
 
     /// <summary>
+    /// The other way: the path a Linux terminal takes for <paramref name="uri"/>, or null where
+    /// there is none. An SFTP server's own path; WSL's spelling of a file on this computer, but
+    /// only with WSL installed, since <c>/mnt/c</c> means nothing without it. Not inside an
+    /// archive, and not WebDAV's, whose path is a URL's that no terminal opens.
+    /// </summary>
+    public static string? LinuxPath(FsUri uri, Func<string?> defaultDistribution)
+    {
+        if (uri is { Scheme: "sftp", Inner: null })
+            return uri.Path;
+
+        if (!uri.IsLocal)
+            return null;
+
+        var local = uri.ToLocalPath();
+        if (WslPaths.TrySplit(local, out _, out var inside))
+            return inside;
+
+        return defaultDistribution() is null ? null : WslPaths.ToLinux(local);
+    }
+
+    /// <summary>
     /// <c>/mnt/c/work</c> as <c>C:\work</c>. WSL mounts the drives under /mnt unless
     /// <c>automount.root</c> says otherwise; reading that means reading the distribution's
     /// /etc/wsl.conf, which starts it, so only the default is understood here.

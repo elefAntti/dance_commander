@@ -136,7 +136,7 @@ or <code>${env:…}</code> is about <strong>the folder</strong>: it appears in t
     <tr><td><code>${env:NAME}</code></td><td>An environment variable</td></tr>
     <tr><td><code>${prompt:Label}</code></td><td>Asks you, inline, before running</td></tr>
     <tr><td><code>${repoRoot|lowerDrive}</code></td><td>A filter: the drive letter in lower case (<code>c:\work\orbit</code>), the spelling dev containers use</td></tr>
-    <tr><td><code>${dir|wsl}</code></td><td>A filter: a folder inside a WSL distribution as Linux spells it (<code>/home/x</code>)</td></tr>
+    <tr><td><code>${path|wsl}</code></td><td>A filter: the path as Linux in WSL spells it (<code>/mnt/c/work/a.sh</code>, or <code>/home/x</code> inside a distribution)</td></tr>
   </tbody>
 </table>
 <p><strong>Arguments are passed as a list, never pasted into a command string</strong>, so a file
@@ -147,6 +147,10 @@ isn't offered at all, rather than running with an empty argument.</p>
 own rules, so for those an argument containing <code>&amp; | &lt; &gt; ^ % "</code> is refused with
 a notice instead of passed on. VS Code's <code>code</code> is one; point <code>exec</code> at
 <code>Code.exe</code> to avoid it.</div>
+<div class="note"><code>wsl.exe</code> hands a command to the Linux shell as a line unless
+<code>--exec</code> comes first, so without it a file name holding a space, a quote, <code>;</code>
+or <code>$</code> is refused rather than passed on. Write a WSL tool as
+<code>["-d", "${distro}", "--cd", "${dir|wsl}", "--exec", "bash", "${path|wsl}"]</code>.</div>
 
 <h2 id="launch">Launch kinds</h2>
 <table>

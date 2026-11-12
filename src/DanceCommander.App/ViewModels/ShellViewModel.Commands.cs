@@ -608,6 +608,25 @@ public sealed partial class ShellViewModel
             ExecuteAsync = (context, _) => CopyAsync(context, e => Spell(e.Uri)),
         });
 
+        // For a terminal on the other side: /mnt/c/work/a.sh for WSL, a server's own /var/log.
+        // Only where every row has one, so it is never a Windows path under a Linux name.
+        commands.Register(new CommandDefinition
+        {
+            Id = "dc.copyLinuxPath",
+            Title = "Copy as Linux path",
+            Group = "Clipboard",
+            Scope = CommandScope.File | CommandScope.Directory | CommandScope.Multiple,
+            CanExecute = context =>
+            {
+                var rows = context.Selection.Count > 0 ? context.Selection : context.Focused is { } one ? [one] : [];
+                // Read once, not per row: menus ask this of every selection, 10,000 rows included.
+                var distribution = rows.Count > 0 ? WslPaths.DefaultDistribution() : null;
+                return rows.Count > 0 && rows.All(e => PosixAddress.LinuxPath(e.Uri, () => distribution) is not null);
+            },
+            ExecuteAsync = (context, _) =>
+                CopyAsync(context, e => PosixAddress.LinuxPath(e.Uri, WslPaths.DefaultDistribution) ?? Spell(e.Uri)),
+        });
+
         commands.Register(new CommandDefinition
         {
             Id = "dc.copyName",

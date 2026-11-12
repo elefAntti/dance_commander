@@ -205,7 +205,7 @@ Each entry in `args` stays one argument, spaces and all.
 | `${dir}`, `${otherPaneDir}` | This pane's folder, and the other's |
 | `${repoRoot}`, `${branch}`, `${remoteUrl}` | The git repository; a tool that needs one is hidden outside it. `${remoteUrl}` |
 | `${distro}` | The WSL distribution the folder is in, otherwise the default one |
-| `${dir\|wsl}` | A folder inside a WSL distribution as Linux spells it: `/home/x` |
+| `${path\|wsl}` | A path as Linux in WSL spells it: `/mnt/c/work/a.sh`, `/home/x`. For a `wsl.exe` tool, put `--exec` before the program, or a name the Linux shell would misread is refused |
 | `${env:NAME}` | An environment variable |
 | `${prompt:Label}` | Asks in the pane before running |
 

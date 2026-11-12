@@ -340,6 +340,27 @@ public class ToolRunnerJobTests
         jobs.Jobs.ShouldBeEmpty();
         context.Scripted.Notices.ShouldHaveSingleItem();
     }
+
+    [Fact]
+    public async Task AWslToolWithoutExecNeverHandsANameToTheShell()
+    {
+        // Harmless if it ever did run: the file isn't there, and "true.sh" is no command.
+        var jobs = new JobService();
+        var runner = new ToolRunner(new ActivityLog(), jobs, NullLogger<ToolRunner>.Instance);
+        var name = "a;true.sh";
+        var context = new FakeContext
+        {
+            Directory = FsUri.Local(Temp),
+            Selection = [new FsEntry(FsUri.Local(Temp).Child(name), name, IsDirectory: false, 1, null)],
+        };
+
+        await runner.RunAsync(
+            new ToolDefinition { Id = "w", Title = "Run in WSL", Exec = "wsl.exe", Args = ["bash", "${path|wsl}"], Launch = "job" },
+            context, CancellationToken.None);
+
+        jobs.Jobs.ShouldBeEmpty();
+        context.Scripted.Notices.ShouldHaveSingleItem().Detail!.ShouldContain("--exec");
+    }
 }
 
 public class JobOriginTests

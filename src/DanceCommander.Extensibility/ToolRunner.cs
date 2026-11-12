@@ -53,9 +53,10 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
 
             // A verbatim line has been expanded already, quoted for the shell that reads it; a
             // file name containing "${" must not be expanded a second time.
+            var fromOutside = new List<bool>();
             var arguments = tool.VerbatimArgs
                 ? tool.Args
-                : await ToolPlaceholders.ExpandAsync(tool.Args, target, context.Decisions, ct);
+                : await ToolPlaceholders.ExpandAsync(tool.Args, target, context.Decisions, ct, fromOutside);
             if (arguments is null)
                 return; // a ${prompt:…} was cancelled
 
@@ -81,6 +82,24 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
             var output = tool.OutputDirectory is null
                 ? null
                 : await ToolPlaceholders.ExpandOneAsync(tool.OutputDirectory, target, context.Decisions, ct: ct);
+
+            // As for a batch file below: wsl.exe hands a command without --exec to the Linux shell
+            // as a line, so a name in it could be read as a command (WslArguments).
+            if (WslArguments.IsWsl(exec) && WslArguments.UnsafeForShell(arguments, fromOutside) is { } forShell)
+            {
+                context.Decisions.Report(new Notice(
+                    $"{tool.Title} was not run.",
+                    NoticeSeverity.Warning,
+                    forShell.InShellLine
+                        ? $"“{forShell.Value}” is a shell's -c line with a name in it, which the shell could read as a " +
+                          "command. Put the name after the line and use $1 in it: \"-c\", \"cat \\\"$1\\\"\", \"_\", \"${path|wsl}\"."
+                        : $"wsl.exe gives “{forShell.Value}” to the Linux shell, which would read part of it as a command. " +
+                          "Put --exec before the program in the tool's args, so its arguments reach it as they are."));
+                activity.Record(
+                    $"Ran {tool.Title}", $"{exec} {string.Join(' ', arguments)}", ActivityOutcome.Failed,
+                    "Refused: unsafe argument for the Linux shell.");
+                return;
+            }
 
             await LaunchAsync(
                 tool, Environment.ExpandEnvironmentVariables(exec), arguments, workingDirectory,

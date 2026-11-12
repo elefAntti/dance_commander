@@ -559,11 +559,15 @@ the defaults) opens the repository from a file four folders down.
   in, and anywhere else the one `wsl.exe` opens by default, read from the registry (`Lxss`), never
   by starting WSL. It has no value only when no distribution is installed. "Open in WSL" is
   `wsl -d ${distro} --cd ${dir|wsl}`: without `-d` it was the default distribution wherever you
-  stood, and `--cd` is given the Linux path rather than the share's, which it is not known to take.
+  stood, and `--cd` is given the Linux path: given another distribution's share path, the default
+  one answered "Failed to translate" (2026-11-12).
 
 **Filters** reshape a value for a program with its own ideas about spelling: `${name|filter}`.
-`wsl` gives a path inside a distribution as Linux spells it (`\\wsl.localhost\Debian\home\x` →
-`/home/x`) and leaves any other path as it is. The other, `lowerDrive` (`c:\work\orbit`), exists because of dev containers: VS
+`wsl` gives a path as Linux in WSL spells it: `\\wsl.localhost\Debian\home\x` → `/home/x`,
+`C:\work\a.sh` → `/mnt/c/work/a.sh` (WSL's default mount point; a distribution's own
+`automount.root` would mean starting it to read `/etc/wsl.conf`). A share WSL can't reach is left
+as it is. The address bar reads `/mnt/c` back the same way (`PosixAddress`), and "Copy as Linux
+path" copies the same spelling. The other, `lowerDrive` (`c:\work\orbit`), exists because of dev containers: VS
 Code labels a container with the folder it was opened from, drive letter lowercased, and
 `devcontainer exec --id-label devcontainer.local_folder=${repoRoot|lowerDrive}` is then the one
 spelling that finds the container for whichever worktree you are standing in. (`--workspace-folder`
@@ -608,7 +612,17 @@ shell, so a bare name like `devcontainer` is resolved against `PATH`/`PATHEXT` b
 (`ExecutableSearch`) — otherwise only `devcontainer.exe` would ever be looked for, and the npm shim
 is a `.cmd`. A batch file breaks the argv guarantee, because cmd.exe re-parses its command line with
 its own rules; rather than lose the guarantee quietly, an argument containing a cmd metacharacter
-(`& | < > ^ % "`) is refused for a `.cmd`/`.bat` target, with a notice naming it.
+(`& | < > ^ % "`) is refused for a `.cmd`/`.bat` target, with a notice naming it. `wsl.exe` breaks it
+the same way: a command given without `--exec` (or after `--`) reaches the distribution's shell as
+a line. So for a `wsl.exe` tool, a value from a placeholder that would reach that shell must be a
+plain word (letters, digits, `_ - . / : @ % + , =`, no space, not starting with `- = %`), or the
+tool is refused with a notice pointing at `--exec` (`WslArguments`). wsl.exe's own options
+(`-d`, `--cd`, `-u`) it reads itself, and after `--exec` every argument goes to the program as it
+is: `["-d", "${distro}", "--cd", "${dir|wsl}", "--exec", "bash", "${path|wsl}"]`. Unless that
+program is a shell given a `-c` line: the line may hold no placeholder value, which goes after it
+as `$1` instead (`"-c", "cat \"$1\"", "_", "${path|wsl}"`). The user's own text in `args` is
+theirs to write: `bash -c "ls | grep x"` is left alone. wslg.exe and System32's bash.exe are WSL
+too and get the same check. Typed command lines that run `wsl` are not covered yet.
 
 **Materialisation for non-local schemes.** `${path}` on an SFTP or in-archive entry has no
 meaning to an external exe. The tool runner checks the provider's `ExecuteHost` capability;

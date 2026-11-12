@@ -1353,7 +1353,7 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         "dc.refresh", "dc.preview", "dc.search", "dc.flatten", "dc.bookmark",
         "dc.mark", "dc.markWithSpace", "dc.selectAll", "dc.selectNone", "dc.invertSelection",
         "dc.toggleHidden", "dc.toggleDirectoriesFirst",
-        "dc.copyName", "dc.copyPath", "dc.copyWebLink", "dc.locationMenu", "dc.revealParent",
+        "dc.copyName", "dc.copyPath", "dc.copyLinuxPath", "dc.copyWebLink", "dc.locationMenu", "dc.revealParent",
     };
 
     private static bool SafeOnRememberedRows(CommandDefinition command) =>

@@ -41,6 +41,27 @@ public static class WslPaths
     }
 
     /// <summary>
+    /// A Windows path as Linux in WSL spells it: <c>\\wsl.localhost\Debian\home\x</c> is
+    /// <c>/home/x</c>, and <c>C:\work\a.sh</c> is <c>/mnt/c/work/a.sh</c>. Null for a path WSL
+    /// can't reach, a share of another server. Drives under /mnt, WSL's default: a distribution
+    /// can mount them elsewhere (<c>automount.root</c>), but reading its /etc/wsl.conf would start
+    /// it, and the address bar, which reads /mnt/c back as C:, must agree with this.
+    /// </summary>
+    public static string? ToLinux(string windowsPath)
+    {
+        if (TrySplit(windowsPath, out _, out var inside))
+            return inside;
+
+        var path = windowsPath.StartsWith(@"\\?\", StringComparison.Ordinal) ? windowsPath[4..] : windowsPath;
+        if (path.Length < 2 || path[1] != ':' || !char.IsAsciiLetter(path[0]) ||
+            (path.Length > 2 && path[2] is not ('\\' or '/')))
+            return null;
+
+        var rest = path[2..].Replace('\\', '/').Trim('/');
+        return "/mnt/" + char.ToLowerInvariant(path[0]) + (rest.Length > 0 ? "/" + rest : string.Empty);
+    }
+
+    /// <summary>
     /// The distribution <c>wsl.exe</c> opens when not told which, or null with none recorded.
     /// Not the first one registered instead: that can be Docker Desktop's own, where a shell is
     /// root in Docker's machinery rather than the user's Linux.

@@ -298,7 +298,7 @@ public class ToolPlaceholderTests
     }
 
     [Fact]
-    public async Task ElsewhereItIsTheDefaultDistributionAndTheFolderAsWindowsSpellsIt()
+    public async Task ElsewhereItIsTheDefaultDistributionAndTheFolderUnderMnt()
     {
         var target = new ToolTarget(FsUri.Local(@"C:\work"), [], null, null);
         var decisions = new ScriptedDecisions();
@@ -308,7 +308,7 @@ public class ToolPlaceholderTests
 
         // This machine's own answer: a test can't install a distribution.
         if (WslPaths.DefaultDistribution() is { } fallback)
-            result.ShouldBe(["-d", fallback, "--cd", @"C:\work"]);
+            result.ShouldBe(["-d", fallback, "--cd", "/mnt/c/work"]);
         else
             decisions.Notices.ShouldHaveSingleItem().Detail!.ShouldContain("no default distribution");
     }
@@ -316,6 +316,138 @@ public class ToolPlaceholderTests
     [Fact]
     public void OnAServerThereIsNoDistribution() =>
         ToolPlaceholders.CanResolve(["${distro}"], null, FsUri.Parse("sftp://me@host/home/me")).ShouldBeFalse();
+
+    [Theory]
+    [InlineData(@"C:\work\a.sh", "/mnt/c/work/a.sh")]
+    [InlineData(@"D:\", "/mnt/d")]
+    [InlineData("D:", "/mnt/d")]
+    [InlineData(@"\\?\C:\work\notes.", "/mnt/c/work/notes.")]
+    [InlineData(@"\\wsl.localhost\Debian\home\x", "/home/x")]
+    public void APathAsLinuxInWslSpellsIt(string windows, string linux) =>
+        WslPaths.ToLinux(windows).ShouldBe(linux);
+
+    [Theory]
+    [InlineData(@"\\server\share\x")]
+    [InlineData(@"\\?\UNC\server\share\x")]
+    [InlineData("relative")]
+    [InlineData("1:\\x")]
+    public void APathWslCannotReachHasNoLinuxSpelling(string windows) =>
+        WslPaths.ToLinux(windows).ShouldBeNull();
+
+    [Theory]
+    [InlineData("wsl cat ${name}", ShellQuoting.Posix)]
+    [InlineData("wsl.exe -e cat ${path|wsl}", ShellQuoting.PowerShell)]
+    [InlineData(@"C:\Windows\System32\wsl.exe cat ${name}", ShellQuoting.Cmd)]
+    [InlineData("git log && wsl cat ${name}", ShellQuoting.Posix)]
+    public async Task ATypedLineThatRunsWslRefusesANameTheLinuxShellWouldRun(string line, ShellQuoting shell)
+    {
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandOneAsync(line, Target("a;touch x.txt"), decisions, shell: shell);
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldContain("runs wsl");
+    }
+
+    [Theory]
+    [InlineData("wsl cat ${name}", "Copy 2.txt")] // a space only splits; nothing runs
+    [InlineData("cat ${name}", "a;touch x.txt")] // no wsl: bash's own quoting holds
+    [InlineData("wslview ${name}", "a;touch x.txt")]
+    [InlineData(@"type \\wsl.localhost\Ubuntu\${name}", "a;touch x.txt")]
+    public async Task OtherwiseTheTypedLineRunsAsBefore(string line, string name) =>
+        (await ToolPlaceholders.ExpandOneAsync(line, Target(name), new ScriptedDecisions(), shell: ShellQuoting.Posix))
+            .ShouldNotBeNull();
+
+    [Fact]
+    public async Task TheFilterGivesAFileItsLinuxPath() =>
+        (await Expand(Target("a b.sh"), "${path|wsl}")).ShouldBe(["/mnt/c/work/src/a b.sh"]);
+
+    [Fact]
+    public async Task ExpandingSaysWhichArgumentsHoldValuesFromOutside()
+    {
+        var outside = new List<bool>();
+
+        await ToolPlaceholders.ExpandAsync(
+            ["--exec", "${path}", "plain", "${env:PATH}", "${selection}"],
+            Target("a.txt", "b.txt"), new ScriptedDecisions(), CancellationToken.None, outside);
+
+        outside.ShouldBe([false, true, false, false, true, true]);
+    }
+}
+
+public class WslArgumentsTests
+{
+    private static string? Check(string[] arguments, params int[] outside) =>
+        WslArguments.UnsafeForShell(arguments, arguments.Select((_, i) => outside.Contains(i)).ToList())?.Value;
+
+    [Theory]
+    [InlineData("bash", "-c")]
+    [InlineData("/bin/sh", "-c")]
+    [InlineData("bash", "-lc")]
+    [InlineData("zsh", "-ec")]
+    public void AShellsLineAfterExecHoldsNoName(string shell, string flag)
+    {
+        // The notice sends people to --exec; "--exec bash -c 'cat <name>'" must not then pass.
+        var refusal = WslArguments.UnsafeForShell(
+            ["--exec", shell, flag, "cat /mnt/c/a.sh"], [false, false, false, true]);
+
+        refusal.ShouldNotBeNull().InShellLine.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ANameAfterTheShellsLineIsADollarOne() =>
+        Check(["--exec", "bash", "-c", "cat \"$1\"", "_", "/mnt/c/a;b.sh"], 5).ShouldBeNull();
+
+    [Fact]
+    public void EnvBeforeTheShellIsSeenThrough() =>
+        Check(["-e", "env", "LANG=C", "sh", "-c", "cat x"], 5).ShouldBe("cat x");
+
+    [Theory]
+    [InlineData("/mnt/c/a;b.sh")]
+    [InlineData("/mnt/c/$(rm -rf ~).sh")]
+    [InlineData("/mnt/c/a b.sh")]
+    [InlineData("/mnt/c/`x`.sh")]
+    [InlineData("/mnt/c/a'b.sh")]
+    [InlineData("/mnt/c/a\nb.sh")]
+    [InlineData("=bash")]
+    public void ANameTheShellWouldReadAsMoreThanAWordIsRefused(string name) =>
+        Check(["bash", name], 1).ShouldBe(name);
+
+    [Fact]
+    public void AfterExecEveryArgumentReachesTheProgramAsItIs() =>
+        Check(["-d", "Debian", "--exec", "bash", "/mnt/c/a;b.sh"], 4).ShouldBeNull();
+
+    [Fact]
+    public void WslsOwnOptionsAreReadByItNotTheShell() =>
+        Check(["-d", "Debian", "--cd", "/mnt/c/Program Files (x86)"], 1, 3).ShouldBeNull();
+
+    [Fact]
+    public void AfterADoubleDashItIsTheShellsLine() =>
+        Check(["--cd", "/home", "--", "cat", "a;b"], 4).ShouldBe("a;b");
+
+    [Fact]
+    public void TheUsersOwnTextIsTheirsToWrite() =>
+        Check(["bash", "-c", "ls | grep x"]).ShouldBeNull();
+
+    [Fact]
+    public void APlainNameIsLetThrough() =>
+        Check(["bash", "/mnt/c/work/build-all.sh", "/home/mé/x"], 1, 2).ShouldBeNull();
+
+    [Fact]
+    public void AValueWhereAnOptionGoesIsRefused() =>
+        Check(["-e", "x"], 0).ShouldBe("-e");
+
+    [Theory]
+    [InlineData(@"C:\Windows\System32\wsl.exe", true)]
+    [InlineData("wsl", true)]
+    [InlineData("WSL.EXE", true)]
+    [InlineData("wslg.exe", true)]
+    [InlineData(@"%windir%\System32\wsl.exe", true)]
+    [InlineData(@"C:\Windows\System32\bash.exe", true)]
+    [InlineData(@"C:\Program Files\Git\bin\bash.exe", false)]
+    [InlineData("pwsh.exe", false)]
+    public void KnowsWslByItsName(string exec, bool isWsl) =>
+        WslArguments.IsWsl(exec).ShouldBe(isWsl);
 }
 
 public class ToolDefinitionTests

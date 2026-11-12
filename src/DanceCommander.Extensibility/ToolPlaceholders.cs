@@ -81,10 +81,11 @@ public static partial class ToolPlaceholders
     /// opened from — so <c>devcontainer exec --id-label</c> can find the container for whichever
     /// worktree you are standing in. Named for what it does, not for who wants it: the application
     /// knows about drive letters, not about VS Code.
-    /// <c>${dir|wsl}</c> is the path as Linux in WSL spells it: <c>\\wsl.localhost\Debian\home\x</c>
-    /// is <c>/home/x</c>, for <c>wsl --cd</c>, which takes a Windows path but not one of these.
-    /// Any other path is left as it is for now. For an argument list: on a line Git Bash runs, a
-    /// value starting with / is rewritten under Git's own folder before a Windows program sees it.
+    /// <c>${path|wsl}</c> is the path as Linux in WSL spells it (<see cref="WslPaths.ToLinux"/>):
+    /// <c>\\wsl.localhost\Debian\home\x</c> is <c>/home/x</c>, <c>C:\work\a.sh</c> is
+    /// <c>/mnt/c/work/a.sh</c>; a share WSL can't reach is left as it is. For an argument list: on
+    /// a line Git Bash runs, a value starting with / is rewritten under Git's own folder before a
+    /// Windows program sees it (AUDIT.md §2 kind 81).
     /// </summary>
     public static readonly IReadOnlyDictionary<string, Func<string, string>> Filters =
         new Dictionary<string, Func<string, string>>(StringComparer.OrdinalIgnoreCase)
@@ -93,7 +94,7 @@ public static partial class ToolPlaceholders
                 value.Length >= 2 && value[1] == ':' && char.IsAsciiLetter(value[0])
                     ? char.ToLowerInvariant(value[0]) + value[1..]
                     : value,
-            ["wsl"] = value => WslPaths.TrySplit(value, out _, out var linux) ? linux : value,
+            ["wsl"] = value => WslPaths.ToLinux(value) ?? value,
         };
 
     /// <summary>The placeholder's name without its filters: <c>repoRoot|lowerDrive</c> → <c>repoRoot</c>.</summary>
@@ -176,11 +177,17 @@ public static partial class ToolPlaceholders
     /// Returns null if the user cancelled a ${prompt:…}, or if a location token has no value here
     /// — which is reported, since unlike a cancel it is not something the user just chose.
     /// </summary>
+    /// <param name="fromOutside">
+    /// Filled, one per argument, with whether it holds a value from outside (a name, a path, a
+    /// branch) rather than only the user's own text, ${env:…} and ${prompt:…}: what a program that
+    /// re-reads its arguments as a command line must check (wsl.exe without --exec).
+    /// </param>
     public static async Task<List<string>?> ExpandAsync(
         IReadOnlyList<string> template,
         ToolTarget target,
         IDecisionHost decisions,
-        CancellationToken ct)
+        CancellationToken ct,
+        List<bool>? fromOutside = null)
     {
         if (Unresolved(template, target.Repository, target.Directory) is { } missing)
         {
@@ -204,6 +211,7 @@ public static partial class ToolPlaceholders
             if (string.Equals(argument.Trim(), "${selection}", StringComparison.OrdinalIgnoreCase))
             {
                 result.AddRange(target.Selection.Select(e => Render(e.Uri)));
+                fromOutside?.AddRange(target.Selection.Select(_ => true));
                 continue;
             }
 
@@ -212,6 +220,7 @@ public static partial class ToolPlaceholders
                 return null;
 
             result.Add(expanded);
+            fromOutside?.Add(PlaceholderPattern().Matches(argument).Any(match => IsFromOutside(Base(match.Groups[1].Value))));
         }
 
         return result;
@@ -247,16 +256,34 @@ public static partial class ToolPlaceholders
 
         var cancelled = false;
         string? reread = null;
+        string? forLinux = null;
         var focused = target.Focused ?? target.Selection.FirstOrDefault();
         List<Range>? inserted = shell == ShellQuoting.Cmd ? [] : null;
+        var runsWsl = shell != ShellQuoting.None && RunsWsl().IsMatch(text);
 
         var result = await ReplaceAsync(text, shell, async token =>
         {
             var words = await ResolveAsync(token);
             if (shell == ShellQuoting.Cmd && reread is null && IsFromOutside(token))
                 reread = words.FirstOrDefault(word => word.IndexOfAny(CmdUnquotable) >= 0);
+            if (runsWsl && forLinux is null && IsFromOutside(token))
+                forLinux = words.FirstOrDefault(word => word.IndexOfAny(LinuxShellReads) >= 0);
             return words;
         }, inserted);
+
+        // A line that runs wsl is quoted right for this shell, which then starts wsl.exe, which
+        // hands what follows to the Linux shell as a line: a name is read twice, and the second
+        // time unquoted. Only a name with what that shell acts on is refused; anything else
+        // reaches Linux as it did (AUDIT.md §2 kind 26; the tools.json side is WslArguments).
+        if (forLinux is not null)
+        {
+            decisions.Report(new Notice(
+                $"“{forLinux}” can't go on a line that runs wsl.",
+                NoticeSeverity.Warning,
+                "wsl hands the line on to the Linux shell, which would read part of the name as a command. " +
+                "Rename it, or run it from a tool in tools.json with --exec."));
+            return null;
+        }
 
         // cmd pairs %s across the whole line, so a value is judged where it landed: a branch fix%
         // beside a file USERPROFILE% made %USERPROFILE% out of two values that each had one.
@@ -330,6 +357,17 @@ public static partial class ToolPlaceholders
     /// line break ends the command, and a NUL ends the whole line.
     /// </summary>
     private static readonly char[] CmdUnquotable = ['"', '\r', '\n', '\0'];
+
+    /// <summary>
+    /// What makes the Linux shell run something or lose its place, in a name it reads unquoted. Not
+    /// a space or a backslash, which only split or drop: <c>wsl --cd ${dir}</c> on
+    /// <c>C:\Program Files</c> is wsl's own option and keeps working.
+    /// </summary>
+    private static readonly char[] LinuxShellReads = ['$', '`', ';', '&', '|', '<', '>', '(', ')', '\'', '"', '\r', '\n', '\0'];
+
+    /// <summary>The line runs wsl.exe (or wslg), as a word of its own, with or without a path.</summary>
+    [GeneratedRegex(@"(^|[\s\\/""'&|;(])wslg?(\.exe)?(?=[\s""';&|)]|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex RunsWsl();
 
     /// <summary>
     /// Whether cmd would read a value as anything but itself, alone on a line: see

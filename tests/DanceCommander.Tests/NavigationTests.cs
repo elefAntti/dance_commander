@@ -538,4 +538,24 @@ public sealed class PosixAddressTests
     [InlineData("sftp://me@host/var")]
     public void AnythingElseIsNotALinuxPath(string typed) =>
         Resolve(typed, OnC).ShouldBeNull();
+
+    [Theory]
+    [InlineData(@"C:\work\a b.sh", "Ubuntu", "/mnt/c/work/a b.sh")]
+    [InlineData(@"C:\work\a b.sh", null, null)]
+    [InlineData(@"\\wsl.localhost\Debian\etc\hosts", null, "/etc/hosts")]
+    [InlineData(@"\\server\share\x", "Ubuntu", null)]
+    public void ALocalFilesLinuxPathNeedsWsl(string path, string? defaultDistribution, string? expected) =>
+        PosixAddress.LinuxPath(FsUri.Local(path), () => defaultDistribution).ShouldBe(expected);
+
+    [Fact]
+    public void AServersFileIsItsOwnPath() =>
+        PosixAddress.LinuxPath(FsUri.Parse("sftp://me@build:2222/var/log/syslog"), () => null).ShouldBe("/var/log/syslog");
+
+    [Fact]
+    public void AWebDavFileHasNone() =>
+        PosixAddress.LinuxPath(FsUri.Parse("davs://me@cloud/remote.php/dav/files/me/x"), () => "Ubuntu").ShouldBeNull();
+
+    [Fact]
+    public void InsideAnArchiveThereIsNone() =>
+        PosixAddress.LinuxPath(FsUri.Parse(@"C:\dl\a.zip!/bin/x"), () => "Ubuntu").ShouldBeNull();
 }
