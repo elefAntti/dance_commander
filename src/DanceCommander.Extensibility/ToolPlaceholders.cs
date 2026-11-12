@@ -259,15 +259,19 @@ public static partial class ToolPlaceholders
         string? forLinux = null;
         var focused = target.Focused ?? target.Selection.FirstOrDefault();
         List<Range>? inserted = shell == ShellQuoting.Cmd ? [] : null;
-        var runsWsl = shell != ShellQuoting.None && RunsWsl().IsMatch(text);
+        // In cmd and PowerShell a bare bash is System32's, which is WSL's; in Git Bash it is Git's.
+        var runsWsl = shell != ShellQuoting.None && (RunsWsl().IsMatch(text) ||
+            (shell is ShellQuoting.Cmd or ShellQuoting.PowerShell && RunsBash().IsMatch(text)));
 
-        var result = await ReplaceAsync(text, shell, async token =>
+        var givesALine = runsWsl && ShellLineFlag().IsMatch(text);
+
+        var result = await ReplaceAsync(text, shell, async (token, inUsersQuotes) =>
         {
             var words = await ResolveAsync(token);
             if (shell == ShellQuoting.Cmd && reread is null && IsFromOutside(token))
                 reread = words.FirstOrDefault(word => word.IndexOfAny(CmdUnquotable) >= 0);
             if (runsWsl && forLinux is null && IsFromOutside(token))
-                forLinux = words.FirstOrDefault(word => word.IndexOfAny(LinuxShellReads) >= 0);
+                forLinux = words.FirstOrDefault(word => LinuxShellActsOn(word, inUsersQuotes && givesALine));
             return words;
         }, inserted);
 
@@ -359,15 +363,40 @@ public static partial class ToolPlaceholders
     private static readonly char[] CmdUnquotable = ['"', '\r', '\n', '\0'];
 
     /// <summary>
-    /// What makes the Linux shell run something or lose its place, in a name it reads unquoted. Not
-    /// a space or a backslash, which only split or drop: <c>wsl --cd ${dir}</c> on
-    /// <c>C:\Program Files</c> is wsl's own option and keeps working.
+    /// What makes the Linux shell run something, lose its place, or name other files, in a value
+    /// it reads unquoted. Not a space or a backslash, which only split or drop: <c>wsl --cd ${dir}</c>
+    /// on <c>C:\Program Files</c> is wsl's own option and keeps working.
     /// </summary>
-    private static readonly char[] LinuxShellReads = ['$', '`', ';', '&', '|', '<', '>', '(', ')', '\'', '"', '\r', '\n', '\0'];
+    private static readonly char[] LinuxShellReads =
+        ['$', '`', ';', '&', '|', '<', '>', '(', ')', '\'', '"', '\r', '\n', '\0', '[', ']', '*', '?'];
+
+    /// <summary>
+    /// Whether the Linux shell behind wsl would read <paramref name="value"/> as more than its
+    /// name (review, 2026-11-12). A leading <c>~</c> is a home folder: a folder called <c>~</c>,
+    /// a common accident, in <c>wsl rm -rf ${name}</c> was the Linux home. A leading <c>#</c>
+    /// comments the rest out, <c>=</c> and <c>%</c> are zsh's and fish's. Braces only when they
+    /// expand, so a {GUID} folder passes. Inside the user's own quotes on a line with a -c, the
+    /// value goes bare into a shell's line, and that shell splits at a space: in
+    /// <c>wsl bash -c "rm -f ${name}"</c>, "notes important.txt" was two files to rm. Quoted for
+    /// wsl's own <c>--cd "${dir}"</c>, a space is still only a space.
+    /// </summary>
+    private static bool LinuxShellActsOn(string value, bool inAShellsLine) =>
+        value.IndexOfAny(LinuxShellReads) >= 0 ||
+        (value.Length > 0 && value[0] is '~' or '#' or '=' or '%') ||
+        (value.Contains('{') && (value.Contains(',') || value.Contains("..", StringComparison.Ordinal))) ||
+        (inAShellsLine && value.Any(char.IsWhiteSpace));
+
+    /// <summary>A -c among the line's words, alone or bundled (-lc): a shell given a line to run.</summary>
+    [GeneratedRegex(@"(^|\s)-[a-zA-Z]*c(?=\s|$)")]
+    private static partial Regex ShellLineFlag();
 
     /// <summary>The line runs wsl.exe (or wslg), as a word of its own, with or without a path.</summary>
-    [GeneratedRegex(@"(^|[\s\\/""'&|;(])wslg?(\.exe)?(?=[\s""';&|)]|$)", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(^|[\s\\/""'&|;({])wslg?(\.exe)?(?=[\s""';&|)}>]|$)", RegexOptions.IgnoreCase)]
     private static partial Regex RunsWsl();
+
+    /// <summary>The line runs bash, as a word of its own: WSL's, in cmd and PowerShell.</summary>
+    [GeneratedRegex(@"(^|[\s\\/""'&|;({])bash(\.exe)?(?=[\s""';&|)}>]|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex RunsBash();
 
     /// <summary>
     /// Whether cmd would read a value as anything but itself, alone on a line: see
@@ -447,7 +476,7 @@ public static partial class ToolPlaceholders
         shell == ShellQuoting.Posix && !uri.IsLocal ? uri.Path : Render(uri);
 
     private static async Task<string> ReplaceAsync(
-        string text, ShellQuoting shell, Func<string, Task<string[]>> resolve, List<Range>? inserted = null)
+        string text, ShellQuoting shell, Func<string, bool, Task<string[]>> resolve, List<Range>? inserted = null)
     {
         var matches = PlaceholderPattern().Matches(text);
         if (matches.Count == 0)
@@ -464,7 +493,8 @@ public static partial class ToolPlaceholders
             quotes.Read(literal);
 
             var token = match.Groups[1].Value;
-            var words = await resolve(Base(token));
+            // Whether it lands inside the user's own quotes: a value there goes in as it is.
+            var words = await resolve(Base(token), quotes.IsOpen);
             // A quote just before starts a word only if it opened one: "pre"${name} is one word.
             var startsWord = match.Index == 0 || char.IsWhiteSpace(text[match.Index - 1]) ||
                              (text[match.Index - 1] is '"' or '\'' && quotes.IsOpen);

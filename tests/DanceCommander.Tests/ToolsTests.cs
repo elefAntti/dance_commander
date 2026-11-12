@@ -350,7 +350,27 @@ public class ToolPlaceholderTests
     }
 
     [Theory]
+    [InlineData("wsl rm -rf ${name}", "~", ShellQuoting.Posix)] // the Linux home
+    [InlineData("wsl rm ${name}", "file[1].txt", ShellQuoting.Posix)] // file1.txt
+    [InlineData("wsl rm ${name}", "{old,keep}.txt", ShellQuoting.Posix)] // two files
+    [InlineData("wsl cp ${name} /backup", "#notes", ShellQuoting.Posix)]
+    [InlineData("wsl bash -c \"rm -f ${name}\"", "notes important.txt", ShellQuoting.Posix)]
+    [InlineData("wsl --exec sh -lc 'cat ${name}'", "a b.txt", ShellQuoting.PowerShell)]
+    [InlineData("bash -c 'cat ${name}'", "a;b.txt", ShellQuoting.PowerShell)] // System32's bash
+    [InlineData("bash.exe -c \"cat ${name}\"", "a;b.txt", ShellQuoting.Cmd)]
+    public async Task ANameTheLinuxShellWouldReadAsMoreIsRefused(string line, string name, ShellQuoting shell)
+    {
+        var decisions = new ScriptedDecisions();
+
+        (await ToolPlaceholders.ExpandOneAsync(line, Target(name), decisions, shell: shell)).ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem();
+    }
+
+    [Theory]
     [InlineData("wsl cat ${name}", "Copy 2.txt")] // a space only splits; nothing runs
+    [InlineData("wsl --cd \"${name}\" ls", "a b")] // quoted for wsl's own option, not a shell's line
+    [InlineData("wsl ls ${name}", "{5F3A0C}")] // a GUID's braces don't expand
+    [InlineData("wsl ls ${name}", "notes~1.txt")]
     [InlineData("cat ${name}", "a;touch x.txt")] // no wsl: bash's own quoting holds
     [InlineData("wslview ${name}", "a;touch x.txt")]
     [InlineData(@"type \\wsl.localhost\Ubuntu\${name}", "a;touch x.txt")]
