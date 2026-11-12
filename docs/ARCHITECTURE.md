@@ -1653,7 +1653,7 @@ typing filters · `Ctrl+H` show/hide hidden entries · `Ctrl+1`/`Ctrl+2` one pan
 `Ctrl+F3`/`Ctrl+F4`/`Ctrl+F5`/`Ctrl+F6` sort by name / type / date / size, `Ctrl+F7` by relevance in a search ·
 `Ctrl+Shift+C` copy path · `Ctrl+Shift+Enter` open containing folder ·
 `Ctrl+Shift+P` command palette · `Ctrl+.` this folder's commands · `Ctrl+E` command line ·
-`F3` preview · `Ctrl+I`/`Ctrl+Shift+A` invert / unmark all · `Ctrl+Shift+H`/`Ctrl+Shift+O` history / bookmarks ·
+`F3` preview, and in it `Ctrl+F` find, `Enter`/`F3` and `Shift+Enter`/`Shift+F3` next and previous match · `Ctrl+I`/`Ctrl+Shift+A` invert / unmark all · `Ctrl+Shift+H`/`Ctrl+Shift+O` history / bookmarks ·
 `Alt+Home` this computer · `Esc` dismiss, one thing at a time ·
 `Ctrl+Shift+F` flatten · `Ctrl+B` add to shelf · `Ctrl+S` search ·
 `Win+Shift+B` show or hide the shelf window, from any program (a system-wide key). Keys are not rebindable yet: only a tool in `tools.json` can claim one

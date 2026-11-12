@@ -48,6 +48,12 @@
   <SolidColorBrush x:Key="GitUntrackedBrush" Color="{x:Static SystemColors.WindowTextColor}" />
   <SolidColorBrush x:Key="GitConflictBrush" Color="{x:Static SystemColors.WindowTextColor}" />
 
+  <!-- Syntax in the text preview: colour is not the carrier here, so it is all the text colour. -->
+  <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="SyntaxStringBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="SyntaxNumberBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+  <SolidColorBrush x:Key="SyntaxNameBrush" Color="{x:Static SystemColors.WindowTextColor}" />
+
   <SolidColorBrush x:Key="DangerBrush" Color="{x:Static SystemColors.HotTrackColor}" />
   <SolidColorBrush x:Key="WarningBrush" Color="{x:Static SystemColors.HotTrackColor}" />
   <SolidColorBrush x:Key="DangerSurfaceBrush" Color="{x:Static SystemColors.WindowColor}" />

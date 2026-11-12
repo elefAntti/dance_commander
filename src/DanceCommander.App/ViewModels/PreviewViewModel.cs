@@ -1,5 +1,6 @@
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using DanceCommander.App.Services;
 using DanceCommander.Core.Preview;
 
 namespace DanceCommander.App.ViewModels;
@@ -16,31 +17,12 @@ public enum PreviewKind
     Failed,
 }
 
-public enum PreviewSegmentKind
-{
-    Content,
-
-    /// <summary>A rendered stand-in for whitespace, drawn faintly so it can be ignored.</summary>
-    Whitespace,
-}
-
-public sealed record PreviewSegment(string Text, PreviewSegmentKind Kind);
-
-/// <param name="Text">
-/// The line as it is in the file, kept alongside the segments so that copying a selection yields
-/// what the file says rather than what the preview drew — tabs as tabs, not as arrows.
-/// </param>
-public sealed record PreviewLine(int Number, IReadOnlyList<PreviewSegment> Segments, string Text);
-
 /// <summary>
 /// One file, shown rather than opened (§6.11). Transient: raised with F3 and dismissed with Escape,
 /// so it costs no permanent chrome and the pane it covers is one keystroke away.
 /// </summary>
 public sealed partial class PreviewViewModel : ObservableObject
 {
-    /// <summary>Where a tab stop falls, counted in characters, as most editors default.</summary>
-    private const int TabWidth = 4;
-
     private readonly string _text;
 
     public PreviewViewModel(string title, PreviewKind kind, string facts, string? message = null)
@@ -50,7 +32,6 @@ public sealed partial class PreviewViewModel : ObservableObject
         Facts = facts;
         Message = message;
         _text = string.Empty;
-        _lines = [];
     }
 
     public PreviewViewModel(string title, string facts, TextInspection inspection)
@@ -70,8 +51,11 @@ public sealed partial class PreviewViewModel : ObservableObject
         // statements, and the length of the longest line is the only evidence available. Prose
         // written one-line-per-paragraph runs to hundreds of characters; source code that does is
         // already unreadable and its author will have turned this off anyway.
-        _wrap = LongestLine(inspection.Text) > 200;
-        _lines = Build(_text, _showWhitespace);
+        var longest = LongestLine(inspection.Text);
+        _wrap = longest > 200;
+
+        // Made here because this runs where the file was read, off the UI thread.
+        Code = CodeText.Prepare(_text, title, longest);
     }
 
     public PreviewViewModel(string title, string facts, ImageSource image)
@@ -81,7 +65,6 @@ public sealed partial class PreviewViewModel : ObservableObject
         Facts = facts;
         Image = image;
         _text = string.Empty;
-        _lines = [];
     }
 
     public string Title { get; }
@@ -99,26 +82,11 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasMessage => !string.IsNullOrEmpty(Message);
 
-    /// <summary>The text as it would be copied: without the whitespace stand-ins.</summary>
+    /// <summary>The whole text, which Copy takes when nothing is selected.</summary>
     public string PlainText => _text;
 
-    /// <summary>
-    /// What the Copy button takes: the lines the user picked out, or all of them if none.
-    /// </summary>
-    /// <remarks>
-    /// Copying the whole file was the first reading of "copy" and the wrong one — the reason to
-    /// open a preview is usually to take a few lines out of something you are not going to open
-    /// properly. Whole-file copy survives as the no-selection case, where it is the only sensible
-    /// answer.
-    /// </remarks>
-    public string TextOf(IEnumerable<PreviewLine> selected)
-    {
-        var lines = selected.Select(l => l.Text).ToList();
-        return lines.Count == 0 ? _text : string.Join(Environment.NewLine, lines);
-    }
-
-    [ObservableProperty]
-    private IReadOnlyList<PreviewLine> _lines;
+    /// <summary>The text as an editor document, with its highlighting; null for anything but text.</summary>
+    public CodeText? Code { get; }
 
     [ObservableProperty]
     private bool _showWhitespace;
@@ -127,7 +95,77 @@ public sealed partial class PreviewViewModel : ObservableObject
     [ObservableProperty]
     private bool _wrap;
 
-    partial void OnShowWhitespaceChanged(bool value) => Lines = Build(_text, value);
+    /// <summary>The find box is open under the facts.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MatchSummary))]
+    private bool _isFinding;
+
+    /// <summary>Kept when the box closes, so Ctrl+F again offers the last search.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MatchSummary))]
+    private string _findText = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MatchSummary))]
+    private IReadOnlyList<TextMatch> _matches = [];
+
+    /// <summary>Index into <see cref="Matches"/> of the one selected, or -1.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MatchSummary))]
+    private int _currentMatch = -1;
+
+    /// <summary>Where the search looks from until there is a match: the caret when find opened.</summary>
+    private int _findFrom;
+
+    /// <summary>"3 of 41", or that there are none.</summary>
+    public string MatchSummary =>
+        !IsFinding || FindText.Length == 0 ? string.Empty
+        : Matches.Count == 0 ? "No matches"
+        : $"{CurrentMatch + 1:N0} of {Matches.Count:N0}" + (Matches.Count >= TextFind.MostMatches ? "+" : "");
+
+    public void StartFind(int from)
+    {
+        _findFrom = from;
+        CurrentMatch = -1;
+        IsFinding = true;
+        Search();
+    }
+
+    public void StopFind()
+    {
+        IsFinding = false;
+        Matches = [];
+        CurrentMatch = -1;
+    }
+
+    public void NextMatch()
+    {
+        if (Matches.Count > 0)
+            CurrentMatch = (CurrentMatch + 1) % Matches.Count;
+    }
+
+    public void PreviousMatch()
+    {
+        if (Matches.Count > 0)
+            CurrentMatch = (CurrentMatch - 1 + Matches.Count) % Matches.Count;
+    }
+
+    partial void OnFindTextChanged(string value)
+    {
+        if (IsFinding)
+            Search();
+    }
+
+    private void Search()
+    {
+        // Typing on stays where it is when the longer text still matches there, as in an editor's
+        // incremental search, rather than jumping back to where find was opened.
+        var from = CurrentMatch >= 0 ? Matches[CurrentMatch].Start : _findFrom;
+        var matches = TextFind.All(_text, FindText);
+        CurrentMatch = -1;
+        Matches = matches;
+        CurrentMatch = TextFind.FirstFrom(matches, from);
+    }
 
     private static int LongestLine(string text)
     {
@@ -144,88 +182,5 @@ public sealed partial class PreviewViewModel : ObservableObject
         }
 
         return longest;
-    }
-
-    private static IReadOnlyList<PreviewLine> Build(string text, bool showWhitespace)
-    {
-        if (text.Length == 0)
-            return [];
-
-        var lines = new List<PreviewLine>();
-        var number = 1;
-
-        foreach (var raw in text.Split('\n'))
-        {
-            // Split on '\n' leaves the '\r' of a CRLF file at the end of every line; it is an
-            // ending, not content, and drawing it would put a box at the end of every line.
-            var line = raw.EndsWith('\r') ? raw[..^1] : raw;
-            lines.Add(new PreviewLine(number++, Segment(line, showWhitespace), line));
-        }
-
-        // A trailing newline produces a final empty element; a file ending properly is not an
-        // extra blank line anyone wants numbered.
-        if (lines.Count > 1 && lines[^1].Segments.Count == 0)
-            lines.RemoveAt(lines.Count - 1);
-
-        return lines;
-    }
-
-    private static IReadOnlyList<PreviewSegment> Segment(string line, bool showWhitespace)
-    {
-        if (line.Length == 0)
-            return [];
-
-        if (!showWhitespace)
-            return [new PreviewSegment(line.Replace("\t", new string(' ', TabWidth)), PreviewSegmentKind.Content)];
-
-        var segments = new List<PreviewSegment>();
-        var buffer = new System.Text.StringBuilder();
-        var bufferKind = PreviewSegmentKind.Content;
-        var column = 0;
-
-        void Flush()
-        {
-            if (buffer.Length == 0)
-                return;
-            segments.Add(new PreviewSegment(buffer.ToString(), bufferKind));
-            buffer.Clear();
-        }
-
-        void Append(string text, PreviewSegmentKind kind)
-        {
-            if (kind != bufferKind)
-            {
-                Flush();
-                bufferKind = kind;
-            }
-
-            buffer.Append(text);
-        }
-
-        foreach (var character in line)
-        {
-            if (character == '\t')
-            {
-                // Padded to the next tab stop so the text still lines up the way an editor shows
-                // it: an arrow alone would shift every column after it.
-                var width = TabWidth - (column % TabWidth);
-                Append("→" + new string(' ', width - 1), PreviewSegmentKind.Whitespace);
-                column += width;
-                continue;
-            }
-
-            // Every space, not just trailing ones: a long run of them in the middle of a line
-            // wraps like text and looks like a rendering fault until it can be seen. The zero-width
-            // space after each dot keeps the break opportunity the space gave, or Wrap would cut
-            // words in half. Copy reads the raw line, so it never sees either.
-            if (character == ' ')
-                Append("·\u200B", PreviewSegmentKind.Whitespace);
-            else
-                Append(character.ToString(), PreviewSegmentKind.Content);
-            column++;
-        }
-
-        Flush();
-        return segments;
     }
 }

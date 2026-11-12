@@ -322,6 +322,13 @@ public sealed partial class ShellViewModel
         {
             var tab = ActiveTab;
 
+            // While find is open, F3 is the next match, as in every editor; Escape closes find first.
+            if (tab.Preview is { IsFinding: true } finding)
+            {
+                finding.NextMatch();
+                return;
+            }
+
             // F3 again closes it: the same key in and out, so it never becomes a mode you have to
             // remember the way out of.
             if (tab.Preview is not null)
@@ -345,6 +352,38 @@ public sealed partial class ShellViewModel
         subject: CommandSubject.Selection,
         readsContents: true);
 
+        // Find in a text preview. Ctrl+F because that is the key everywhere else; search for files
+        // is Ctrl+S here, so nothing is taken from it. A key, not a menu item: the preview covers
+        // the rows a context menu would be opened on.
+        commands.Register(new CommandDefinition
+        {
+            Id = "dc.findInPreview",
+            Subject = CommandSubject.Window,
+            Title = "Find in preview",
+            Binding = KeyStroke.Parse("Ctrl+F"),
+            CanExecute = _ => ActiveTab.Preview is { IsText: true },
+            ExecuteAsync = (_, _) =>
+            {
+                FocusRequested?.Invoke(this, "previewFind");
+                return Task.CompletedTask;
+            },
+        });
+
+        commands.Register(new CommandDefinition
+        {
+            Id = "dc.previousMatch",
+            Subject = CommandSubject.Window,
+            Title = "Previous match",
+            Binding = KeyStroke.Parse("Shift+F3"),
+            InLegend = false,
+            CanExecute = _ => ActiveTab.Preview is { IsFinding: true },
+            ExecuteAsync = (_, _) =>
+            {
+                ActiveTab.Preview?.PreviousMatch();
+                return Task.CompletedTask;
+            },
+        });
+
         // Escape clears whatever transient panel is showing, innermost first. Without it, captured
         // tool output could only be dismissed with the mouse — and a keyboard-first file manager
         // that needs the mouse to close its own output panel is not keyboard-first (§1.2/7).
@@ -366,6 +405,15 @@ public sealed partial class ShellViewModel
             ExecuteAsync = (_, _) =>
             {
                 var tab = ActiveTab;
+
+                // Find is inside the preview, so it closes first, leaving the match selected.
+                if (tab.Preview is { IsFinding: true } finding)
+                {
+                    finding.StopFind();
+                    FocusRequested?.Invoke(this, "previewText");
+                    return Task.CompletedTask;
+                }
+
                 if (tab.Preview is not null)
                     tab.Preview = null;
                 else if (tab.Decision is { } decision)

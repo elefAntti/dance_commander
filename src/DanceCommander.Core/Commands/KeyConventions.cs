@@ -22,7 +22,7 @@ public static class KeyConventions
         [KeyStroke.Parse("Ctrl+A")] = ("Select all", ["dc.selectAll"]),
         [KeyStroke.Parse("Ctrl+Shift+A")] = ("Select none", ["dc.selectNone"]),
         [KeyStroke.Parse("Ctrl+S")] = ("Save", []),
-        [KeyStroke.Parse("Ctrl+F")] = ("Find", ["dc.search"]),
+        [KeyStroke.Parse("Ctrl+F")] = ("Find", ["dc.findInPreview", "dc.search"]),
         [KeyStroke.Parse("Ctrl+P")] = ("Print", []),
         [KeyStroke.Parse("Ctrl+N")] = ("New window", []),
         [KeyStroke.Parse("Ctrl+T")] = ("New tab", ["dc.newTab"]),

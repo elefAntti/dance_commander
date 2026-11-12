@@ -1219,6 +1219,10 @@ public partial class MainWindow : Window
                 ActivePaneView.FocusAddress();
             else if (target == "command")
                 ActivePaneView.FocusCommandLine(_shell.TakeCommandLineDraft());
+            else if (target == "previewFind")
+                ActivePaneView.FocusPreviewFind();
+            else if (target == "previewText")
+                ActivePaneView.FocusPreviewText();
             else if (target == "locationMenu")
                 ActivePaneView.OpenLocationMenu();
             else if (target == "palette")
@@ -1416,6 +1420,24 @@ public partial class MainWindow : Window
             e.Handled = true;
     }
 
+    /// <summary>The keys the preview's text keeps from the window's commands while it has the keyboard.</summary>
+    private static bool PreviewTextOwns(Key key, ModifierKeys modifiers)
+    {
+        if (modifiers.HasFlag(ModifierKeys.Alt) || modifiers.HasFlag(ModifierKeys.Windows))
+            return false;
+
+        return key switch
+        {
+            Key.A or Key.C => modifiers == ModifierKeys.Control,
+            Key.Insert => modifiers is ModifierKeys.None or ModifierKeys.Control,
+            Key.Space or Key.Back => modifiers == ModifierKeys.None,
+            // Ctrl+Page Up and Down switch tabs here, as in a browser; with Shift alone they select.
+            Key.PageUp or Key.PageDown => !modifiers.HasFlag(ModifierKeys.Control),
+            Key.Up or Key.Down or Key.Left or Key.Right or Key.Home or Key.End => true,
+            _ => false,
+        };
+    }
+
     private async void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         UpdateHeldModifiers();
@@ -1522,10 +1544,12 @@ public partial class MainWindow : Window
         if (Keyboard.FocusedElement is ButtonBase && e.Key is Key.Enter or Key.Space)
             return;
 
-        // An open preview owns Ctrl+C: what it copies is the lines picked out of the file, which
-        // is what the preview is for. The grid's own "copy these files to the clipboard" is one
-        // Escape away, and is what Ctrl+C means everywhere else in the window.
-        if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control && ActivePaneView.IsPreviewFocused)
+        // The preview's text owns the keys a text editor has a meaning for: Ctrl+C copies what was
+        // picked out of the file, Ctrl+A selects all of it, and the arrows and their Shift and Ctrl
+        // forms move and select. Space, Insert and Backspace do nothing in a read-only text, and
+        // are claimed anyway: as commands they marked rows and left the folder under the preview,
+        // out of sight (2026-11-12). Tab, Escape, the function keys and Alt chords stay the app's.
+        if (ActivePaneView.IsPreviewFocused && PreviewTextOwns(e.Key, Keyboard.Modifiers))
             return;
 
         // Windows delivers anything with Alt held as WM_SYSKEY*, which WPF surfaces as Key.System

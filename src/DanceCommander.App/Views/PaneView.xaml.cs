@@ -484,9 +484,10 @@ public partial class PaneView : UserControl
                 System.Windows.Threading.DispatcherPriority.Input);
         }
 
-        // The preview is what the user just asked to look at, so it is what the keys should reach.
+        // The preview is what the user just asked to look at, so it is what the keys should reach:
+        // after layout, since the preview was collapsed until now.
         if (e.PropertyName == nameof(TabViewModel.Preview) && Tab?.Preview is { IsText: true })
-            Dispatcher.BeginInvoke(() => PreviewLines.Focus());
+            Dispatcher.BeginInvoke(() => PreviewPanel.FocusText(), System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     /// <summary>
@@ -1760,7 +1761,7 @@ public partial class PaneView : UserControl
             _ = Tab?.GoUpAsync();
     }
 
-    private void OnClosePreview(object sender, RoutedEventArgs e)
+    private void OnClosePreview(object? sender, EventArgs e)
     {
         if (Tab is null)
             return;
@@ -1925,38 +1926,18 @@ public partial class PaneView : UserControl
             Tab.FilterBy(character);
     }
 
-    private void OnCopyPreview(object sender, RoutedEventArgs e)
-    {
-        // Left uncaught, a clipboard another program was holding took the whole window down here
-        // (2026-10-20).
-        if (Tab?.Preview is { IsText: true } preview
-            && !WindowsClipboard.PutText(preview.TextOf(PreviewLines.SelectedItems.Cast<PreviewLine>())))
-            Tab.Report(WindowsClipboard.CouldNotCopy);
-    }
+    private void OnPreviewCopyFailed(object? sender, EventArgs e) => Tab?.Report(WindowsClipboard.CouldNotCopy);
 
     /// <summary>
     /// True while the keyboard is inside an open preview, which is what decides who owns Ctrl+C.
     /// </summary>
-    public bool IsPreviewFocused => Tab?.Preview is not null && PreviewLines.IsKeyboardFocusWithin;
+    public bool IsPreviewFocused => Tab?.Preview is not null && PreviewPanel.IsTextFocused;
 
-    /// <summary>
-    /// Ctrl+C in a preview copies the lines you picked out, not the file you are standing on.
-    /// </summary>
-    /// <remarks>
-    /// The window's global handler defers to this (see MainWindow.OnPreviewKeyDown) rather than
-    /// the other way round, because a tunnelled key that has already been marked handled never
-    /// reaches this control at all. Taking a few lines out of something you are not going to open
-    /// is the reason the preview has a Copy button; the key that everyone reaches for first should
-    /// do the same thing the button does.
-    /// </remarks>
-    private void OnPreviewLinesKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.C || Keyboard.Modifiers != ModifierKeys.Control)
-            return;
+    /// <summary>Find in the open preview (Ctrl+F).</summary>
+    public void FocusPreviewFind() => PreviewPanel.FocusFind();
 
-        e.Handled = true;
-        OnCopyPreview(sender, e);
-    }
+    /// <summary>Back into the preview's text, after its find box closes.</summary>
+    public void FocusPreviewText() => PreviewPanel.FocusText();
 
     private void OnRefreshClick(object sender, RoutedEventArgs e)
     {

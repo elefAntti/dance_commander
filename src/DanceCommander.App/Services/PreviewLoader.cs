@@ -70,8 +70,12 @@ public sealed class PreviewLoader(IProviderRegistry providers) : IPreviewLoader
             var inspection = TextInspector.Inspect(
                 truncated ? head.AsSpan(0, TextCap) : head, truncated);
 
+            // On the pool by name: the awaits above leave the UI thread only when a read really
+            // was asynchronous, and building the editor's document and loading a language's
+            // highlighting must not happen on it (CodeText).
             if (inspection.IsText)
-                return new PreviewViewModel(entry.Name, DescribeText(size, inspection), inspection);
+                return await Task.Run(() => new PreviewViewModel(entry.Name, DescribeText(size, inspection), inspection), ct)
+                    .ConfigureAwait(false);
 
             var archive = await ArchiveSniffer.DetectAsync(new MemoryStream(head), ct).ConfigureAwait(false);
 

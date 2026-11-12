@@ -1,0 +1,104 @@
+<UserControl x:Class="DanceCommander.App.Views.PreviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:DanceCommander.App.Converters">
+
+  <!--
+    One file, shown rather than opened. The DataContext is the PreviewViewModel; the pane that
+    hosts this decides when it is visible and where the keyboard goes when it closes.
+  -->
+  <UserControl.Resources>
+    <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
+    <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+  </UserControl.Resources>
+
+  <Grid Margin="8,0,8,4">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0" Margin="2,2,2,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Grid.Column="0" Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                 VerticalAlignment="Center" />
+      <!-- The whole width under the title and the controls: in a half-width pane the controls
+           left it so little that "7 CRLF, 6 LF", the reason to look, was trimmed away. -->
+      <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding Facts}"
+                 Style="{StaticResource SecondaryTextStyle}" />
+
+      <!--
+        Find, opened with Ctrl+F. Under the facts rather than over the text, so no match is ever
+        behind it, and only while it is open (§1.3). Keys while typing: Enter or F3 for the next
+        match, with Shift for the previous one, Escape back to the text.
+      -->
+      <Grid Grid.Row="2" Grid.ColumnSpan="3" Margin="0,6,0,0"
+            Visibility="{Binding IsFinding, Converter={StaticResource BoolToVisibility}}">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" MaxWidth="360" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="Find" VerticalAlignment="Center" Margin="0,0,10,0"
+                   Style="{StaticResource SecondaryTextStyle}" />
+        <TextBox x:Name="FindBox" Grid.Column="1" Style="{StaticResource InputStyle}" Padding="6,2"
+                 FontFamily="{DynamicResource MonoFontFamily}"
+                 Text="{Binding FindText, UpdateSourceTrigger=PropertyChanged}"
+                 PreviewKeyDown="OnFindKeyDown" />
+        <TextBlock Grid.Column="2" Text="{Binding MatchSummary}" VerticalAlignment="Center" Margin="10,0,0,0"
+                   Style="{StaticResource SecondaryTextStyle}" />
+        <TextBlock Grid.Column="4" Text="Esc to close" VerticalAlignment="Center" Margin="10,0,0,0"
+                   Style="{StaticResource SecondaryTextStyle}" />
+      </Grid>
+
+      <!-- Only where it means something: a file with no tabs has nothing to reveal. -->
+      <CheckBox Grid.Column="1" Content="Whitespace" Margin="10,0,10,0" VerticalAlignment="Center"
+                Foreground="{DynamicResource TextSecondaryBrush}"
+                IsChecked="{Binding ShowWhitespace}"
+                ToolTip="Show tabs and spaces"
+                Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+
+      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+        <CheckBox Content="Wrap" Margin="0,0,10,0" VerticalAlignment="Center"
+                  Foreground="{DynamicResource TextSecondaryBrush}"
+                  IsChecked="{Binding Wrap}"
+                  ToolTip="Fold long lines to the width of the pane"
+                  Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+        <Button Style="{StaticResource ChromeButtonStyle}" Content="Copy"
+                ToolTip="Copy the selection, or the whole file when nothing is selected"
+                Click="OnCopy"
+                Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+        <Button Style="{StaticResource ChromeButtonStyle}" Content="Close (Esc)"
+                Click="OnClose" />
+      </StackPanel>
+    </Grid>
+
+    <TextBlock Grid.Row="1" Text="{Binding Message}" TextWrapping="Wrap" Margin="2,10,2,0"
+               VerticalAlignment="Top" Style="{StaticResource SecondaryTextStyle}"
+               Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}" />
+
+    <Image Grid.Row="1" Source="{Binding Image}" Stretch="Uniform"
+           StretchDirection="DownOnly" RenderOptions.BitmapScalingMode="HighQuality"
+           Visibility="{Binding Image, Converter={StaticResource NullToVisibility}}" />
+
+    <!--
+      The text, in an editor made on the first text preview (TextPreview). Selection is by
+      character, Ctrl+A and Ctrl+C work as anywhere else, and the keyboard is here when the
+      preview opens, so Page Up, Page Down, Home and End reach it.
+    -->
+    <ContentControl x:Name="TextHost" Grid.Row="1" Focusable="False" IsTabStop="False"
+                    Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+  </Grid>
+</UserControl>

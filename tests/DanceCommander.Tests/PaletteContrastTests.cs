@@ -18,6 +18,7 @@ public sealed class PaletteContrastTests
     /// <summary>Text drawn on panes, and the surfaces it is drawn on.</summary>
     private static readonly string[] Texts =
         ["TextPrimaryBrush", "TextSecondaryBrush", "TextMutedBrush", "DangerBrush", "WarningBrush",
+         "SyntaxKeywordBrush", "SyntaxStringBrush", "SyntaxNumberBrush", "SyntaxNameBrush",
          "GitModifiedBrush", "GitAddedBrush", "GitDeletedBrush", "GitUntrackedBrush", "GitConflictBrush"];
 
     /// <summary>

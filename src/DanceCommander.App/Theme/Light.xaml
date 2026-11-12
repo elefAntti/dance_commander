@@ -50,6 +50,12 @@
   <SolidColorBrush x:Key="GitUntrackedBrush" Color="#1765A8" />
   <SolidColorBrush x:Key="GitConflictBrush" Color="#A40E26" />
 
+  <!-- Syntax in the text preview: the same four kinds, dark enough for AA on the pane. -->
+  <SolidColorBrush x:Key="SyntaxKeywordBrush" Color="#1F55B0" />
+  <SolidColorBrush x:Key="SyntaxStringBrush" Color="#3D6B1E" />
+  <SolidColorBrush x:Key="SyntaxNumberBrush" Color="#9A4A0B" />
+  <SolidColorBrush x:Key="SyntaxNameBrush" Color="#7B3AA8" />
+
   <!-- Semantic only. Never decorative. -->
   <SolidColorBrush x:Key="DangerBrush" Color="#B42318" />
   <SolidColorBrush x:Key="WarningBrush" Color="#8A5A00" />

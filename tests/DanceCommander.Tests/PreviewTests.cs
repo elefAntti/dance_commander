@@ -216,3 +216,63 @@ public sealed class ImageOrientationTests
     public void AValueOutsideTheStandardIsUpright(int exif) =>
         ImageOrientation.FromExif(exif).ShouldBe(ImageOrientation.Upright);
 }
+
+public sealed class SyntaxColourTests
+{
+    [Theory]
+    [InlineData("Comment", SyntaxKind.Comment)]
+    [InlineData("DocComment", SyntaxKind.Comment)]
+    [InlineData("String", SyntaxKind.String)]
+    [InlineData("Char", SyntaxKind.String)]
+    [InlineData("AttributeValue", SyntaxKind.String)]
+    [InlineData("NumberLiteral", SyntaxKind.Number)]
+    [InlineData("Keywords", SyntaxKind.Keyword)]
+    [InlineData("ValueTypeKeywords", SyntaxKind.Keyword)]
+    [InlineData("Preprocessor", SyntaxKind.Keyword)]
+    [InlineData("XmlTag", SyntaxKind.Name)]
+    [InlineData("AttributeName", SyntaxKind.Name)]
+    [InlineData("MethodCall", SyntaxKind.Name)]
+    [InlineData("Heading", SyntaxKind.Name)]
+    public void NamesFoldOntoThePalettesKinds(string name, SyntaxKind expected) =>
+        SyntaxColours.KindOf(name).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("Punctuation")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void WhatIsNotRecognisedStaysPlain(string? name) =>
+        SyntaxColours.KindOf(name).ShouldBe(SyntaxKind.Plain);
+}
+
+public sealed class TextFindTests
+{
+    [Fact]
+    public void LowerCaseFindsAnyCase() =>
+        TextFind.All("Foo foo FOO", "foo").Select(m => m.Start).ShouldBe([0, 4, 8]);
+
+    [Fact]
+    public void ACapitalMakesItExact() =>
+        TextFind.All("Foo foo FOO", "Foo").Select(m => m.Start).ShouldBe([0]);
+
+    [Fact]
+    public void MatchesDoNotOverlap() =>
+        TextFind.All("aaaa", "aa").Select(m => m.Start).ShouldBe([0, 2]);
+
+    [Fact]
+    public void NothingTypedFindsNothing() => TextFind.All("text", "").ShouldBeEmpty();
+
+    [Fact]
+    public void StopsAtTheCap() => TextFind.All(new string('a', 100), "a", most: 10).Count.ShouldBe(10);
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(5, 1)]
+    [InlineData(10, 1)]
+    [InlineData(11, 2)]
+    [InlineData(31, 0)] // past the last, round to the first
+    public void TheNextMatchIsTheFirstAtOrAfter(int offset, int expected) =>
+        TextFind.FirstFrom([new(0, 1), new(10, 1), new(20, 1)], offset).ShouldBe(expected);
+
+    [Fact]
+    public void NoMatchesHasNoNext() => TextFind.FirstFrom([], 0).ShouldBe(-1);
+}
