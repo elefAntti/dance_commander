@@ -2564,6 +2564,14 @@ public partial class PaneView : UserControl
             return;
         }
 
+        // /home/x pasted from a terminal: this server's, or WSL's, rather than a folder at the
+        // root of whichever drive the application started from.
+        if (PosixAddress.Resolve(typed, Tab.Uri, WslPaths.DefaultDistribution) is { } linux)
+        {
+            Accept(linux);
+            return;
+        }
+
         // A bare word that is no bookmark's name: never an address, so a search of this folder.
         if (SearchFor(typed) is { } search)
         {

@@ -483,3 +483,59 @@ public sealed class FolderCompletionTests : IDisposable
         _folders.Cached(gone, "").ShouldBeNull();
     }
 }
+
+public sealed class PosixAddressTests
+{
+    private static readonly FsUri OnC = FsUri.Local(@"C:\work");
+
+    private static FsUri? Resolve(string typed, FsUri? here, string? defaultDistribution = "Ubuntu") =>
+        PosixAddress.Resolve(typed, here, () => defaultDistribution);
+
+    [Theory]
+    [InlineData("/home/me/src", @"\\wsl.localhost\Ubuntu\home\me\src")]
+    [InlineData("/", @"\\wsl.localhost\Ubuntu\")]
+    [InlineData("/mnt/c/work/a b", @"C:\work\a b")]
+    [InlineData("/mnt/d", @"D:\")]
+    [InlineData("/mnt/d/", @"D:\")]
+    [InlineData("/mnt/wsl/x", @"\\wsl.localhost\Ubuntu\mnt\wsl\x")]
+    [InlineData("/mnt", @"\\wsl.localhost\Ubuntu\mnt")]
+    public void FromThisComputerItIsTheDefaultDistributions(string typed, string expected) =>
+        Resolve(typed, OnC).ShouldBe(FsUri.Local(expected));
+
+    [Fact]
+    public void InsideADistributionItIsThatDistributions()
+    {
+        var debian = FsUri.Local(@"\\wsl.localhost\Debian\home\me");
+
+        Resolve("/etc/apt", debian).ShouldBe(FsUri.Local(@"\\wsl.localhost\Debian\etc\apt"));
+        Resolve("/mnt/c/work", debian).ShouldBe(FsUri.Local(@"C:\work"));
+    }
+
+    [Fact]
+    public void InAViewOfADistributionItIsThatDistributions() =>
+        Resolve("/etc", FsUri.Parse(@"flat:\\wsl.localhost\Debian\home"))
+            .ShouldBe(FsUri.Local(@"\\wsl.localhost\Debian\etc"));
+
+    [Fact]
+    public void OnAServerItIsTheServersPath()
+    {
+        var server = FsUri.Parse("sftp://me@build:2222/home/me");
+
+        // Not WSL's, and not /mnt/c either: the server has its own /mnt.
+        Resolve("/var/log", server).ShouldBe(FsUri.Parse("sftp://me@build:2222/var/log"));
+        Resolve("/mnt/c/x", server).ShouldBe(FsUri.Parse("sftp://me@build:2222/mnt/c/x"));
+    }
+
+    [Fact]
+    public void WithoutWslItStaysAWindowsPath() =>
+        Resolve("/home/me", OnC, defaultDistribution: null).ShouldBeNull();
+
+    [Theory]
+    [InlineData(@"C:\work")]
+    [InlineData("//server/share/x")]
+    [InlineData(@"/a\b")]
+    [InlineData("readme")]
+    [InlineData("sftp://me@host/var")]
+    public void AnythingElseIsNotALinuxPath(string typed) =>
+        Resolve(typed, OnC).ShouldBeNull();
+}

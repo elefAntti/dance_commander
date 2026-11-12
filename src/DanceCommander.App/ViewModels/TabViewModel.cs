@@ -325,10 +325,21 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
     [NotifyPropertyChangedFor(nameof(LoadingText))]
     private string? _connectingTo;
 
+    /// <summary>
+    /// The WSL distribution a listing inside its share waits for, until the first rows come. A
+    /// stopped one starts when its files are first asked for, which takes seconds, and the wait
+    /// was "Reading… 0 found" as if the folder were empty so far.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LoadingText))]
+    private string? _waitingForDistribution;
+
     /// <summary>What the loading bar says the wait is for.</summary>
     public string LoadingText => ConnectingTo is { } server
         ? $"Connecting to {server}…"
-        : $"Reading… {LoadedCount:N0} found";
+        : WaitingForDistribution is { } distribution
+            ? $"Waiting for {distribution} in WSL…"
+            : $"Reading… {LoadedCount:N0} found";
 
     /// <summary>
     /// True when the listing on screen is what a stopped walk had found, not the whole location.
@@ -1105,6 +1116,9 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
         ConnectingTo = _providers.TryResolve(uri, out var connecting) && connecting is IConnectingProvider remote
             ? remote.ConnectingTo(uri)
             : null;
+        WaitingForDistribution = uri.Anchor is { IsLocal: true } local && WslPaths.TrySplit(local.ToLocalPath(), out var distribution, out _)
+            ? distribution
+            : null;
         IsPartial = false;
         Notice = null;
         QuickFilter = string.Empty;
@@ -1208,6 +1222,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
             {
                 LoadedCount = n;
                 ConnectingTo = null;
+                WaitingForDistribution = null;
             });
 
             // What has been found so far, shown in the order found (PLAN.md section 13, "Streaming
@@ -1449,6 +1464,7 @@ public sealed partial class TabViewModel : ObservableObject, IDecisionHost, IOut
                 IsBusy = false;
                 ShowLoading = false;
                 ConnectingTo = null;
+                WaitingForDistribution = null;
                 _listing = null;
 
                 // Failed, stopped, or the password not given: whatever is on screen is still

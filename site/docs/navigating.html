@@ -28,6 +28,9 @@ you can type over it straight away. <kbd>Esc</kbd> closes the suggestions; press
 the address back as it was and returns you to the listing. It accepts a Windows path, a full address such as
 <code>sftp://deploy@build01/var/log</code> (see <a href="remote.html#addresses">addresses</a>), or
 the name of a bookmark.</p>
+<p>A Linux path, as pasted from a terminal, goes where the pane is: <code>/var/log</code> on a
+server is that server's. Anywhere else it is WSL's: the distribution the pane is in, or the default
+one, with <code>/mnt/c/work</code> as <code>C:\work</code>.</p>
 <p>It also takes the path of a file on this computer. An archive such as <code>C:\dl\pack.zip</code> opens as a
 folder; any other file opens the folder it is in, with the cursor on it.</p>
 <ul>

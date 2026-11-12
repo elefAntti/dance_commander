@@ -93,6 +93,7 @@ Ctrl+L, then type an address and press Enter:
 |---|---|
 | `C:\work`, `\\server\share\dir` | A folder |
 | `%USERPROFILE%\Downloads` | Environment variables are expanded |
+| `/home/me/src`, `/mnt/c/work` | A Linux path: on a server, the server's; elsewhere, WSL's (the default distribution's, or the one the pane is in), with `/mnt/c` as `C:\` |
 | `sftp://me@build01/var/log` | An SFTP server; `:2222` after the host for another port |
 | `davs://me@cloud.example.com/remote.php/dav/files/me/` | A WebDAV server over HTTPS (`dav://` for plain HTTP) |
 | `C:\dl\release.zip!/bin` | Inside an archive: `!/` separates the archive from the path in it |

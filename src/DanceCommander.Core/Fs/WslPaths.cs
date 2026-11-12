@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace DanceCommander.Extensibility;
+namespace DanceCommander.Core.Fs;
 
 /// <summary>
 /// WSL's distributions as Windows sees them: each one's files are under
