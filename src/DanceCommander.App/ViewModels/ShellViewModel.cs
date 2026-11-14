@@ -689,7 +689,8 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
                 remarks.Add($"{created.Name} came as {file.Content.LongLength:N0} bytes where {file.DeclaredSize:N0} were promised. Open it before deleting where it came from.");
             }
 
-            if (created.IsLocal && !VirtualFiles.MarkFromInternet(created.ToLocalPath()))
+            // As Outlook and Explorer mark a saved attachment: an email attachment is the classic carrier.
+            if (created.IsLocal && !ZoneMark.MarkFromInternet(created.ToLocalPath()))
             {
                 worrying = true;
                 remarks.Add($"{created.Name} could not be marked as from the internet, so Windows will not warn before opening it.");

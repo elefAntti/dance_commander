@@ -122,7 +122,12 @@ The one promise that outranks speed. **No step removes the last copy of anything
 - A move's source is removed only once its copy is known to be whole.
 - A cancel, failure, crash or pulled cable at any point leaves every byte somewhere the user can
   find it: at the source, the target or the Recycle Bin.
-- Permanent deletion happens only when asked for exactly (Shift+Del), never as clean-up.
+- Permanent deletion happens only when asked for exactly (Shift+Del), never as clean-up. The
+  exception is the app's own copies of files still whole where they came from (a server file
+  opened from temp), and only while nobody has changed them. A changed copy is the user's work.
+- **Safeguards are guard rails, not walls.** They are always there, the safe choice is the
+  default, and there is a deliberate, plainly worded way past for someone who means it. A slip
+  or an unclear moment must never cost data; a choice made knowingly is the user's.
 
 The build bans the deleting and overwriting APIs (`BannedSymbols.Files.txt`). Each use that has to
 stay is marked `// §1.6: why it can't lose anything`, and changes to anything that touches files

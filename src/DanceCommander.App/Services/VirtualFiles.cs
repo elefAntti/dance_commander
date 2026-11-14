@@ -322,27 +322,6 @@ public static class VirtualFiles
         void EndOperation(int result, IntPtr bindContext, int effects);
     }
 
-    /// <summary>
-    /// Marks a file written from a drop as come from the internet, as Outlook and Explorer do when
-    /// they save an attachment. Without it a macro document opens outside Protected View and a
-    /// program runs without SmartScreen's question: an email attachment is the classic carrier.
-    /// </summary>
-    /// <returns>False when the disk can't hold the mark (FAT, some shares).</returns>
-    public static bool MarkFromInternet(string path)
-    {
-        try
-        {
-            // A stream of the file's own, new: CreateNew, so a mark already there stays.
-            using var mark = new FileStream(path + ":Zone.Identifier", FileMode.CreateNew, FileAccess.Write);
-            mark.Write(Encoding.ASCII.GetBytes("[ZoneTransfer]\r\nZoneId=3\r\n"));
-            return true;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
-        {
-            return false;
-        }
-    }
-
     private static byte[]? ReadContents(ComTypes.IDataObject com, int index, long? size)
     {
         var format = new ComTypes.FORMATETC

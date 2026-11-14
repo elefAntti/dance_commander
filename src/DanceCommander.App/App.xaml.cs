@@ -484,6 +484,8 @@ public partial class App : Application
         // Asked only when something is in use, to say which program has it (§1.3).
         services.AddSingleton<IUsageFinder, WindowsUsageFinder>();
         services.AddSingleton<Launcher>();
+        // Enter on a file on a server or in an archive opens a local copy of it.
+        services.AddSingleton(sp => new OpenedCopies(sp.GetRequiredService<IProviderRegistry>()));
         services.AddSingleton<IClipboardService, WindowsClipboard>();
         services.AddSingleton<IFileOperationService, FileOperationService>();
         services.AddSingleton<ITransferService, TransferService>();

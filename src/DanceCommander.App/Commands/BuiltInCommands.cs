@@ -341,15 +341,87 @@ public static class BuiltInCommands
 
         if (!target.Uri.IsLocal)
         {
-            ctx.Decisions.Report(new Notice(
-                "Opening files from this location is not supported yet.",
-                NoticeSeverity.Warning,
-                "Copy it somewhere local first."));
+            await OpenCopyAsync(ctx, target, ct);
             return;
         }
 
         // Says "Starting Word…" if it is slow to come up, and does not start it twice (Launcher).
         await ctx.Services.GetRequiredService<Launcher>().OpenAsync(target.Uri.ToLocalPath(), ctx.Decisions as ILaunchHost);
+    }
+
+    /// <summary>
+    /// A file on a server or inside an archive has no path a program can be given, so it is
+    /// copied to one first (<see cref="OpenedCopies"/>) and the copy opened. Enter is the ask: unlike
+    /// F3, which never starts a download by itself, this one is what the key was pressed for.
+    /// </summary>
+    /// <remarks>
+    /// A job once it runs past a moment, as a Del is, so a large file shows how far it has got and
+    /// can be stopped. Not an operation and not on the undo stack: nothing the user has changed,
+    /// only a copy in the temp folder.
+    /// </remarks>
+    private static async Task OpenCopyAsync(ICommandContext ctx, FsEntry target, CancellationToken ct)
+    {
+        var copies = ctx.Services.GetRequiredService<OpenedCopies>();
+        var verb = OpenedCopies.IsDownload(target.Uri) ? "Downloading" : "Extracting";
+        var job = new OperationJob($"{verb} {target.Name} to open it");
+        OpenedCopy? copy = null;
+        try
+        {
+            await OperationJob.RunAsync(
+                ctx.Services.GetRequiredService<IJobService>(),
+                job,
+                async (running, token) =>
+                {
+                    copy = await copies.FetchAsync(
+                        target,
+                        target.SizeUnknown || target.Size <= 0 ? null : done => running.Report((double)done / target.Size),
+                        token).ConfigureAwait(false);
+                },
+                ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (NotSupportedException)
+        {
+            ctx.Decisions.Report(new Notice($"{target.Name} can't be opened from here.", NoticeSeverity.Warning, "Copy it to a local folder first."));
+            return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ctx.Decisions.Report(new Notice($"Could not open {target.Name}.", NoticeSeverity.Warning, ex.Message));
+            return;
+        }
+
+        // Null: Enter pressed again while the first copy is on its way, which opens it when it lands.
+        if (copy is null)
+            return;
+
+        // Without the mark a macro document or a program from a server would open with no
+        // Protected View and no SmartScreen question. A guard rail, not a wall (DESIGN.md §1.6):
+        // Enter or a slip lands on Cancel, and opening it anyway is a choice made knowingly.
+        var name = Path.GetFileName(copy.Path);
+        if (copy.Unmarked)
+        {
+            var answer = await ctx.Decisions.AskAsync(
+                new ChoiceRequest(
+                    $"Windows won't warn before opening {name}.",
+                    [
+                        new DecisionOption("cancel", "Cancel", IsDefault: true, IsCancel: true),
+                        new DecisionOption("open", "Open anyway"),
+                    ],
+                    $"The temp folder can't mark the copy as from the internet, so Office opens it outside Protected View and a program runs without SmartScreen's question. The copy is at {copy.Path}.",
+                    NoticeSeverity.Warning),
+                ct);
+            if (answer != "open")
+                return;
+        }
+
+        await ctx.Services.GetRequiredService<Launcher>().OpenAsync(copy.Path, ctx.Decisions as ILaunchHost);
+        // The copy's name, which is what ran: a name a server made up may have been changed to
+        // be safe on Windows, and the pane still shows the original.
+        ctx.Services.GetService<IEcho>()?.Say($"{name} opened as a read-only copy");
     }
 
     /// <summary>
