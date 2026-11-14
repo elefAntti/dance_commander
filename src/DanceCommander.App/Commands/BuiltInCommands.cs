@@ -363,6 +363,37 @@ public static class BuiltInCommands
     {
         var copies = ctx.Services.GetRequiredService<OpenedCopies>();
         var verb = OpenedCopies.IsDownload(target.Uri) ? "Downloading" : "Extracting";
+
+        // Said before, not found out at the end. A FAT limit can't be stepped past; too little free
+        // space can, since a listed size may be wrong or room may be made meanwhile (§1.6, guard rails).
+        if (!target.SizeUnknown && copies.Room() is { } room)
+        {
+            if (room.Limit is { } limit && target.Size > limit.MaxFile)
+            {
+                ctx.Decisions.Report(new Notice(
+                    $"{target.Name} won't fit in the temp folder.", NoticeSeverity.Warning,
+                    $"It is {Format.Size(target.Size)}, and {room.Drive} is {limit.Format}, which holds files up to {limit.Said}."));
+                return;
+            }
+
+            if (target.Size > room.Free)
+            {
+                var anyway = $"{verb[..^3]} anyway";
+                var answer = await ctx.Decisions.AskAsync(
+                    new ChoiceRequest(
+                        $"{target.Name} won't fit in the temp folder.",
+                        [
+                            new DecisionOption("cancel", "Cancel", IsDefault: true, IsCancel: true),
+                            new DecisionOption("anyway", anyway),
+                        ],
+                        $"It is {Format.Size(target.Size)}, and {room.Drive} has {Format.Size(room.Free)} free.",
+                        NoticeSeverity.Warning),
+                    ct);
+                if (answer != "anyway")
+                    return;
+            }
+        }
+
         var job = new OperationJob($"{verb} {target.Name} to open it");
         OpenedCopy? copy = null;
         try

@@ -49,7 +49,10 @@ public sealed class OpenedCopiesTests : IDisposable
         Path.GetFileName(path).ShouldBe("report.txt");
         (await File.ReadAllTextAsync(path)).ShouldBe("the report");
         File.GetAttributes(path).HasFlag(FileAttributes.ReadOnly).ShouldBeTrue();
-        Directory.GetFiles(Path.GetDirectoryName(path)!).ShouldBe([path]);
+        // Beside it only its record, hidden, which the tidy reads.
+        var record = Path.Combine(Path.GetDirectoryName(path)!, ".dc-opened");
+        Directory.GetFiles(Path.GetDirectoryName(path)!).Order().ShouldBe(new[] { path, record }.Order());
+        File.GetAttributes(record).HasFlag(FileAttributes.Hidden).ShouldBeTrue();
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DanceCommander.App.Commands;
 using DanceCommander.App.Services;
@@ -897,6 +898,68 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
 
         if (BookmarkService is Core.Navigation.BookmarkService { FirstRun: { } firstRun })
             _ = AnnounceFirstRunAsync(firstRun, looked, packs);
+
+        _ = TidyOpenedCopiesAsync();
+    }
+
+    /// <summary>
+    /// Copies Enter made of server and archive files (<see cref="OpenedCopies"/>): those nobody
+    /// changed go to the Recycle Bin once old enough, and a changed one, being the user's work, is
+    /// said once, in the pane and without taking the keyboard, and left where it is.
+    /// </summary>
+    private async Task TidyOpenedCopiesAsync()
+    {
+        if (_services.GetService<OpenedCopies>() is not { } copies || _services.GetService<IRecycleBin>() is not { } bin)
+            return;
+
+        TidiedCopies tidied;
+        try
+        {
+            // Well clear of the launch, and off the UI thread: it walks a folder and asks the bin.
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            tidied = await Task.Run(() => copies.TidyAsync(bin, DateTimeOffset.UtcNow, CancellationToken.None));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
+                                       or InvalidOperationException or OperationCanceledException
+                                       or System.Runtime.InteropServices.COMException)
+        {
+            // Left for the next launch; nothing has been touched that wasn't finished.
+            return;
+        }
+
+        if (tidied.Changed.Count == 0)
+            return;
+
+        // Not a promise that the copy stays: Storage Sense and Disk Cleanup empty the temp folder,
+        // and the copy may be the only place the changes are (review, 2026-11-14).
+        var one = tidied.Changed.Count == 1;
+        var first = tidied.Changed[0];
+        var answer = await ActiveTab.AskAsync(
+            new ChoiceRequest(
+                one
+                    ? $"{Path.GetFileName(first.Path)} was edited in its temp copy."
+                    : $"{tidied.Changed.Count} temp copies were edited.",
+                [
+                    new DecisionOption("ok", "OK", IsDefault: true, IsCancel: true),
+                    new DecisionOption("show", one ? "Show it" : "Show them"),
+                ],
+                (!one ? "The changes aren't in the originals. "
+                    : first.From is { } from ? $"The changes aren't in the original, {from}. "
+                    : "The changes aren't in the original. ")
+                    + "Windows may clear the temp folder, so move what you want to keep.",
+                TakesFocus: false),
+            CancellationToken.None);
+
+        // Only once answered: a window closed before the notice was read says it again next time.
+        foreach (var changed in tidied.Changed)
+            OpenedCopies.MarkTold(changed.Path);
+
+        if (answer != "show")
+            return;
+        if (one)
+            await ActiveTab.GoToAsync(FsUri.Local(Path.GetDirectoryName(first.Path)!), Path.GetFileName(first.Path));
+        else
+            await ActiveTab.GoToAsync(FsUri.Local(copies.Root));
     }
 
     /// <summary>
