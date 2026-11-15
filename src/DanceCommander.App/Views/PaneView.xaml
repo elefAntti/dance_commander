@@ -200,15 +200,18 @@
 
         <!-- MinWidth, because the address is the one thing in this row that must never be squeezed:
              a star column yields to its Auto neighbours, and a long branch name is an Auto neighbour. -->
-        <Grid Grid.Column="1" MinWidth="180">
-          <!-- Left padding makes room for the location icon, which sits inside the box's edge. Half of
-               what it looks like it should be: this template's padding is applied twice, once as
-               the content host's margin and again by the text view inside it. -->
-          <TextBox x:Name="AddressBox" Style="{StaticResource InputStyle}" Padding="16,4,8,4"
+        <Grid x:Name="AddressArea" Grid.Column="1" MinWidth="180"
+              MouseEnter="OnAddressAreaHover" MouseLeave="OnAddressAreaHover">
+          <!-- Left padding makes room for the location icon, which sits inside the box's edge, and
+               right padding for the bookmark star. Half of what it looks like it should be: this
+               template's padding is applied twice, once as the content host's margin and again by
+               the text view inside it. -->
+          <TextBox x:Name="AddressBox" Style="{StaticResource InputStyle}" Padding="16,4,15,4"
                    Text="{Binding ActiveTab.AddressText, UpdateSourceTrigger=PropertyChanged}"
                    PreviewKeyDown="OnAddressKeyDown" GotKeyboardFocus="OnAddressFocused"
                    PreviewMouseLeftButtonDown="OnAddressMouseDown"
                    LostKeyboardFocus="OnAddressLostFocus"
+                   IsKeyboardFocusWithinChanged="OnAddressFocusWithinChanged"
                    TextChanged="OnAddressTextChanged" SizeChanged="OnAddressSizeChanged" />
 
           <!--
@@ -256,6 +259,17 @@
             <Image Source="{Binding ActiveTab.LocationIcon}" Width="16" Height="16"
                    HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
+
+          <!--
+            The bookmark star, as a browser has it. Filled, always shown, when this place is
+            bookmarked: that is a fact about the location, like the icon at the other end. Outlined
+            only while the pointer is over the address, so an unbookmarked place carries no mark;
+            its room is kept either way, so the text never moves. Away while the box is being typed
+            in, since it describes where the pane is and not what is being typed (PaneView.Star.cs).
+          -->
+          <Button x:Name="StarButton" HorizontalAlignment="Right" VerticalAlignment="Center"
+                  Margin="0,0,3,0" Padding="5,3" Visibility="Hidden"
+                  Style="{StaticResource GlyphButtonStyle}" Click="OnStarClick" />
 
           <!-- Completion popup: bookmarks first, then recent locations. -->
           <Popup x:Name="SuggestionPopup" PlacementTarget="{Binding ElementName=AddressBox}"
@@ -318,6 +332,15 @@
         <!-- The branch lives in the pane footer, not here: this row belongs to the location. -->
         <Button x:Name="BookmarksButton" Grid.Column="2" Content="&#xE728;" Margin="8,0,0,0"
                 Style="{StaticResource GlyphButtonStyle}" ToolTip="Bookmarks" />
+
+        <!--
+          New tab. Here, where it is with one tab or ten, rather than at the end of the strip as in
+          a browser: with one tab there is no strip, and a button that jumped into the strip once it
+          appeared would leave the next click at its old place landing on something else.
+        -->
+        <Button x:Name="NewTabButton" Grid.Column="3" Content="&#xE710;"
+                Style="{StaticResource GlyphButtonStyle}" ToolTip="New tab (Ctrl+T)"
+                Click="OnNewTabClick" />
 
       </Grid>
 

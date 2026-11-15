@@ -60,7 +60,7 @@ spacing, not from removing information.
   something. At most three type sizes.
 - **Comfortable by default, dense on request:** ~24px rows, ~18px compact.
 - **No icon toolbars.** Text or nothing, except the browser's own vocabulary: back, forward, up,
-  bookmarks. Icons belong in the grid and in bookmarks.
+  bookmarks, new tab. Icons belong in the grid and in bookmarks.
 - **The F-key bar is a legend, not a toolbar.** Hold a modifier and it shows that whole layer of
   the keymap; it teaches the app without a tooltip.
 - **Five persistent chrome regions:** pane toolbar, tab strip, grid, pane footer, F-key legend.

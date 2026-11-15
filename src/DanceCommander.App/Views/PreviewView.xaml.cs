@@ -98,7 +98,8 @@ public partial class PreviewView : UserControl
         if (sender is not PreviewViewModel preview)
             return;
 
-        if (e.PropertyName is nameof(PreviewViewModel.Wrap) or nameof(PreviewViewModel.ShowWhitespace))
+        if (e.PropertyName is nameof(PreviewViewModel.Wrap) or nameof(PreviewViewModel.ShowWhitespace)
+            or nameof(PreviewViewModel.HighlightSyntax))
             _text?.Apply(preview);
         else if (e.PropertyName is nameof(PreviewViewModel.Matches) or nameof(PreviewViewModel.CurrentMatch))
             _text?.ShowMatches(preview.Matches, preview.CurrentMatch);
@@ -135,6 +136,60 @@ public partial class PreviewView : UserControl
         }
 
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Opens the find row, or closes it when it is open: for the mouse the button is the row's
+    /// switch, since its Escape is a key. Closing leaves the current match selected, as Escape does.
+    /// </summary>
+    private void OnFind(object sender, RoutedEventArgs e)
+    {
+        if (_shown is { IsFinding: true } preview)
+        {
+            preview.StopFind();
+            FocusText();
+            return;
+        }
+
+        FocusFind();
+    }
+
+    /// <summary>
+    /// The view options under the button. Each item is the preview's own setting, ticked when on,
+    /// so the menu shows how the text is being drawn as well as changing it.
+    /// </summary>
+    private void OnViewMenu(object sender, RoutedEventArgs e)
+    {
+        if (_shown is not { IsText: true } preview)
+            return;
+
+        var menu = new ContextMenu
+        {
+            PlacementTarget = ViewButton,
+            Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
+            VerticalOffset = 4,
+        };
+        menu.Items.Add(Option("Wrap long lines", nameof(PreviewViewModel.Wrap)));
+        menu.Items.Add(Option("Show tabs and spaces", nameof(PreviewViewModel.ShowWhitespace)));
+
+        // Only for a language the preview knows: for plain text the item would do nothing.
+        if (preview.CanHighlight)
+            menu.Items.Add(Option("Syntax colours", nameof(PreviewViewModel.HighlightSyntax)));
+
+        // The text keeps the keyboard it had: Page Down after picking an option should scroll.
+        menu.Closed += (_, _) => FocusText();
+        menu.IsOpen = true;
+
+        MenuItem Option(string header, string property)
+        {
+            var item = new MenuItem { Header = header, IsCheckable = true, StaysOpenOnClick = true };
+            item.SetBinding(MenuItem.IsCheckedProperty, new System.Windows.Data.Binding(property)
+            {
+                Source = preview,
+                Mode = System.Windows.Data.BindingMode.TwoWay,
+            });
+            return item;
+        }
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, EventArgs.Empty);

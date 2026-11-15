@@ -95,6 +95,13 @@ public sealed partial class PreviewViewModel : ObservableObject
     [ObservableProperty]
     private bool _wrap;
 
+    /// <summary>Colours from the file's language. On by default; off shows the text as it is.</summary>
+    [ObservableProperty]
+    private bool _highlightSyntax = true;
+
+    /// <summary>The file's language is one the preview knows, so there are colours to turn off.</summary>
+    public bool CanHighlight => Code?.Highlighting is not null;
+
     /// <summary>The find box is open under the facts.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MatchSummary))]

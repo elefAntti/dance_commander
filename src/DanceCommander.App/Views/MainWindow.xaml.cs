@@ -60,6 +60,7 @@ public partial class MainWindow : Window
             pane.CommandSubmitted += OnCommandSubmitted;
             pane.FilesDropped += OnFilesDropped;
             pane.TabDropped += OnTabDropped;
+            pane.CommandRequested += OnPaneCommandRequested;
         }
 
         Legend.CommandInvoked += async (_, commandId) => await _shell.ExecuteAsync(commandId);
@@ -1133,6 +1134,20 @@ public partial class MainWindow : Window
             view.FocusGrid(clicked: true);
         }
         await _shell.MiddleClickAsync(row.Entry);
+    }
+
+    /// <summary>
+    /// A pane's own button, such as New tab or the bookmark star. It acts on that pane, so the pane
+    /// becomes the active one first, as a click on its rows would make it.
+    /// </summary>
+    private async void OnPaneCommandRequested(object? sender, string commandId)
+    {
+        if (sender is PaneView { ViewModel: { IsActive: false } pane } view)
+        {
+            _shell.Activate(pane);
+            view.FocusGrid(clicked: true);
+        }
+        await _shell.ExecuteAsync(commandId);
     }
 
     /// <summary>The input that had the keyboard when the window lost it, if one did.</summary>

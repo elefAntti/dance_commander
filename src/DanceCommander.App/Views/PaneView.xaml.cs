@@ -73,8 +73,6 @@ public partial class PaneView : UserControl
     /// <summary>Supplied by the window: the folders on disk that carry on from a typed path.</summary>
     public FolderCompletion? Folders { get; set; }
 
-    public IEnumerable<BookmarkItemViewModel> Bookmarks { get; set; } = [];
-
     /// <summary>Raised on double-click; the window turns it into the "open" command.</summary>
     public event EventHandler<FileRowViewModel>? Opened;
 
@@ -419,10 +417,15 @@ public partial class PaneView : UserControl
             tab.PropertyChanged += OnTabPropertyChanged;
             RebuildColumns();
         }
+
+        ShowStar();
     }
 
     private void OnTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(TabViewModel.Uri))
+            ShowStar();
+
         // Going behind another tab. Said before the pane changes its front tab, so the list still
         // shows this one's rows, scrolled as they were.
         if (e.PropertyName == nameof(TabViewModel.IsCurrent) && sender is TabViewModel { IsCurrent: false } leaving)

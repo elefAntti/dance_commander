@@ -63,19 +63,18 @@
                    Style="{StaticResource SecondaryTextStyle}" />
       </Grid>
 
-      <!-- Only where it means something: a file with no tabs has nothing to reveal. -->
-      <CheckBox Grid.Column="1" Content="Whitespace" Margin="10,0,10,0" VerticalAlignment="Center"
-                Foreground="{DynamicResource TextSecondaryBrush}"
-                IsChecked="{Binding ShowWhitespace}"
-                ToolTip="Show tabs and spaces"
-                Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
-
+      <!--
+        The view options are a menu rather than checkboxes beside the title, which a half-width
+        pane squeezed to nothing; the menu also has room for the next option. Find is here for the
+        mouse, named with its key the way Close is.
+      -->
       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-        <CheckBox Content="Wrap" Margin="0,0,10,0" VerticalAlignment="Center"
-                  Foreground="{DynamicResource TextSecondaryBrush}"
-                  IsChecked="{Binding Wrap}"
-                  ToolTip="Fold long lines to the width of the pane"
-                  Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+        <Button x:Name="ViewButton" Style="{StaticResource ChromeButtonStyle}" Content="View ▾"
+                Click="OnViewMenu"
+                Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+        <Button Style="{StaticResource ChromeButtonStyle}" Content="Find (Ctrl+F)"
+                Click="OnFind"
+                Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
         <Button Style="{StaticResource ChromeButtonStyle}" Content="Copy"
                 ToolTip="Copy the selection, or the whole file when nothing is selected"
                 Click="OnCopy"
@@ -93,12 +92,12 @@
            StretchDirection="DownOnly" RenderOptions.BitmapScalingMode="HighQuality"
            Visibility="{Binding Image, Converter={StaticResource NullToVisibility}}" />
 
-    <!--
-      The text, in an editor made on the first text preview (TextPreview). Selection is by
-      character, Ctrl+A and Ctrl+C work as anywhere else, and the keyboard is here when the
-      preview opens, so Page Up, Page Down, Home and End reach it.
-    -->
-    <ContentControl x:Name="TextHost" Grid.Row="1" Focusable="False" IsTabStop="False"
-                    Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+    <!--
+      The text, in an editor made on the first text preview (TextPreview). Selection is by
+      character, Ctrl+A and Ctrl+C work as anywhere else, and the keyboard is here when the
+      preview opens, so Page Up, Page Down, Home and End reach it.
+    -->
+    <ContentControl x:Name="TextHost" Grid.Row="1" Focusable="False" IsTabStop="False"
+                    Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
   </Grid>
 </UserControl>

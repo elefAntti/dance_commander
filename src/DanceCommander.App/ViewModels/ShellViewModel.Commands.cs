@@ -251,6 +251,18 @@ public sealed partial class ShellViewModel
         subject: CommandSubject.Location,
         legend: "Bookmark");
 
+        // The filled star's other half: a bookmarked place can be un-bookmarked from where it is,
+        // as in a browser, without going to the bookmarks page to find it. Every bookmark that
+        // points here goes, since the star said "bookmarked" for all of them; Ctrl+Z restores them.
+        RegisterAsync("dc.removeLocationBookmark", "Remove bookmark for this location", "Navigate", null, (ctx, ct) =>
+        {
+            if (ActiveTab.Uri is not { } uri || BookmarksAt(uri) is not { Count: > 0 } removed)
+                return Task.CompletedTask;
+            return RemoveBookmarksAsync(ctx, removed, ct);
+        },
+        canExecute: _ => ActiveTab.Uri is { } uri && BookmarksAt(uri).Count > 0,
+        subject: CommandSubject.Location);
+
         // Selection from the keyboard. Insert and Space are the commander's marking keys — both, as
         // Total Commander has them — and the rest are the keys every other program uses for these.
         Register("dc.mark", "Mark and move down", "Selection", "Insert",

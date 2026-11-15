@@ -125,11 +125,9 @@ internal sealed class TextPreview
         _editor.TextArea.Caret.CaretBrush = (Brush?)_editor.TryFindResource("TextPrimaryBrush");
         _editor.ScrollToHome();
 
+        // Made whether or not it is shown, so turning colours back on doesn't parse the file again.
         if (preview.Code?.Highlighting is { } highlighting)
-        {
             _colorizer = new ThemedColorizer(highlighting);
-            _editor.TextArea.TextView.LineTransformers.Insert(0, _colorizer);
-        }
 
         Apply(preview);
     }
@@ -140,6 +138,20 @@ internal sealed class TextPreview
         _editor.WordWrap = preview.Wrap;
         _editor.Options.ShowTabs = preview.ShowWhitespace;
         _editor.Options.ShowSpaces = preview.ShowWhitespace;
+
+        if (_colorizer is null)
+            return;
+
+        var transformers = _editor.TextArea.TextView.LineTransformers;
+        var shown = transformers.Contains(_colorizer);
+        if (preview.HighlightSyntax && !shown)
+            transformers.Insert(0, _colorizer);
+        else if (!preview.HighlightSyntax && shown)
+            transformers.Remove(_colorizer);
+        else
+            return;
+
+        _editor.TextArea.TextView.Redraw();
     }
 
     /// <summary>Lets go of the file, so a closed preview doesn't keep a megabyte alive.</summary>

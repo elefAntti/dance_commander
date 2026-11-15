@@ -1511,6 +1511,33 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         return (typed[..slash].Trim(), typed[(slash + 1)..].Trim());
     }
 
+    /// <summary>The bookmarks that point at <paramref name="uri"/>, which is what the address bar's star shows.</summary>
+    public IReadOnlyList<Core.Navigation.Bookmark> BookmarksAt(FsUri uri) =>
+        BookmarkService.Bookmarks
+            .Where(b => FsUri.TryParse(b.Uri, out var at, out _) && at == uri)
+            .ToList();
+
+    /// <summary>Takes bookmarks out, never the places they point to, and leaves Ctrl+Z to put them back.</summary>
+    private async Task RemoveBookmarksAsync(ICommandContext ctx, IReadOnlyList<Core.Navigation.Bookmark> removed, CancellationToken ct)
+    {
+        foreach (var bookmark in removed)
+            await BookmarkService.RemoveAsync(bookmark.Name, ct);
+
+        var what = removed.Count == 1 ? $"Bookmark “{removed[0].Name}”" : $"{removed.Count:N0} bookmarks";
+        Undo.Push(new DelegateUndo(
+            $"Remove {(removed.Count == 1 ? $"the bookmark {removed[0].Name}" : what)}",
+            "(bookmarks removed; no file was touched)",
+            async token =>
+            {
+                foreach (var bookmark in removed)
+                {
+                    if (FsUri.TryParse(bookmark.Uri, out var uri, out _))
+                        await BookmarkService.AddAsync(bookmark.Name, uri, bookmark.Group, token);
+                }
+            }));
+        ctx.Decisions.Report(new Notice($"{what} removed · Ctrl+Z to undo"));
+    }
+
     private void RefreshBookmarks()
     {
         Bookmarks.Clear();
