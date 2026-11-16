@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   Starts an SSH server with fish and zsh accounts, seeded with the awkward names the quoting
-  checks need (PLAN.md, *Security and file-safety fixes from BUGS.md*; CHECKS_FOR_0.9.md).
+  checks need (Summer DC-41; CHECKS_FOR_0.9.md).
 
 .DESCRIPTION
   Builds scripts/check-shells into the image dc-check-shells (once), runs it on 127.0.0.1:2233

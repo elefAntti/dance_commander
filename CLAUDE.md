@@ -6,8 +6,9 @@ purpose (§1.4 — don't propose those again without a new argument), and the ti
 [ROADMAP.md](docs/ROADMAP.md) and [WISHLIST.md](docs/WISHLIST.md) are the public direction and ideas.
 [ARCHITECTURE.md](docs/ARCHITECTURE.md) is reference for the area you touch.
 
-`plans/` is private and never published: [PLAN.md](plans/PLAN.md) holds status, what's next and the
-checks; [IMPLEMENTATION_LOG.md](plans/IMPLEMENTATION_LOG.md) says what was already tried and why it
+`plans/` is private and never published: [PLAN.md](plans/PLAN.md) holds status and what's next;
+the checks and the ideas live in Summer's DC project (`.summer.json`; start with `overview`);
+[IMPLEMENTATION_LOG.md](plans/IMPLEMENTATION_LOG.md) says what was already tried and why it
 went the way it did; [AUDIT.md](plans/AUDIT.md) records which code has been read for file-losing bugs,
 the kinds found, and what to read next. Nothing outside `plans/` may name the company, its
 projects, its tickets or its paths.
@@ -52,8 +53,10 @@ projects, its tickets or its paths.
 - The user runs the published copy as their file manager. `scripts/publish-local.bat` kills it.
   Don't publish or launch it unless the user has said it's free. The `debug-dance-commander`
   skill covers logs, config and driving the real window.
-- What needs checking in the running app goes under "Written, not yet verified" in PLAN.md, with
-  a *Serves:* line naming the §1 principle. Once the user confirms it, move it to IMPLEMENTATION_LOG.md.
+- What needs checking in the running app becomes a Summer ticket set to "built", with concrete
+  tests and a *Serves:* line naming the §1 principle. When the user passes the last test the ticket
+  closes itself; put what was learned driving it in IMPLEMENTATION_LOG.md. Ideas go in as "idea"
+  tickets, not into docs/WISHLIST.md (which keeps only what was declined).
 - When the user says something felt slow, loud or in the way, add a dated line under
   "Friction" in PLAN.md §4.
 - Keep good screenshots taken while testing in `temp/screenshots/` (git-ignored, with the user's own).
