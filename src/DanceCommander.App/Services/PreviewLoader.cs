@@ -74,7 +74,7 @@ public sealed class PreviewLoader(IProviderRegistry providers) : IPreviewLoader
             // was asynchronous, and building the editor's document and loading a language's
             // highlighting must not happen on it (CodeText).
             if (inspection.IsText)
-                return await Task.Run(() => new PreviewViewModel(entry.Name, DescribeText(size, inspection), inspection), ct)
+                return await Task.Run(() => new PreviewViewModel(entry.Name, DescribeText(size, inspection), inspection, LocalFolder(entry.Uri)), ct)
                     .ConfigureAwait(false);
 
             var archive = await ArchiveSniffer.DetectAsync(new MemoryStream(head), ct).ConfigureAwait(false);
@@ -241,6 +241,10 @@ public sealed class PreviewLoader(IProviderRegistry providers) : IPreviewLoader
             return null; // the extractor ran out of time; fall through to whatever we can say
         }
     }
+
+    /// <summary>The folder of a file on a local drive, where a Markdown file's images are; null for anywhere else.</summary>
+    private static string? LocalFolder(FsUri uri) =>
+        uri.IsLocal && uri.Parent is { IsLocal: true } parent ? parent.ToLocalPath() : null;
 
     private static string DescribeText(long size, TextInspection inspection)
     {

@@ -98,6 +98,11 @@
       preview opens, so Page Up, Page Down, Home and End reach it.
     -->
     <ContentControl x:Name="TextHost" Grid.Row="1" Focusable="False" IsTabStop="False"
-                    Visibility="{Binding IsText, Converter={StaticResource BoolToVisibility}}" />
+                    Visibility="{Binding ShowsSource, Converter={StaticResource BoolToVisibility}}" />
+
+    <!-- A Markdown file as it reads (MarkdownPreview), made on the first one; Ctrl+Shift+V
+         switches between this and the text above. -->
+    <ContentControl x:Name="MarkdownHost" Grid.Row="1" Focusable="False" IsTabStop="False"
+                    Visibility="{Binding ShowsRendered, Converter={StaticResource BoolToVisibility}}" />
   </Grid>
 </UserControl>

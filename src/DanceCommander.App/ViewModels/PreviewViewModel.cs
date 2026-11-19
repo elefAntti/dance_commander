@@ -34,7 +34,8 @@ public sealed partial class PreviewViewModel : ObservableObject
         _text = string.Empty;
     }
 
-    public PreviewViewModel(string title, string facts, TextInspection inspection)
+    /// <param name="folder">The file's folder as a local path, where a Markdown file's images are looked for; null elsewhere.</param>
+    public PreviewViewModel(string title, string facts, TextInspection inspection, string? folder = null)
     {
         Title = title;
         Kind = PreviewKind.Text;
@@ -56,7 +57,20 @@ public sealed partial class PreviewViewModel : ObservableObject
 
         // Made here because this runs where the file was read, off the UI thread.
         Code = CodeText.Prepare(_text, title, longest);
+
+        // Parsed here too, for the same reason; drawn only if the rendered view is the one shown.
+        if (MarkdownFile.IsMarkdown(title))
+        {
+            Markdown = MarkdownText.Parse(_text, folder);
+            _rendered = _renderMarkdown;
+        }
     }
+
+    /// <summary>
+    /// Whether the next Markdown file opens rendered: the last choice made with Ctrl+Shift+V, for
+    /// as long as the app runs. Someone reading the source of one file is likely after the next.
+    /// </summary>
+    private static bool _renderMarkdown = true;
 
     public PreviewViewModel(string title, string facts, ImageSource image)
     {
@@ -87,6 +101,27 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     /// <summary>The text as an editor document, with its highlighting; null for anything but text.</summary>
     public CodeText? Code { get; }
+
+    /// <summary>The parsed file when it is Markdown, which can be shown as it reads; null otherwise.</summary>
+    public MarkdownText? Markdown { get; }
+
+    public bool IsMarkdown => Markdown is not null;
+
+    /// <summary>A Markdown file shown as it reads rather than as it is written.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsRendered), nameof(ShowsSource))]
+    private bool _rendered;
+
+    public bool ShowsRendered => IsText && IsMarkdown && Rendered;
+
+    /// <summary>The text in the editor: every text file, and Markdown when it is not rendered.</summary>
+    public bool ShowsSource => IsText && !ShowsRendered;
+
+    partial void OnRenderedChanged(bool value)
+    {
+        if (IsMarkdown)
+            _renderMarkdown = value;
+    }
 
     [ObservableProperty]
     private bool _showWhitespace;

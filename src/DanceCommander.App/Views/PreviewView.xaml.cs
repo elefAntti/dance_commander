@@ -14,6 +14,7 @@ namespace DanceCommander.App.Views;
 public partial class PreviewView : UserControl
 {
     private TextPreview? _text;
+    private MarkdownPreview? _markdown;
     private PreviewViewModel? _shown;
 
     public PreviewView()
@@ -29,35 +30,55 @@ public partial class PreviewView : UserControl
     public event EventHandler? CopyFailed;
 
     /// <summary>True while the keyboard is in the text, which is what decides who owns Ctrl+C.</summary>
-    public bool IsTextFocused => _shown is { IsText: true } && _text?.IsKeyboardFocusWithin == true;
+    public bool IsTextFocused => _shown is { IsText: true }
+        && (_text?.IsKeyboardFocusWithin == true || _markdown?.IsKeyboardFocusWithin == true);
 
     /// <summary>Hands the keyboard to the text, so Page Up, Page Down, Home, End and Ctrl+A reach it.</summary>
     public void FocusText()
     {
-        if (_text is not { } text)
+        (UIElement View, Action Focus)? shown =
+            _shown is { ShowsRendered: true } && _markdown is { } markdown ? (markdown.View, markdown.Focus)
+            : _text is { } text ? (text.View, text.Focus)
+            : null;
+        if (shown is not { } target)
             return;
 
         // The first text preview makes the editor, which can't take the keyboard until it has
         // been laid out: focused straight away, the keys went to the hidden listing under it.
-        if (text.View is FrameworkElement { IsLoaded: false } view)
+        if (target.View is FrameworkElement { IsLoaded: false } view)
         {
             void OnLoaded(object sender, RoutedEventArgs e)
             {
                 view.Loaded -= OnLoaded;
-                text.Focus();
+                target.Focus();
             }
 
             view.Loaded += OnLoaded;
             return;
         }
 
-        text.Focus();
+        // Switching between rendered and source: the one now shown has only just been made
+        // visible, and can't take the keyboard until layout has caught up.
+        if (!target.View.IsVisible)
+        {
+            Dispatcher.BeginInvoke(target.Focus, System.Windows.Threading.DispatcherPriority.Loaded);
+            return;
+        }
+
+        target.Focus();
     }
 
     /// <summary>Opens find from the caret, with the last search selected so typing replaces it.</summary>
     public void FocusFind()
     {
-        if (_shown is not { IsText: true } preview || _text is null)
+        if (_shown is not { IsText: true } preview)
+            return;
+
+        // Find looks through the text as written, so a rendered Markdown file shows its source
+        // for it: matches are selected and scrolled to there.
+        if (preview.Rendered)
+            preview.Rendered = false;
+        if (_text is null)
             return;
 
         preview.StartFind(_text.FindOrigin);
@@ -80,17 +101,49 @@ public partial class PreviewView : UserControl
         if (preview is not { IsText: true })
         {
             _text?.Clear();
+            _markdown?.Clear();
             return;
         }
 
-        if (_text is null)
+        ShowViews(preview);
+        preview.PropertyChanged += OnOptionChanged;
+    }
+
+    /// <summary>
+    /// Fills whichever of the editor and the rendered view is on screen. The other is filled only
+    /// when it is switched to, so a Markdown file read rendered never builds an editor document.
+    /// </summary>
+    private void ShowViews(PreviewViewModel preview)
+    {
+        if (preview.ShowsSource)
         {
-            _text = new TextPreview(Copy);
-            TextHost.Content = _text.View;
+            if (_text is null)
+            {
+                _text = new TextPreview(Copy);
+                TextHost.Content = _text.View;
+            }
+
+            _text.Show(preview);
+        }
+        else
+        {
+            _text?.Clear();
         }
 
-        _text.Show(preview);
-        preview.PropertyChanged += OnOptionChanged;
+        if (preview is { ShowsRendered: true, Markdown: { } markdown })
+        {
+            if (_markdown is null)
+            {
+                _markdown = new MarkdownPreview(Copy);
+                MarkdownHost.Content = _markdown.View;
+            }
+
+            _markdown.Show(markdown);
+        }
+        else
+        {
+            _markdown?.Clear();
+        }
     }
 
     private void OnOptionChanged(object? sender, PropertyChangedEventArgs e)
@@ -98,7 +151,12 @@ public partial class PreviewView : UserControl
         if (sender is not PreviewViewModel preview)
             return;
 
-        if (e.PropertyName is nameof(PreviewViewModel.Wrap) or nameof(PreviewViewModel.ShowWhitespace)
+        if (e.PropertyName is nameof(PreviewViewModel.Rendered))
+        {
+            ShowViews(preview);
+            FocusText();
+        }
+        else if (e.PropertyName is nameof(PreviewViewModel.Wrap) or nameof(PreviewViewModel.ShowWhitespace)
             or nameof(PreviewViewModel.HighlightSyntax))
             _text?.Apply(preview);
         else if (e.PropertyName is nameof(PreviewViewModel.Matches) or nameof(PreviewViewModel.CurrentMatch))
@@ -169,12 +227,25 @@ public partial class PreviewView : UserControl
             Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom,
             VerticalOffset = 4,
         };
-        menu.Items.Add(Option("Wrap long lines", nameof(PreviewViewModel.Wrap)));
-        menu.Items.Add(Option("Show tabs and spaces", nameof(PreviewViewModel.ShowWhitespace)));
+        if (preview.IsMarkdown)
+        {
+            var rendered = Option("Rendered", nameof(PreviewViewModel.Rendered));
+            rendered.InputGestureText = "Ctrl+Shift+V";
+            // The options below are about the text as written, so the menu is rebuilt for them.
+            rendered.StaysOpenOnClick = false;
+            menu.Items.Add(rendered);
+        }
 
-        // Only for a language the preview knows: for plain text the item would do nothing.
-        if (preview.CanHighlight)
-            menu.Items.Add(Option("Syntax colours", nameof(PreviewViewModel.HighlightSyntax)));
+        // How the source is drawn, which a rendered file isn't.
+        if (!preview.ShowsRendered)
+        {
+            menu.Items.Add(Option("Wrap long lines", nameof(PreviewViewModel.Wrap)));
+            menu.Items.Add(Option("Show tabs and spaces", nameof(PreviewViewModel.ShowWhitespace)));
+
+            // Only for a language the preview knows: for plain text the item would do nothing.
+            if (preview.CanHighlight)
+                menu.Items.Add(Option("Syntax colours", nameof(PreviewViewModel.HighlightSyntax)));
+        }
 
         // The text keeps the keyboard it had: Page Down after picking an option should scroll.
         menu.Closed += (_, _) => FocusText();
@@ -207,7 +278,7 @@ public partial class PreviewView : UserControl
         if (_shown is not { IsText: true } preview)
             return;
 
-        var selected = _text?.SelectedText;
+        var selected = preview.ShowsRendered ? _markdown?.SelectedText : _text?.SelectedText;
         var text = string.IsNullOrEmpty(selected) ? preview.PlainText : selected;
 
         // Left uncaught, a clipboard another program was holding took the whole window down here

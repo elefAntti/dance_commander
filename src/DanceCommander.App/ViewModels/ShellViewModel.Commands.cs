@@ -381,6 +381,27 @@ public sealed partial class ShellViewModel
             },
         });
 
+        // A Markdown preview as it reads or as it is written. Ctrl+Shift+V is the key editors
+        // use for the same switch.
+        commands.Register(new CommandDefinition
+        {
+            Id = "dc.previewRendered",
+            Subject = CommandSubject.Window,
+            Title = "Rendered or source Markdown",
+            Binding = KeyStroke.Parse("Ctrl+Shift+V"),
+            CanExecute = _ => ActiveTab.Preview is { IsMarkdown: true },
+            ExecuteAsync = (_, _) =>
+            {
+                if (ActiveTab.Preview is { IsMarkdown: true } preview)
+                {
+                    preview.StopFind();
+                    preview.Rendered = !preview.Rendered;
+                }
+
+                return Task.CompletedTask;
+            },
+        });
+
         commands.Register(new CommandDefinition
         {
             Id = "dc.previousMatch",
