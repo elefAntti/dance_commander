@@ -513,11 +513,7 @@ public sealed partial class ShellViewModel
             Title = "Open an administrator terminal here",
             Group = "Terminal",
             OnlyAt = uri => uri.IsLocal,
-            ExecuteAsync = (context, _) =>
-            {
-                TerminalLauncher.OpenAsAdministrator(context.Directory.ToLocalPath());
-                return Task.CompletedTask;
-            },
+            ExecuteAsync = (context, _) => TerminalLauncher.OpenAsAdministrator(context.Directory.ToLocalPath()),
         });
 
         // History from the keyboard: Ctrl+H is the hidden-files toggle here, so Firefox's "show all

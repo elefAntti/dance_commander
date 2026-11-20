@@ -61,19 +61,29 @@ public static class TerminalLauncher
 
     /// <summary>
     /// An administrator terminal in a local folder (AdminShell), after Windows' own question. No
-    /// on that question is the user's answer, so nothing is said about it.
+    /// on that question is the user's answer, so nothing is said about it. Started off the UI
+    /// thread: the call doesn't return until the question is answered.
     /// </summary>
-    public static void OpenAsAdministrator(string folder)
+    public static async Task OpenAsAdministrator(string folder)
     {
-        // Drive letters mapped to a share belong to the user's own sign-in, and an elevated
-        // window has a sign-in of its own without them: it would open somewhere else, or not at all.
-        var root = Path.GetPathRoot(folder);
-        if (root is { Length: > 0 } && !root.StartsWith(@"\\", StringComparison.Ordinal)
-            && new DriveInfo(root).DriveType == DriveType.Network)
+        // The elevated window has a sign-in of its own, and a drive letter made in the user's
+        // (mapped to a share, or by subst) isn't in it: the shell would start somewhere else.
+        // Read through \\?\, which long paths and names ending in a dot or space come with.
+        var plain = folder.StartsWith(@"\\?\", StringComparison.Ordinal) && !folder.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase)
+            ? folder[4..]
+            : folder;
+        if (plain.Length >= 2 && plain[1] == ':' && char.IsAsciiLetter(plain[0]))
         {
-            throw new InvalidOperationException(
-                $"An administrator terminal doesn't see mapped drives such as {root.TrimEnd('\\')}, so it can't open here.");
+            var drive = plain[..2];
+            if (new DriveInfo(drive).DriveType == DriveType.Network || IsSubst(drive))
+            {
+                throw new InvalidOperationException(
+                    $"An administrator terminal doesn't see drives made for your own sign-in, such as {drive}, so it can't open here.");
+            }
         }
+
+        if (!Directory.Exists(folder))
+            throw new InvalidOperationException("This folder no longer exists, so no terminal was opened.");
 
         var start = AdminShell.For(folder, name =>
                 ExecutableSearch.Resolve(name) is var found && !ExecutableSearch.IsBare(found) ? found : null)
@@ -83,14 +93,28 @@ public static class TerminalLauncher
         foreach (var argument in start.Args)
             info.ArgumentList.Add(argument);
 
-        try
+        await Task.Run(() =>
         {
-            Process.Start(info)?.Dispose();
-        }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
-        {
-        }
+            try
+            {
+                Process.Start(info)?.Dispose();
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
+            {
+            }
+        });
     }
+
+    /// <summary>A drive letter made by <c>subst</c>, which Windows names <c>\??\C:\somewhere</c>.</summary>
+    private static bool IsSubst(string drive)
+    {
+        var target = new char[1024];
+        return QueryDosDevice(drive, target, target.Length) > 0 &&
+               new string(target).StartsWith(@"\??\", StringComparison.Ordinal);
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern uint QueryDosDevice(string deviceName, char[] targetPath, int max);
 
     /// <summary>ERROR_CANCELLED: No was the answer to Windows' administrator question.</summary>
     private const int ErrorCancelled = 1223;
