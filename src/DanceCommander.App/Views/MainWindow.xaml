@@ -38,9 +38,11 @@
 
       <views:PaneView x:Name="LeftPane" Grid.Column="0" />
 
-      <!-- Space is the separator; the splitter itself is invisible until you grab it. -->
+      <!-- Space is the separator; the splitter itself is invisible until you grab it. A double
+           click puts it back in the middle. -->
       <GridSplitter x:Name="Splitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
-                    Background="Transparent" ShowsPreview="False" />
+                    Background="Transparent" ShowsPreview="False"
+                    MouseDoubleClick="OnSplitterDoubleClick" />
 
       <views:PaneView x:Name="RightPane" Grid.Column="2" />
     </Grid>

@@ -843,6 +843,21 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Both panes the same width again, as the divider in most two-pane tools does on a double
+    /// click: dragging back to the exact middle by eye never quite gets there.
+    /// </summary>
+    private void OnSplitterDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (!_shell.IsDualPane)
+            return;
+
+        var star = new GridLength(1, GridUnitType.Star);
+        LeftColumn.Width = star;
+        RightColumn.Width = star;
+        e.Handled = true;
+    }
+
+    /// <summary>
     /// TaskbarItemInfo.ProgressState is a WPF enum, so the view maps the view model's plain flags
     /// onto it rather than the view model taking a dependency on the shell types.
     /// </summary>
