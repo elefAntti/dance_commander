@@ -158,7 +158,8 @@ the pane says where and the app keeps using the previous version.
 
 | File | Holds |
 |---|---|
-| `settings.json` | `appearance.scheme`: `"system"` (follows Windows), `"dark"`, `"light"`. `commandLine.shell`: `"auto"`, `"bash"`, `"pwsh"`, `"cmd"` |
+| `settings.json` | `appearance.scheme`: `"system"` (follows Windows), `"dark"`, `"light"`. `appearance.theme`: `"default"`, a built-in theme such as `"nord"` or `"catppuccin-mocha"`, or one of yours. `commandLine.shell`: `"auto"`, `"bash"`, `"pwsh"`, `"cmd"` |
+| `themes\*.json` | Colour themes of your own, chosen by file name |
 | `tools.json` | Your own commands, and listings defined by a command |
 | `highlighting.json` | Colours for rows that match a rule |
 | `bookmarks.json`, `collections.json` | Bookmarks and collections, also edited from the app |
@@ -167,6 +168,19 @@ the pane says where and the app keeps using the previous version.
 ```jsonc
 // settings.json
 { "appearance": { "scheme": "light" }, "commandLine": { "shell": "pwsh" } }
+```
+
+A theme of your own names colours by [Catppuccin's roles](https://catppuccin.com/palette/).
+Only `base` (the panes) and `text` are needed; the rest are mixed from them or taken from
+Catppuccin. Whatever the colours, text is kept readable on them.
+
+```jsonc
+// themes\gruvbox.json
+{
+  "name": "Gruvbox",
+  "accent": "yellow", // a colour name below, or "#RRGGBB"
+  "colours": { "base": "#282828", "mantle": "#1d2021", "text": "#ebdbb2", "yellow": "#fabd2f", "red": "#fb4934" }
+}
 ```
 
 The window's place, the open tabs and the logs are on this machine only, in

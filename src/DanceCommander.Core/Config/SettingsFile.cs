@@ -43,6 +43,14 @@ public sealed class AppearanceSettings
     /// </summary>
     public string Accent { get; set; } = "system";
 
+    /// <summary>
+    /// <c>"default"</c> (the app's own palettes, dark or light by <see cref="Scheme"/>), a built-in
+    /// theme from <see cref="ColourTheme.BuiltIn"/>, or the name of a file in <c>themes\</c>. A
+    /// theme is dark or light by itself; a theme that can't be found or read is said, and the
+    /// default used.
+    /// </summary>
+    public string Theme { get; set; } = ColourTheme.Default;
+
     /// <summary><c>"comfortable"</c> (24 px rows) or <c>"compact"</c> (18 px), DESIGN.md §1.3.</summary>
     public string Density { get; set; } = "comfortable";
 

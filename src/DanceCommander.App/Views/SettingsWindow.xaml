@@ -57,7 +57,8 @@
             <ItemsControl ItemsSource="{Binding Choices}" KeyboardNavigation.DirectionalNavigation="Cycle">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <!-- Wraps: a theme has more choices than one line holds. -->
+                  <WrapPanel Orientation="Horizontal" />
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>

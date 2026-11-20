@@ -33,7 +33,7 @@ public static class SettingsCommands
 
         foreach (var setting in SettingsCatalog.All.Concat(more ?? []))
         {
-            foreach (var choice in setting.Choices)
+            foreach (var choice in setting.AllChoices())
             {
                 registry.Register(new CommandDefinition
                 {

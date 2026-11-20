@@ -37,6 +37,13 @@ public sealed class SettingDefinition
 
     public required IReadOnlyList<SettingChoice> Choices { get; init; }
 
+    /// <summary>Choices found on this computer rather than known in advance: the user's own theme files.</summary>
+    public Func<IReadOnlyList<SettingChoice>>? MoreChoices { get; init; }
+
+    /// <summary><see cref="Choices"/> and, after them, whatever <see cref="MoreChoices"/> finds now.</summary>
+    public IReadOnlyList<SettingChoice> AllChoices() =>
+        MoreChoices is { } more ? [.. Choices, .. more()] : Choices;
+
     public required string Default { get; init; }
 
     /// <summary>The value in force, in the same text as <see cref="SettingChoice.Value"/>.</summary>
@@ -52,7 +59,7 @@ public sealed class SettingDefinition
     public Func<string?>? Status { get; init; }
 
     public string LabelOf(string value) =>
-        Choices.FirstOrDefault(c => c.Value == value)?.Label ?? value;
+        AllChoices().FirstOrDefault(c => c.Value == value)?.Label ?? value;
 }
 
 /// <summary>Every setting there is, in the order the window shows them.</summary>
@@ -72,6 +79,18 @@ public static class SettingsCatalog
         Choices = [new("system", "System"), new("dark", "Dark"), new("light", "Light")],
         Default = "system",
         Read = file => Text(file.Appearance.Scheme),
+    };
+
+    public static SettingDefinition Theme { get; } = new()
+    {
+        Path = ["appearance", "theme"],
+        Title = "Theme",
+        Description = "The colours of everything. A theme is dark or light by itself, so it replaces the colour scheme; your own go in the themes folder beside settings.json.",
+        Section = SettingSection.Appearance,
+        Choices = [new(ColourTheme.Default, "Dance Commander"), .. ColourTheme.BuiltIn.Select(t => new SettingChoice(t.Id, t.Label))],
+        MoreChoices = ColourThemeFiles.Choices,
+        Default = ColourTheme.Default,
+        Read = file => Text(file.Appearance.Theme),
     };
 
     public static SettingDefinition Accent { get; } = new()
@@ -209,7 +228,7 @@ public static class SettingsCatalog
     };
 
     public static IReadOnlyList<SettingDefinition> All { get; } =
-        [DirectoriesFirst, Shell, MiddleClick, Prefetch, KeepListings, UnencryptedSignIn, Scheme, Accent, Density, TextSize, CloudStatus, FriendlyDates];
+        [DirectoriesFirst, Shell, MiddleClick, Prefetch, KeepListings, UnencryptedSignIn, Theme, Scheme, Accent, Density, TextSize, CloudStatus, FriendlyDates];
 
     /// <summary>The command the middle button runs on a row; anything but "otherPane" is a new tab.</summary>
     public static string MiddleClickCommand(SettingsFile file) =>

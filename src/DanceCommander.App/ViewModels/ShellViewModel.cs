@@ -1060,6 +1060,12 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         foreach (var file in files)
             file.ProblemFound += (_, problem) => ActiveTab.Report(Describe([problem]));
 
+        // A theme that can't be used is a file mistake too, said the same way.
+        var scheme = _services.GetRequiredService<ColourScheme>();
+        if (scheme.Problem is { } themeProblem)
+            ActiveTab.Report(new Notice(themeProblem + " The app's own colours are used.", NoticeSeverity.Warning));
+        scheme.ThemeProblem += (_, problem) => ActiveTab.Report(new Notice(problem, NoticeSeverity.Warning));
+
         static Notice Describe(IReadOnlyList<Core.Config.ConfigProblem> problems) => new(
             string.Join(" ", problems.Select(p => p.Message)),
             NoticeSeverity.Warning,

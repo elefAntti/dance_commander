@@ -111,7 +111,9 @@ public partial class App : Application
         await _host.StartAsync();
         StartupClock.Mark("services");
 
-        // The palette before anything is built from it: dark, light, or Windows' own choice.
+        // The palette before anything is built from it: dark, light, Windows' own choice, or a theme.
+        // Only the theme in use is read now; the folder is listed when the settings window opens.
+        ColourThemeFiles.Directory = Path.Combine(DataDirectory, "themes");
         _host.Services.GetRequiredService<ColourScheme>().Apply();
         // Sizes and keys likewise, before the window measures anything or the legend is drawn.
         _host.Services.GetRequiredService<AppliedSettings>().Apply();

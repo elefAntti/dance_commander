@@ -26,10 +26,25 @@ public sealed class ColourScheme
     private readonly IConfigStore<SettingsFile> _settings;
     private (Palette Palette, string Accent)? _applied;
 
-    private enum Palette { Dark, Light, HighContrast }
+    /// <summary>The palette put in place by the last switch, found again by reference: a theme's is made in code and has no Source.</summary>
+    private ResourceDictionary? _current;
+
+    private ColourTheme? _theme;
+    private string? _themeTokens;
+
+    /// <summary>Made once a theme file is in use, so saving it shows the change as settings.json does.</summary>
+    private System.IO.FileSystemWatcher? _themeFiles;
+
+    private enum Palette { Dark, Light, HighContrast, Theme }
 
     /// <summary>After a switch, on the UI thread.</summary>
     public static event EventHandler? Changed;
+
+    /// <summary>The chosen theme couldn't be used, in words; the app's own colours are in place instead.</summary>
+    public event EventHandler<string>? ThemeProblem;
+
+    /// <summary>Why the chosen theme isn't the one shown, or null.</summary>
+    public string? Problem { get; private set; }
 
     public ColourScheme(IConfigStore<SettingsFile> settings)
     {
@@ -45,34 +60,58 @@ public sealed class ColourScheme
         };
     }
 
-    public bool IsLight => _applied?.Palette == Palette.Light;
+    public bool IsLight => _applied?.Palette == Palette.Light || _theme is { IsDark: false };
 
     /// <summary>Puts the chosen palette and accent in place, if they are not already, and tells whoever draws by hand.</summary>
     public void Apply()
     {
         var palette = Resolve();
         var accent = ResolveAccent(palette);
+
+        // A theme's colours are part of what is in place: the same name can be a file edited since.
+        IReadOnlyDictionary<string, Rgb>? tokens = null;
+        if (palette == Palette.Theme)
+        {
+            WatchThemeFiles();
+            tokens = _theme!.Tokens(accent);
+            var signature = string.Join(",", tokens.Select(t => t.Value.ToString()));
+            if (signature != _themeTokens)
+                _applied = null;
+            _themeTokens = signature;
+        }
+
         var state = (palette, accent?.ToString() ?? string.Empty);
         if (_applied == state)
             return;
 
         var merged = Application.Current.Resources.MergedDictionaries;
-        var current = merged.FirstOrDefault(d => d.Source?.OriginalString is { } source
-            && (source.EndsWith("Dark.xaml", StringComparison.Ordinal)
-                || source.EndsWith("Light.xaml", StringComparison.Ordinal)
-                || source.EndsWith("HighContrast.xaml", StringComparison.Ordinal)));
-        var file = palette switch { Palette.Light => "Light", Palette.HighContrast => "HighContrast", _ => "Dark" };
-        var chosen = new ResourceDictionary { Source = new Uri($"Theme/{file}.xaml", UriKind.Relative) };
-        if (palette == Palette.HighContrast)
-            MixHighContrastFills(chosen);
-        else if (accent is { } colour)
-            ApplyAccent(chosen, colour);
+        var current = _current is not null && merged.Contains(_current) ? _current
+            : merged.FirstOrDefault(d => d.Source?.OriginalString is { } source
+                && (source.EndsWith("Dark.xaml", StringComparison.Ordinal)
+                    || source.EndsWith("Light.xaml", StringComparison.Ordinal)
+                    || source.EndsWith("HighContrast.xaml", StringComparison.Ordinal)));
+
+        ResourceDictionary chosen;
+        if (tokens is not null)
+        {
+            chosen = FromTokens(tokens);
+        }
+        else
+        {
+            var file = palette switch { Palette.Light => "Light", Palette.HighContrast => "HighContrast", _ => "Dark" };
+            chosen = new ResourceDictionary { Source = new Uri($"Theme/{file}.xaml", UriKind.Relative) };
+            if (palette == Palette.HighContrast)
+                MixHighContrastFills(chosen);
+            else if (accent is { } colour)
+                ApplyAccent(chosen, colour);
+        }
 
         if (current is null)
             merged.Insert(1, chosen);
         else
             merged[merged.IndexOf(current)] = chosen;
 
+        _current = chosen;
         _applied = state;
 
         foreach (Window window in Application.Current.Windows)
@@ -120,6 +159,49 @@ public sealed class ColourScheme
         palette["SelectionActiveBrush"] = Brush(AccentColour.Mix(pane, fitted, strength));
     }
 
+    private void WatchThemeFiles()
+    {
+        if (_themeFiles is not null || ColourThemeFiles.Directory is not { } folder || !System.IO.Directory.Exists(folder))
+            return;
+
+        _themeFiles = new System.IO.FileSystemWatcher(folder, "*.json")
+        {
+            NotifyFilter = System.IO.NotifyFilters.LastWrite | System.IO.NotifyFilters.FileName | System.IO.NotifyFilters.Size,
+        };
+
+        // An editor saves in more than one write; a moment later the file is whole.
+        var pending = 0;
+        void OnChange(object sender, System.IO.FileSystemEventArgs e)
+        {
+            if (Interlocked.Exchange(ref pending, 1) == 1)
+                return;
+            _ = Task.Delay(300).ContinueWith(_ =>
+            {
+                Volatile.Write(ref pending, 0);
+                OnUiThread(Apply);
+            }, TaskScheduler.Default);
+        }
+
+        _themeFiles.Changed += OnChange;
+        _themeFiles.Created += OnChange;
+        _themeFiles.Renamed += OnChange;
+        _themeFiles.EnableRaisingEvents = true;
+    }
+
+    /// <summary>
+    /// A theme's palette, keyed as Theme/Dark.xaml is, with the corner where scroll bars meet in
+    /// the theme's colours too.
+    /// </summary>
+    private static ResourceDictionary FromTokens(IReadOnlyDictionary<string, Rgb> tokens)
+    {
+        var palette = new ResourceDictionary();
+        foreach (var (key, colour) in tokens)
+            palette[key] = key == "AccentColor" ? Color.FromRgb(colour.R, colour.G, colour.B) : Brush(colour);
+
+        palette[SystemColors.ControlBrushKey] = Brush(AccentColour.Mix(tokens["PaneBrush"], tokens["HoverBrush"], 0.5));
+        return palette;
+    }
+
     private static SolidColorBrush Brush(Rgb colour)
     {
         var brush = new SolidColorBrush(Color.FromRgb(colour.R, colour.G, colour.B));
@@ -134,8 +216,13 @@ public sealed class ColourScheme
     /// Null keeps the palette's own: when Windows doesn't say, and in a contrast theme, whose
     /// colours are the user's.
     /// </summary>
+    /// <remarks>
+    /// With a theme, "Windows" means the theme's own accent: it is part of the look someone
+    /// picked the theme for. An accent chosen in the settings still wins.
+    /// </remarks>
     private Rgb? ResolveAccent(Palette palette) =>
         palette == Palette.HighContrast ? null
+        : palette == Palette.Theme ? (AccentColour.TryParse(_settings.Current.Appearance.Accent, out var mine) ? mine : null)
         : AccentColour.TryParse(_settings.Current.Appearance.Accent, out var chosen) ? chosen
         : WindowsAccent();
 
@@ -156,14 +243,45 @@ public sealed class ColourScheme
     }
 
     /// <summary>High contrast wins over the choice: it is the user's own setting for being able to read anything.</summary>
-    private Palette Resolve() =>
-        SystemParameters.HighContrast ? Palette.HighContrast
-        : _settings.Current.Appearance.Scheme.Trim().ToLowerInvariant() switch
+    private Palette Resolve()
+    {
+        _theme = null;
+        string? problem = null;
+        try
         {
-            "light" => Palette.Light,
-            "dark" => Palette.Dark,
-            _ => WindowsAppsAreLight() ? Palette.Light : Palette.Dark,
-        };
+            if (SystemParameters.HighContrast)
+                return Palette.HighContrast;
+
+            var theme = _settings.Current.Appearance.Theme.Trim();
+            if (theme.Length > 0 && !string.Equals(theme, ColourTheme.Default, StringComparison.OrdinalIgnoreCase))
+            {
+                if (ColourThemeFiles.TryLoad(theme, out var loaded, out problem))
+                {
+                    _theme = loaded;
+                    return Palette.Theme;
+                }
+
+                Serilog.Log.Warning("Theme {Theme} not used: {Problem}", theme, problem);
+            }
+
+            return _settings.Current.Appearance.Scheme.Trim().ToLowerInvariant() switch
+            {
+                "light" => Palette.Light,
+                "dark" => Palette.Dark,
+                _ => WindowsAppsAreLight() ? Palette.Light : Palette.Dark,
+            };
+        }
+        finally
+        {
+            // Said once when it changes, not again on every Windows preference event.
+            if (problem != Problem)
+            {
+                Problem = problem;
+                if (problem is not null)
+                    ThemeProblem?.Invoke(this, problem + " The app's own colours are used.");
+            }
+        }
+    }
 
     /// <summary>Windows' "default app mode". Missing means light, as on a fresh Windows.</summary>
     private static bool WindowsAppsAreLight()

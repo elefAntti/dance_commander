@@ -86,7 +86,9 @@ These are not gaps. Proposing one again needs a new argument.
 - **No WebView preview, hex view or `IPreviewHandler`.** Each is a second rendering, theming and
   keyboard surface. Rich formats open in the application that owns them.
 - **No theming engine, plugin marketplace, forty-format preview, cloud accounts or companion
-  apps.** Each is an "everything for everyone" move.
+  apps.** Each is an "everything for everyone" move. Named colour themes (Catppuccin, Nord, a
+  file of your own) are not an engine: a theme is colours for the same tokens, kept legible,
+  never styles or layout.
 - **No C# plugin DLLs.** Script locations give extensions a process boundary instead.
 - **No built-in knowledge of any external service.** A script owns each integration (GitLab,
   issue trackers, …); the app owns listing, navigation, preview and copy.

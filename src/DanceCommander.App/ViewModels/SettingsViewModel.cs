@@ -241,6 +241,24 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>A pack's tools that tools.json has its own of, which are used instead.</summary>
     private string? Replaced(SettingDefinition setting)
     {
+        // A theme is dark or light by itself, so the scheme only matters with the app's own colours.
+        if (setting == SettingsCatalog.Scheme || setting == SettingsCatalog.Theme || setting == SettingsCatalog.Accent)
+        {
+            var theme = _store.Current.Appearance.Theme.Trim();
+            if (string.Equals(theme, ColourTheme.Default, StringComparison.OrdinalIgnoreCase) || theme.Length == 0)
+                return null;
+            if (!ColourThemeFiles.TryLoad(theme, out var loaded, out var problem))
+                return setting == SettingsCatalog.Theme ? problem + " The app's own colours are used." : null;
+            if (setting == SettingsCatalog.Accent)
+            {
+                return AccentColour.TryParse(_store.Current.Appearance.Accent, out _)
+                    ? null
+                    : $"With {loaded!.Label}, Windows means the theme's own accent. A colour picked here is used instead.";
+            }
+
+            return setting == SettingsCatalog.Scheme ? $"{loaded!.Label} is {(loaded.IsDark ? "dark" : "light")} by itself, so this applies only with the Dance Commander theme." : null;
+        }
+
         if (_tools is null || setting.Path is not ["tools", "packs", var id]
             || ToolPacks.All.FirstOrDefault(p => p.Id == id) is not { } pack)
         {
@@ -315,7 +333,7 @@ public sealed partial class SettingRowViewModel : ObservableObject
     public SettingRowViewModel(SettingDefinition definition)
     {
         Definition = definition;
-        Choices = definition.Choices.Select(c => new ChoiceViewModel(this, c.Value, c.Label)).ToList();
+        Choices = definition.AllChoices().Select(c => new ChoiceViewModel(this, c.Value, c.Label)).ToList();
     }
 
     public SettingDefinition Definition { get; }
