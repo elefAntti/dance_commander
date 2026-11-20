@@ -11,7 +11,8 @@ public sealed record ToolTarget(
     FsEntry? Focused,
     FsUri? OtherPaneDirectory,
     RepositoryInfo? Repository = null,
-    IReadOnlyList<FsEntry>? OtherPaneMarked = null);
+    IReadOnlyList<FsEntry>? OtherPaneMarked = null,
+    bool OtherPaneUnconfirmed = false);
 
 /// <summary>
 /// Expands <c>${…}</c> placeholders into an <em>argument vector</em>, never into a command string
@@ -84,9 +85,33 @@ public static partial class ToolPlaceholders
             foreach (Match match in PlaceholderPattern().Matches(template))
             {
                 var token = Base(match.Groups[1].Value);
-                if (!IsKnown(token) && (!nearOnly || Nearest(token) is not null))
+                if (nearOnly ? !IsKnown(token) && !InCapitals(token) && Nearest(token) is not null : !IsKnown(token))
                     return token;
             }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// On a typed line, a <c>${…}</c> that is the shell's own and goes to it as typed: not one of
+    /// ours, or written in capitals as environment variables are, so <c>${PATH}</c> is the shell's
+    /// and not the cursor's file. Never one with <c>${</c> inside: in <c>${x:-${name}}</c> our
+    /// <c>${name}</c> would reach the shell unfilled, and the shell's own (unset) name is nothing.
+    /// </summary>
+    private static bool IsShells(string token) =>
+        !token.Contains("${", StringComparison.Ordinal) && (!IsKnown(token) || InCapitals(token));
+
+    private static bool InCapitals(string token) =>
+        token.Length > 1 && token.Any(char.IsLetter) && !token.Any(char.IsLower);
+
+    /// <summary>A shell's ${…} on a typed line with a placeholder of ours inside it, or null.</summary>
+    private static string? Nested(string text)
+    {
+        foreach (Match match in PlaceholderPattern().Matches(text))
+        {
+            if (match.Groups[1].Value.Contains("${", StringComparison.Ordinal))
+                return match.Value;
         }
 
         return null;
@@ -366,7 +391,19 @@ public static partial class ToolPlaceholders
             return null;
         }
 
+        if (typedLine && Nested(text) is { } nested)
+        {
+            decisions.Report(new Notice(
+                $"{nested} has a placeholder inside the shell's own braces, so nothing was run.",
+                NoticeSeverity.Warning,
+                "It would reach the shell unfilled. Put the placeholder outside the braces."));
+            return null;
+        }
+
         if (!HasOtherPaneMarks([text], target, decisions))
+            return null;
+
+        if (typedLine && !OtherPaneIsHere(text, target, decisions))
             return null;
 
         var cancelled = false;
@@ -382,7 +419,7 @@ public static partial class ToolPlaceholders
 
         var result = await ReplaceAsync(text, shell, async (token, inUsersQuotes) =>
         {
-            if (!IsKnown(token))
+            if (typedLine && IsShells(token))
                 return null; // the shell's own variable, left for it
             var words = await ResolveAsync(token);
             if (shell == ShellQuoting.Cmd && reread is null && IsFromOutside(token))
@@ -580,7 +617,30 @@ public static partial class ToolPlaceholders
         var reads = templates.Any(template => !string.IsNullOrEmpty(template) &&
             PlaceholderPattern().Matches(template).Any(match =>
                 Base(match.Groups[1].Value).Equals("otherPaneSelection", StringComparison.OrdinalIgnoreCase)));
-        if (!reads || target.OtherPaneMarked is { Count: > 0 })
+        if (!reads)
+            return true;
+
+        if (target.OtherPaneDirectory is null)
+        {
+            decisions.Report(new Notice(
+                "The other pane isn't on screen, so ${otherPaneSelection} has nothing to give.",
+                NoticeSeverity.Warning,
+                "Show both panes (Ctrl+D), mark files in the other one, then run it again."));
+            return false;
+        }
+
+        // Rows remembered from the last visit to a server may not be what is there now: a name
+        // marked as a file may be a folder by now (AUDIT.md §2 kind 50).
+        if (target.OtherPaneUnconfirmed)
+        {
+            decisions.Report(new Notice(
+                "The other pane is still checking its folder, so its marks weren't used.",
+                NoticeSeverity.Warning,
+                "Run it again once the other pane has listed."));
+            return false;
+        }
+
+        if (target.OtherPaneMarked is { Count: > 0 })
             return true;
 
         decisions.Report(new Notice(
@@ -589,6 +649,38 @@ public static partial class ToolPlaceholders
             "${otherPaneSelection} is the files marked there. Mark them with Insert or Space, then run it again."));
         return false;
     }
+
+    /// <summary>
+    /// Whether the other pane's paths mean the same files where a typed line runs. A line runs
+    /// where the active pane is, and a server's path is just /var/www/x: on another server, or
+    /// read by Git Bash here, it names other files, or a folder under Git's own (review, 2026-11-20).
+    /// </summary>
+    private static bool OtherPaneIsHere(string text, ToolTarget target, IDecisionHost decisions)
+    {
+        var reads = PlaceholderPattern().Matches(text).Any(match =>
+            Base(match.Groups[1].Value) is var token &&
+            (token.Equals("otherPaneSelection", StringComparison.OrdinalIgnoreCase) ||
+             token.Equals("otherPaneDir", StringComparison.OrdinalIgnoreCase)));
+        if (!reads)
+            return true;
+
+        var here = target.Directory.Anchor;
+        var others = (target.OtherPaneMarked ?? []).Select(e => e.Uri)
+            .Concat(target.OtherPaneDirectory is { } dir ? [dir] : []);
+        if (others.All(uri => SameSystem(uri.Anchor, here)))
+            return true;
+
+        decisions.Report(new Notice(
+            "The other pane is on another computer, so its paths can't go on this line.",
+            NoticeSeverity.Warning,
+            "A line runs where this pane is. Copy the files over first, or run it from the other pane."));
+        return false;
+    }
+
+    private static bool SameSystem(FsUri a, FsUri b) =>
+        a.IsLocal ? b.IsLocal
+        : string.Equals(a.Scheme, b.Scheme, StringComparison.OrdinalIgnoreCase) &&
+          string.Equals(a.Authority, b.Authority, StringComparison.OrdinalIgnoreCase);
 
     public static void ReportUnresolved(string token, RepositoryInfo? repository, IDecisionHost decisions) =>
         decisions.Report(new Notice(
@@ -623,6 +715,9 @@ public static partial class ToolPlaceholders
         var builder = new System.Text.StringBuilder();
         var quotes = new ShellQuoteState(shell);
         var position = 0;
+        // Where a ${…} left for the shell ended, if it started a word: the shell's own ${p} is
+        // likely empty, so a name straight after it starts the word as far as a program can tell.
+        var shellsWordEndsAt = -1;
 
         foreach (Match match in matches)
         {
@@ -636,15 +731,18 @@ public static partial class ToolPlaceholders
             if (words is null)
             {
                 // Not ours: kept as written, part of the user's own line.
+                var started = match.Index == 0 || char.IsWhiteSpace(text[match.Index - 1]) || match.Index == shellsWordEndsAt;
                 builder.Append(match.Value);
                 quotes.Read(match.Value);
                 position = match.Index + match.Length;
+                shellsWordEndsAt = started ? position : -1;
                 continue;
             }
 
             // A quote just before starts a word only if it opened one: "pre"${name} is one word.
             var startsWord = match.Index == 0 || char.IsWhiteSpace(text[match.Index - 1]) ||
-                             (text[match.Index - 1] is '"' or '\'' && quotes.IsOpen);
+                             (text[match.Index - 1] is '"' or '\'' && quotes.IsOpen) ||
+                             match.Index == shellsWordEndsAt;
             var from = builder.Length;
             builder.AppendJoin(' ', words.Select(word => quotes.Quote(NotAnOption(token, Filtered(token, word), startsWord, shell))));
             if (inserted is not null && IsFromOutside(Base(token)))

@@ -1266,7 +1266,7 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         // one word there.
         var target = new ToolTarget(
             context.Directory, context.Selection, context.Focused, context.OtherPaneDirectory, context.Repository,
-            context.OtherPaneMarked);
+            context.OtherPaneMarked, context.OtherPaneUnconfirmed);
         // A trailing & sends the line to the job strip at once. Taken off the line: left on, bash
         // would put the command in its own background and exit, and the job would end at once.
         var background = false;
@@ -1714,6 +1714,7 @@ internal sealed class PaneCommandContext : ICommandContext
         Focused = standingOn ?? Tab.FocusedRow?.Entry;
         OtherPaneDirectory = otherVisible ? other.ActiveTab.Uri : null;
         OtherPaneMarked = otherVisible && other.ActiveTab.HasMarks ? other.ActiveTab.SelectedEntries : [];
+        OtherPaneUnconfirmed = otherVisible && other.ActiveTab.IsUnconfirmed;
         Repository = Tab.RepositoryWithConflicts();
     }
 
@@ -1731,6 +1732,8 @@ internal sealed class PaneCommandContext : ICommandContext
     public FsUri? OtherPaneDirectory { get; }
 
     public IReadOnlyList<FsEntry> OtherPaneMarked { get; }
+
+    public bool OtherPaneUnconfirmed { get; }
 
     /// <summary>Free: the branch decoration already had to work this out to draw the chip.</summary>
     public RepositoryInfo? Repository { get; }

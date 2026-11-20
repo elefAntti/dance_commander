@@ -166,6 +166,9 @@ public interface ICommandContext
     /// </summary>
     IReadOnlyList<FsEntry> OtherPaneMarked => [];
 
+    /// <summary>The other pane shows remembered rows it hasn't checked yet, so its marks may name what is gone.</summary>
+    bool OtherPaneUnconfirmed => false;
+
     /// <summary>
     /// True when <see cref="Directory"/> is inside a git work tree.
     /// </summary>

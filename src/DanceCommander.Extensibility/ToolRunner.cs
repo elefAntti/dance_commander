@@ -35,6 +35,14 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
             return;
         }
 
+        // Likewise a misspelt placeholder anywhere, the output folder included: there a null is a
+        // tool with no output folder, and it ran after saying it hadn't (review, 2026-11-20).
+        if (ToolPlaceholders.UnknownPlaceholder(tool.Templates()) is { } misspelt)
+        {
+            ToolPlaceholders.ReportUnknownPlaceholder(misspelt, context.Decisions);
+            return;
+        }
+
         // Once per row only means something for a tool about the rows.
         var selections = tool.ForEachSelected && tool.ParsedSubject() == CommandSubject.Selection
             ? context.Selection.Select(entry => (IReadOnlyList<FsEntry>)[entry]).ToList()
@@ -50,7 +58,8 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
                 selection.Count == 1 ? selection[0] : context.Focused,
                 context.OtherPaneDirectory,
                 context.Repository,
-                context.OtherPaneMarked);
+                context.OtherPaneMarked,
+                context.OtherPaneUnconfirmed);
 
             // A verbatim line has been expanded already, quoted for the shell that reads it; a
             // file name containing "${" must not be expanded a second time.

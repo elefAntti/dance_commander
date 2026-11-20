@@ -273,6 +273,74 @@ public class ToolPlaceholderTests
         decisions.Notices.ShouldHaveSingleItem().Message.ShouldBe("Nothing is marked in the other pane.");
     }
 
+    private static async Task<(string? Line, ScriptedDecisions Decisions)> Typed(string line, ToolTarget target)
+    {
+        var decisions = new ScriptedDecisions();
+        var result = await ToolPlaceholders.ExpandOneAsync(line, target, decisions, shell: ShellQuoting.Posix, typedLine: true);
+        return (result, decisions);
+    }
+
+    [Theory]
+    [InlineData("rm -rf ${dir}/${x:-${name}}")]
+    [InlineData("rm -rf \"${dir}/${x:-\"${name}\"}\"")]
+    public async Task APlaceholderInsideTheShellsOwnBracesIsRefused(string line)
+    {
+        // Bash would get ${x:-${name}} with its own, unset, name: rm -rf of the folder itself.
+        var (result, decisions) = await Typed(line, Target("a.txt"));
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldContain("inside the shell's own braces");
+    }
+
+    [Theory]
+    [InlineData("export PATH=${PATH}:/x", "export PATH=${PATH}:/x")]
+    [InlineData("echo ${NAME} ${name}", "echo ${NAME} a.txt")]
+    public async Task CapitalsAreTheShellsVariablesOnATypedLine(string line, string expected) =>
+        (await Typed(line, Target("a.txt"))).Line.ShouldBe(expected);
+
+    [Fact]
+    public async Task ANameRightAfterAShellVariableStillCantBeAnOption()
+    {
+        var (result, _) = await Typed("rm ${p}${name}", Target("-rf"));
+
+        result.ShouldBe("rm ${p}./-rf");
+    }
+
+    [Fact]
+    public async Task TheOtherPanesFilesOnAnotherComputerCantGoOnALineHere()
+    {
+        var server = FsUri.Parse("sftp://me@server/var/www");
+        var target = Target("mine.txt") with
+        {
+            OtherPaneDirectory = server,
+            OtherPaneMarked = [new FsEntry(server.Child("index.php"), "index.php", IsDirectory: false, 10, null)],
+        };
+
+        var (result, decisions) = await Typed("rm ${otherPaneSelection}", target);
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldContain("on another computer");
+    }
+
+    [Fact]
+    public async Task TheOtherPanesRememberedRowsArentUsed()
+    {
+        var decisions = new ScriptedDecisions();
+        var target = Target("mine.txt") with { OtherPaneMarked = [Other("build")], OtherPaneUnconfirmed = true };
+
+        (await ToolPlaceholders.ExpandAsync(["${otherPaneSelection}"], target, decisions, CancellationToken.None)).ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldContain("still checking");
+    }
+
+    [Fact]
+    public async Task AHiddenOtherPaneIsSaidAsSuch()
+    {
+        var (result, decisions) = await Typed("ls ${otherPaneSelection}", Target("mine.txt") with { OtherPaneDirectory = null });
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldContain("isn't on screen");
+    }
+
     [Fact]
     public void AToolReadingTheOtherPanesMarksNeedsTheOtherPane() =>
         ToolPlaceholders.ReadsOtherPane(["${otherPaneSelection}"]).ShouldBeTrue();
