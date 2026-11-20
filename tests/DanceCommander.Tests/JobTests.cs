@@ -82,6 +82,26 @@ public class JobServiceTests
     }
 
     [Fact]
+    public void AFinishedJobSaysWhenInsteadOfAForecast()
+    {
+        var job = new ManualJob();
+        var changed = new List<string?>();
+        job.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        job.MoveTo(JobState.Running);
+        job.FinishedAt.ShouldBeNull();
+        job.Ending.ShouldBeNull();
+
+        var before = DateTimeOffset.Now;
+        job.MoveTo(JobState.Cancelled);
+
+        job.FinishedAt!.Value.ShouldBeGreaterThanOrEqualTo(before);
+        job.Ending.ShouldBe("at " + Clock.Time(job.FinishedAt.Value, DateTimeOffset.Now));
+        job.EndingTip!.ShouldStartWith("Finished ");
+        changed.ShouldContain(nameof(Job.Ending));
+    }
+
+    [Fact]
     public void AnnouncesEachJobFinishingExactlyOnce()
     {
         var service = new JobService();

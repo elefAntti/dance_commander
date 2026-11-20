@@ -65,6 +65,8 @@ public abstract class Job : INotifyPropertyChanged
             if (_state == value)
                 return;
             _state = value;
+            if (IsFinished)
+                FinishedAt ??= DateTimeOffset.Now;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsFinished));
             OnPropertyChanged(nameof(ActionLabel));
@@ -75,8 +77,22 @@ public abstract class Job : INotifyPropertyChanged
             OnPropertyChanged(nameof(Status));
             OnPropertyChanged(nameof(ShowsMotion));
             OnPropertyChanged(nameof(Forecast));
+            OnPropertyChanged(nameof(Ending));
+            OnPropertyChanged(nameof(EndingTip));
         }
     }
+
+    /// <summary>When it completed, failed or was cancelled; null while it runs.</summary>
+    public DateTimeOffset? FinishedAt { get; private set; }
+
+    /// <summary>
+    /// The strip's last column: the time left while it runs, and once it has stopped, when. A row
+    /// left in the strip over lunch otherwise says "Done" with no way to tell which copy it was.
+    /// </summary>
+    public string? Ending => FinishedAt is { } at ? "at " + Clock.Time(at, DateTimeOffset.Now) : Forecast;
+
+    /// <summary>The tooltip of <see cref="Ending"/>: the speed while it runs, the exact time after.</summary>
+    public string? EndingTip => FinishedAt is { } at ? $"Finished {at.ToLocalTime():F}" : StatusTip;
 
     /// <summary>
     /// What the job is waiting on when it is not working: your answer to a question in the pane.
@@ -218,6 +234,14 @@ public abstract class Job : INotifyPropertyChanged
         OnPropertyChanged(name);
     }
 
-    protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        // The last column shows the forecast while the job runs, so it changes when that does.
+        if (name is nameof(Forecast))
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Ending)));
+        else if (name is nameof(StatusTip))
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(EndingTip)));
+    }
 }

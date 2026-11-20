@@ -12,7 +12,13 @@ public sealed record ActivityEntry(
     string Description,
     string ShellEquivalent,
     ActivityOutcome Outcome,
-    string? Detail = null);
+    string? Detail = null)
+{
+    /// <summary>When, as the log shows it: the time today, the day and time before that.</summary>
+    public string Time => Jobs.Clock.Time(At, DateTimeOffset.Now);
+
+    public string FullTime => At.ToLocalTime().ToString("F", System.Globalization.CultureInfo.CurrentCulture);
+}
 
 public interface IActivityLog
 {

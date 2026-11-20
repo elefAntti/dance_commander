@@ -112,11 +112,11 @@
                      gives way before it does. The speed is a hover away: it moves more than the
                      estimate does, and the strip stays calm. -->
                 <TextBlock Grid.Column="2" Margin="8,0,0,0" Foreground="{DynamicResource TextMutedBrush}"
-                           Text="{Binding Forecast, Mode=OneWay}" ToolTip="{Binding StatusTip, Mode=OneWay}">
+                           Text="{Binding Ending, Mode=OneWay}" ToolTip="{Binding EndingTip, Mode=OneWay}">
                   <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource SecondaryTextStyle}">
                       <Style.Triggers>
-                        <DataTrigger Binding="{Binding Forecast}" Value="{x:Null}">
+                        <DataTrigger Binding="{Binding Ending}" Value="{x:Null}">
                           <Setter Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                       </Style.Triggers>
@@ -300,7 +300,15 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <StackPanel Margin="0,0,0,10">
-                    <TextBlock Text="{Binding Description}" />
+                    <!-- When, muted at the end of the line: which of two copies of the same
+                         folder this was. -->
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding Time}" Margin="12,0,0,0"
+                                 ToolTip="{Binding FullTime}"
+                                 Style="{StaticResource SecondaryTextStyle}"
+                                 Foreground="{DynamicResource TextMutedBrush}" />
+                      <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
                     <TextBlock Text="{Binding ShellEquivalent}" Margin="0,2,0,0"
                                FontFamily="{DynamicResource MonoFontFamily}"
                                FontSize="{DynamicResource FontSizeSmall}"
