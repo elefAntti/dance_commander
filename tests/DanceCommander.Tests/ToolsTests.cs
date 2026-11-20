@@ -172,11 +172,110 @@ public class ToolPlaceholderTests
     }
 
     [Fact]
-    public async Task UnknownPlaceholdersBecomeEmptyRatherThanLeakingTheirOwnText()
+    public async Task AMisspeltPlaceholderIsNamedAndNothingRuns()
     {
-        var result = await Expand(Target("a.txt"), "${nonsense}");
-        result.ShouldHaveSingleItem().ShouldBe(string.Empty);
+        // It used to become empty: rm -rf ${dir}\${nmae} was rm -rf of the folder itself.
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandAsync(
+            ["-rf", @"${dir}\${nmae}"], Target("a.txt"), decisions, CancellationToken.None);
+
+        result.ShouldBeNull();
+        var notice = decisions.Notices.ShouldHaveSingleItem();
+        notice.Message.ShouldBe("${nmae} isn't a placeholder, so nothing was run.");
+        notice.Detail!.ShouldStartWith("${name} is the closest one.");
     }
+
+    [Fact]
+    public async Task AnUnknownPlaceholderInAToolsProgramIsRefusedToo()
+    {
+        var decisions = new ScriptedDecisions();
+
+        (await ToolPlaceholders.ExpandOneAsync("${nonsense}", Target("a.txt"), decisions)).ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Detail!.ShouldNotContain("closest");
+    }
+
+    [Theory]
+    [InlineData("echo ${HOME}", "echo ${HOME}")]
+    [InlineData("echo \"${HOME}\" ${name}", "echo \"${HOME}\" a.txt")]
+    [InlineData("for f in *; do echo ${f}; done", "for f in *; do echo ${f}; done")]
+    public async Task ATypedLineKeepsItsShellsOwnVariables(string line, string expected)
+    {
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandOneAsync(line, Target("a.txt"), decisions, shell: ShellQuoting.Posix, typedLine: true);
+
+        result.ShouldBe(expected);
+        decisions.Notices.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task ATypedLineStillCatchesANearMiss()
+    {
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandOneAsync(
+            "rm ${selction}", Target("a.txt"), decisions, shell: ShellQuoting.Posix, typedLine: true);
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Detail!.ShouldStartWith("${selection} is the closest one.");
+    }
+
+    [Theory]
+    [InlineData("selction", "selection")]
+    [InlineData("otherPaneDri", "otherPaneDir")]
+    [InlineData("Path", null)] // known: placeholders are not case-sensitive
+    [InlineData("id", null)]
+    [InlineData("HOME", null)]
+    public void TheNearestIsOnlyATypoAway(string token, string? expected)
+    {
+        if (ToolPlaceholders.Known.Contains(token, StringComparer.OrdinalIgnoreCase))
+            ToolPlaceholders.UnknownPlaceholder(["${" + token + "}"]).ShouldBeNull();
+        else
+            ToolPlaceholders.Nearest(token).ShouldBe(expected);
+    }
+
+    // ---- ${otherPaneSelection} --------------------------------------------------------------
+
+    private static FsEntry Other(string name) =>
+        new(FsUri.Local(@"C:\work\out").Child(name), name, IsDirectory: false, 10, null);
+
+    [Fact]
+    public async Task TheOtherPanesMarksAreOneArgumentEach()
+    {
+        var target = Target("mine.txt") with { OtherPaneMarked = [Other("a b.txt"), Other("c.txt")] };
+
+        var result = await Expand(target, "--diff", "${selection}", "${otherPaneSelection}");
+
+        result.ShouldBe(["--diff", @"C:\work\src\mine.txt", @"C:\work\out\a b.txt", @"C:\work\out\c.txt"]);
+    }
+
+    [Fact]
+    public async Task OnATypedLineEachOfTheOtherPanesMarksIsQuotedOnItsOwn()
+    {
+        var target = Target("mine.txt") with { OtherPaneMarked = [Other("a b.txt"), Other("c.txt")] };
+
+        var result = await ToolPlaceholders.ExpandOneAsync(
+            "ls ${otherPaneSelection}", target, new ScriptedDecisions(), shell: ShellQuoting.Posix, typedLine: true);
+
+        result.ShouldBe(@"ls 'C:\work\out\a b.txt' 'C:\work\out\c.txt'");
+    }
+
+    [Fact]
+    public async Task NothingMarkedInTheOtherPaneIsSaidAndNothingRuns()
+    {
+        var decisions = new ScriptedDecisions();
+
+        var result = await ToolPlaceholders.ExpandAsync(
+            ["${otherPaneSelection}"], Target("mine.txt"), decisions, CancellationToken.None);
+
+        result.ShouldBeNull();
+        decisions.Notices.ShouldHaveSingleItem().Message.ShouldBe("Nothing is marked in the other pane.");
+    }
+
+    [Fact]
+    public void AToolReadingTheOtherPanesMarksNeedsTheOtherPane() =>
+        ToolPlaceholders.ReadsOtherPane(["${otherPaneSelection}"]).ShouldBeTrue();
 
     // ---- location tokens (§6.6) -----------------------------------------------------------
 

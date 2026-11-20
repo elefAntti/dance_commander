@@ -616,6 +616,7 @@ public static class BuiltInCommands
         public IReadOnlyList<FsEntry> Selection { get; } = [entry];
         public FsEntry? Focused => entry;
         public FsUri? OtherPaneDirectory => inner.OtherPaneDirectory;
+        public IReadOnlyList<FsEntry> OtherPaneMarked => inner.OtherPaneMarked;
         public RepositoryInfo? Repository => inner.Repository;
         public IDecisionHost Decisions => inner.Decisions;
         public IOutputHost Output => inner.Output;

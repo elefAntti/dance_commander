@@ -1265,7 +1265,8 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         // -- but quoted for the shell that will read the line, so a name with a space in it is still
         // one word there.
         var target = new ToolTarget(
-            context.Directory, context.Selection, context.Focused, context.OtherPaneDirectory, context.Repository);
+            context.Directory, context.Selection, context.Focused, context.OtherPaneDirectory, context.Repository,
+            context.OtherPaneMarked);
         // A trailing & sends the line to the job strip at once. Taken off the line: left on, bash
         // would put the command in its own background and exit, and the job would end at once.
         var background = false;
@@ -1276,7 +1277,7 @@ public sealed partial class ShellViewModel : ObservableObject, IEcho
         }
 
         var expanded = await ToolPlaceholders.ExpandOneAsync(
-            line, target, context.Decisions, shell: onServer ? ShellQuoting.Posix : local.Quoting);
+            line, target, context.Decisions, shell: onServer ? ShellQuoting.Posix : local.Quoting, typedLine: true);
         if (expanded is null)
             return; // a ${prompt:...} the user cancelled
 
@@ -1712,6 +1713,7 @@ internal sealed class PaneCommandContext : ICommandContext
         Selection = standingOn is null ? Tab.SelectedEntries : [standingOn];
         Focused = standingOn ?? Tab.FocusedRow?.Entry;
         OtherPaneDirectory = otherVisible ? other.ActiveTab.Uri : null;
+        OtherPaneMarked = otherVisible && other.ActiveTab.HasMarks ? other.ActiveTab.SelectedEntries : [];
         Repository = Tab.RepositoryWithConflicts();
     }
 
@@ -1727,6 +1729,8 @@ internal sealed class PaneCommandContext : ICommandContext
     public FsEntry? Focused { get; }
 
     public FsUri? OtherPaneDirectory { get; }
+
+    public IReadOnlyList<FsEntry> OtherPaneMarked { get; }
 
     /// <summary>Free: the branch decoration already had to work this out to draw the chip.</summary>
     public RepositoryInfo? Repository { get; }

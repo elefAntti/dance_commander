@@ -161,6 +161,12 @@ public interface ICommandContext
     FsUri? OtherPaneDirectory { get; }
 
     /// <summary>
+    /// What is marked in the other pane, when it is on screen; empty when nothing is marked there.
+    /// Never its cursor's row: that sits wherever the user last left it.
+    /// </summary>
+    IReadOnlyList<FsEntry> OtherPaneMarked => [];
+
+    /// <summary>
     /// True when <see cref="Directory"/> is inside a git work tree.
     /// </summary>
     /// <remarks>

@@ -28,6 +28,8 @@ internal sealed class FakeContext : ICommandContext, IOutputHost
 
     public FsUri? OtherPaneDirectory { get; init; }
 
+    public IReadOnlyList<FsEntry> OtherPaneMarked { get; init; } = [];
+
     public RepositoryInfo? Repository { get; init; }
 
     public ScriptedDecisions Scripted { get; } = new();

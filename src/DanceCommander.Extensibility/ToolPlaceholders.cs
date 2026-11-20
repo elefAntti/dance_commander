@@ -10,7 +10,8 @@ public sealed record ToolTarget(
     IReadOnlyList<FsEntry> Selection,
     FsEntry? Focused,
     FsUri? OtherPaneDirectory,
-    RepositoryInfo? Repository = null);
+    RepositoryInfo? Repository = null,
+    IReadOnlyList<FsEntry>? OtherPaneMarked = null);
 
 /// <summary>
 /// Expands <c>${…}</c> placeholders into an <em>argument vector</em>, never into a command string
@@ -56,6 +57,89 @@ public static partial class ToolPlaceholders
     /// <summary>The placeholders that read the selected rows rather than the folder (§6.18).</summary>
     private static readonly string[] EntryTokens = ["path", "name", "stem", "ext", "selection", "uri"];
 
+    /// <summary>Every placeholder there is, besides <c>${env:…}</c> and <c>${prompt:…}</c>.</summary>
+    public static readonly IReadOnlyList<string> Known =
+        [.. EntryTokens, "dir", "otherPaneDir", "otherPaneSelection", .. LocationTokens];
+
+    private static bool IsKnown(string token) =>
+        token.StartsWith("env:", StringComparison.OrdinalIgnoreCase) ||
+        token.StartsWith("prompt:", StringComparison.OrdinalIgnoreCase) ||
+        Known.Contains(token, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The first placeholder in the templates that isn't one, or null. A misspelt one used to
+    /// expand to nothing: <c>rm -rf ${dir}\${nmae}</c> was <c>rm -rf</c> of the folder itself.
+    /// </summary>
+    /// <param name="nearOnly">
+    /// Only those within a typo of a real one. A typed line keeps its shell's own <c>${HOME}</c>,
+    /// which the shell expands; a near miss like <c>${selction}</c> is still caught there.
+    /// </param>
+    public static string? UnknownPlaceholder(IEnumerable<string?> templates, bool nearOnly = false)
+    {
+        foreach (var template in templates)
+        {
+            if (string.IsNullOrEmpty(template))
+                continue;
+
+            foreach (Match match in PlaceholderPattern().Matches(template))
+            {
+                var token = Base(match.Groups[1].Value);
+                if (!IsKnown(token) && (!nearOnly || Nearest(token) is not null))
+                    return token;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The real placeholder a misspelt one is a typo away from, or null.</summary>
+    public static string? Nearest(string token)
+    {
+        var lower = token.ToLowerInvariant();
+        string? best = null;
+        var bestDistance = int.MaxValue;
+        foreach (var known in Known)
+        {
+            var distance = Distance(lower, known.ToLowerInvariant());
+            if (distance < bestDistance)
+                (best, bestDistance) = (known, distance);
+        }
+
+        // One slip in a short name, two in a longer one: ${id} is somebody's shell variable, not ${dir}.
+        return bestDistance <= (best!.Length <= 4 ? 1 : 2) ? best : null;
+    }
+
+    /// <summary>Edits between two names, a swapped pair of letters counting as one: nmae is one slip from name.</summary>
+    private static int Distance(string a, string b)
+    {
+        var d = new int[a.Length + 1, b.Length + 1];
+        for (var i = 0; i <= a.Length; i++)
+            d[i, 0] = i;
+        for (var j = 0; j <= b.Length; j++)
+            d[0, j] = j;
+
+        for (var i = 1; i <= a.Length; i++)
+        {
+            for (var j = 1; j <= b.Length; j++)
+            {
+                var cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
+                if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1])
+                    d[i, j] = Math.Min(d[i, j], d[i - 2, j - 2] + 1);
+            }
+        }
+
+        return d[a.Length, b.Length];
+    }
+
+    public static void ReportUnknownPlaceholder(string token, IDecisionHost decisions) =>
+        decisions.Report(new Notice(
+            $"${{{token}}} isn't a placeholder, so nothing was run.",
+            NoticeSeverity.Warning,
+            (Nearest(token) is { } near ? $"${{{near}}} is the closest one. " : string.Empty) +
+            $"The placeholders are {string.Join(", ", Known.Select(k => "${" + k + "}"))}, " +
+            "${env:NAME} for an environment variable and ${prompt:Question} to ask."));
+
     /// <summary>True when any template reads the selection, which makes the tool about the selection.</summary>
     public static bool ReadsEntries(IEnumerable<string?> templates) =>
         templates.Any(template => !string.IsNullOrEmpty(template) &&
@@ -70,7 +154,9 @@ public static partial class ToolPlaceholders
     public static bool ReadsOtherPane(IEnumerable<string?> templates) =>
         templates.Any(template => !string.IsNullOrEmpty(template) &&
             PlaceholderPattern().Matches(template).Any(match =>
-                Base(match.Groups[1].Value).Equals("otherPaneDir", StringComparison.OrdinalIgnoreCase)));
+                Base(match.Groups[1].Value) is var token &&
+                (token.Equals("otherPaneDir", StringComparison.OrdinalIgnoreCase) ||
+                 token.Equals("otherPaneSelection", StringComparison.OrdinalIgnoreCase))));
 
     // ---- filters ------------------------------------------------------------------------------
 
@@ -201,6 +287,15 @@ public static partial class ToolPlaceholders
             return null;
         }
 
+        if (UnknownPlaceholder(template) is { } misspelt)
+        {
+            ReportUnknownPlaceholder(misspelt, decisions);
+            return null;
+        }
+
+        if (!HasOtherPaneMarks(template, target, decisions))
+            return null;
+
         var result = new List<string>(template.Count);
         var prompted = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -212,6 +307,15 @@ public static partial class ToolPlaceholders
             {
                 result.AddRange(target.Selection.Select(e => Render(e.Uri)));
                 fromOutside?.AddRange(target.Selection.Select(_ => true));
+                continue;
+            }
+
+            // The other pane's marks the same way, one slot each.
+            if (string.Equals(argument.Trim(), "${otherPaneSelection}", StringComparison.OrdinalIgnoreCase))
+            {
+                var marked = target.OtherPaneMarked ?? [];
+                result.AddRange(marked.Select(e => Render(e.Uri)));
+                fromOutside?.AddRange(marked.Select(_ => true));
                 continue;
             }
 
@@ -235,7 +339,8 @@ public static partial class ToolPlaceholders
         IDecisionHost decisions,
         Dictionary<string, string>? prompted = null,
         CancellationToken ct = default,
-        ShellQuoting shell = ShellQuoting.None)
+        ShellQuoting shell = ShellQuoting.None,
+        bool typedLine = false)
     {
         prompted ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -254,6 +359,16 @@ public static partial class ToolPlaceholders
             return null;
         }
 
+        // On a typed line, ${HOME} is the shell's and goes to it as typed; ${nmae} is a slip.
+        if (UnknownPlaceholder([text], nearOnly: typedLine) is { } misspelt)
+        {
+            ReportUnknownPlaceholder(misspelt, decisions);
+            return null;
+        }
+
+        if (!HasOtherPaneMarks([text], target, decisions))
+            return null;
+
         var cancelled = false;
         string? reread = null;
         string? forLinux = null;
@@ -267,6 +382,8 @@ public static partial class ToolPlaceholders
 
         var result = await ReplaceAsync(text, shell, async (token, inUsersQuotes) =>
         {
+            if (!IsKnown(token))
+                return null; // the shell's own variable, left for it
             var words = await ResolveAsync(token);
             if (shell == ShellQuoting.Cmd && reread is null && IsFromOutside(token))
                 reread = words.FirstOrDefault(word => word.IndexOfAny(CmdUnquotable) >= 0);
@@ -342,6 +459,7 @@ public static partial class ToolPlaceholders
                 "otherpanedir" => [target.OtherPaneDirectory is { } other ? Render(other, shell) : string.Empty],
                 // One word per row, so that at a shell prompt each is quoted on its own.
                 "selection" => target.Selection.Select(e => Render(e.Uri, shell)).ToArray(),
+                "otherpaneselection" => (target.OtherPaneMarked ?? []).Select(e => Render(e.Uri, shell)).ToArray(),
                 _ => [string.Empty],
             };
         }
@@ -452,6 +570,26 @@ public static partial class ToolPlaceholders
         "CMDCMDLINE", "HIGHESTNUMANODENUMBER",
     };
 
+    /// <summary>
+    /// ${otherPaneSelection} is what is marked there, never the cursor's row standing in: the
+    /// cursor of the pane you aren't in sits wherever it was left. Nothing marked is said, and
+    /// nothing runs.
+    /// </summary>
+    private static bool HasOtherPaneMarks(IEnumerable<string?> templates, ToolTarget target, IDecisionHost decisions)
+    {
+        var reads = templates.Any(template => !string.IsNullOrEmpty(template) &&
+            PlaceholderPattern().Matches(template).Any(match =>
+                Base(match.Groups[1].Value).Equals("otherPaneSelection", StringComparison.OrdinalIgnoreCase)));
+        if (!reads || target.OtherPaneMarked is { Count: > 0 })
+            return true;
+
+        decisions.Report(new Notice(
+            "Nothing is marked in the other pane.",
+            NoticeSeverity.Warning,
+            "${otherPaneSelection} is the files marked there. Mark them with Insert or Space, then run it again."));
+        return false;
+    }
+
     public static void ReportUnresolved(string token, RepositoryInfo? repository, IDecisionHost decisions) =>
         decisions.Report(new Notice(
             $"${{{token}}} has no value here.", NoticeSeverity.Warning, Explain(token, repository)));
@@ -476,7 +614,7 @@ public static partial class ToolPlaceholders
         shell == ShellQuoting.Posix && !uri.IsLocal ? uri.Path : Render(uri);
 
     private static async Task<string> ReplaceAsync(
-        string text, ShellQuoting shell, Func<string, bool, Task<string[]>> resolve, List<Range>? inserted = null)
+        string text, ShellQuoting shell, Func<string, bool, Task<string[]?>> resolve, List<Range>? inserted = null)
     {
         var matches = PlaceholderPattern().Matches(text);
         if (matches.Count == 0)
@@ -495,6 +633,15 @@ public static partial class ToolPlaceholders
             var token = match.Groups[1].Value;
             // Whether it lands inside the user's own quotes: a value there goes in as it is.
             var words = await resolve(Base(token), quotes.IsOpen);
+            if (words is null)
+            {
+                // Not ours: kept as written, part of the user's own line.
+                builder.Append(match.Value);
+                quotes.Read(match.Value);
+                position = match.Index + match.Length;
+                continue;
+            }
+
             // A quote just before starts a word only if it opened one: "pre"${name} is one word.
             var startsWord = match.Index == 0 || char.IsWhiteSpace(text[match.Index - 1]) ||
                              (text[match.Index - 1] is '"' or '\'' && quotes.IsOpen);

@@ -216,6 +216,7 @@ Each entry in `args` stays one argument, spaces and all.
 |---|---|
 | `${path}`, `${name}`, `${stem}`, `${ext}` | The file under the cursor |
 | `${selection}` | Every marked file, one argument each |
+| `${otherPaneSelection}` | Every file marked in the other pane, one argument each; with nothing marked there, the tool says so and doesn't run |
 | `${dir}`, `${otherPaneDir}` | This pane's folder, and the other's |
 | `${repoRoot}`, `${branch}`, `${remoteUrl}` | The git repository; a tool that needs one is hidden outside it. `${remoteUrl}` |
 | `${distro}` | The WSL distribution the folder is in, otherwise the default one |
@@ -223,9 +224,13 @@ Each entry in `args` stays one argument, spaces and all.
 | `${env:NAME}` | An environment variable |
 | `${prompt:Label}` | Asks in the pane before running |
 
+A misspelt placeholder such as `${nmae}` is named in the pane and the tool doesn't run. On the
+command line, `${HOME}` and the like are left for the shell; only a near miss of a placeholder is
+caught there.
+
 `when` limits where a tool appears: `{ "extensions": ["zip", "7z"] }`, `{ "glob": "*.log" }`,
 `{ "filesOnly": true, "minSize": "100MB" }`, `{ "newerThan": "7d" }`. `schemes` says which kinds of
-place it applies to (`["file"]` by default, local only), and a tool using `${otherPaneDir}` also
+place it applies to (`["file"]` by default, local only), and a tool using `${otherPaneDir}` or `${otherPaneSelection}` also
 needs the other pane on screen and showing such a place. `"maxSelected": 3` keeps it off the menu
 when more rows than that are marked. `"inConflict": true` offers it only where git
 reports a merge conflict: on the conflicted files and folders holding them, or, for a tool about

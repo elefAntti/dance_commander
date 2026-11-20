@@ -531,9 +531,12 @@ to whatever you already commit with, and a file manager that half-implements git
 one that shows you what git thinks and gets out of the way.
 
 **Placeholder expansion** (`${…}`): `path`, `dir`, `name`, `stem`, `ext`, `selection` (all
-selected paths as separate argv entries), `otherPaneDir`, `uri`, `env:NAME`,
+selected paths as separate argv entries), `otherPaneDir`, `otherPaneSelection` (what is marked
+in the other pane, never its cursor's row, as separate entries), `uri`, `env:NAME`,
 `prompt:Label` (asks the user for a value), and the location tokens `repoRoot`, `branch` and
-`remoteUrl` (below). Expansion produces an **argv array**, never a
+`remoteUrl` (below). Anything else is refused with a notice naming it and the nearest real one;
+it used to expand to nothing, which made `${dir}\${nmae}` the folder itself. A typed command line
+passes unknown names to its shell (`${HOME}`) and refuses only near misses. Expansion produces an **argv array**, never a
 command string — arguments are passed to `ProcessStartInfo.ArgumentList`, so no quoting or
 shell-injection hazard from filenames containing `"` or `&`.
 

@@ -49,7 +49,8 @@ public sealed class ToolRunner(IActivityLog activity, IJobService jobs, ILogger<
                 selection,
                 selection.Count == 1 ? selection[0] : context.Focused,
                 context.OtherPaneDirectory,
-                context.Repository);
+                context.Repository,
+                context.OtherPaneMarked);
 
             // A verbatim line has been expanded already, quoted for the shell that reads it; a
             // file name containing "${" must not be expanded a second time.
