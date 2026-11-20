@@ -503,6 +503,23 @@ public sealed partial class ShellViewModel
             },
         });
 
+        // A shell with administrator rights in the folder on screen, for the commands that need
+        // them. Windows asks first, in its own prompt. Only the shell is elevated: the app never
+        // runs an operation of its own with those rights (AdminShell).
+        commands.Register(new CommandDefinition
+        {
+            Id = "dc.adminTerminal",
+            Subject = CommandSubject.Location,
+            Title = "Open an administrator terminal here",
+            Group = "Terminal",
+            OnlyAt = uri => uri.IsLocal,
+            ExecuteAsync = (context, _) =>
+            {
+                TerminalLauncher.OpenAsAdministrator(context.Directory.ToLocalPath());
+                return Task.CompletedTask;
+            },
+        });
+
         // History from the keyboard: Ctrl+H is the hidden-files toggle here, so Firefox's "show all
         // history", Ctrl+Shift+H, rather than typing about:history (friction log, 2026-10-04).
         commands.Register(new CommandDefinition

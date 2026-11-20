@@ -59,6 +59,42 @@ public static class TerminalLauncher
         Process.Start(info)?.Dispose();
     }
 
+    /// <summary>
+    /// An administrator terminal in a local folder (AdminShell), after Windows' own question. No
+    /// on that question is the user's answer, so nothing is said about it.
+    /// </summary>
+    public static void OpenAsAdministrator(string folder)
+    {
+        // Drive letters mapped to a share belong to the user's own sign-in, and an elevated
+        // window has a sign-in of its own without them: it would open somewhere else, or not at all.
+        var root = Path.GetPathRoot(folder);
+        if (root is { Length: > 0 } && !root.StartsWith(@"\\", StringComparison.Ordinal)
+            && new DriveInfo(root).DriveType == DriveType.Network)
+        {
+            throw new InvalidOperationException(
+                $"An administrator terminal doesn't see mapped drives such as {root.TrimEnd('\\')}, so it can't open here.");
+        }
+
+        var start = AdminShell.For(folder, name =>
+                ExecutableSearch.Resolve(name) is var found && !ExecutableSearch.IsBare(found) ? found : null)
+            ?? throw new InvalidOperationException("Neither Windows Terminal nor PowerShell was found on this computer.");
+
+        var info = new ProcessStartInfo(start.Exec) { UseShellExecute = true, Verb = "runas", WorkingDirectory = folder };
+        foreach (var argument in start.Args)
+            info.ArgumentList.Add(argument);
+
+        try
+        {
+            Process.Start(info)?.Dispose();
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
+        {
+        }
+    }
+
+    /// <summary>ERROR_CANCELLED: No was the answer to Windows' administrator question.</summary>
+    private const int ErrorCancelled = 1223;
+
     /// <summary>Windows Terminal reads an unescaped ';' as "and another tab", even inside an argument.</summary>
     private static string Escape(string argument) => argument.Replace(";", "\\;");
 }
